@@ -5,7 +5,7 @@ ARG PY_VER=3.12
 ENV DEBIAN_FRONTEND=noninteractive \
   HF_HOME=/opt/hf-cache
 
-# Builder system dependencies + Python runtime
+# Builder system dependencies + Python runtime + Pandoc
 RUN apt-get update -qq && \
   apt-get install -y --no-install-recommends \
     curl git ca-certificates \
@@ -48,7 +48,7 @@ ENV TZ=Europe/Amsterdam \
 RUN apt-get update -qq && \
   apt-get install -y --no-install-recommends \
     python3.12-minimal python3.12-venv libpython3.12 \
-    libcurl4 libssl3 libxml2 && \
+    libcurl4 libssl3 libxml2 pandoc && \
   apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
@@ -66,6 +66,10 @@ COPY --chown=appuser:appuser Dockerfile-app.R app.R
 COPY --chown=appuser:appuser www/ www/
 COPY --chown=appuser:appuser language/ language/
 COPY --chown=appuser:appuser LICENSE.md LICENSE.md
+
+# Ensure app directory and contents are owned by appuser and fully accessible
+RUN chown -R appuser:appuser /home/appuser/app && \
+    chmod -R u+rwX /home/appuser/app
 
 # Switch to non-root user
 USER appuser
