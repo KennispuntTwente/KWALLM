@@ -1,4 +1,4 @@
-  name: Promote preview to release tags
+  name: (3) Release preview container
 
   # This action promotes the previously built 'preview' container image
   #   to a versioned release tag, along with 'latest' and 'stable' tags.

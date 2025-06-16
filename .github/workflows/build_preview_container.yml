@@ -1,12 +1,16 @@
-name: Build container with preview tag
+name: (2) Build preview container
 
-# This action gets auto-triggered by draft_release_with_desktop_app_build.yml
-#   That workflow runs upon any commit to the main branch when a higher version
-#   than what was previously released
-# This action builds the container according to the Dockerfile,
-#   and publishes it under the 'preview' tag
-# Upon approving the drafted release, another action (publish_container_with_release.yml)
-#   will automatically convert this is a versioned tags & 'latest'/'stable'
+# This action gets auto-triggered by prepare_release.yml;
+#   That workflow runs upon any commit to the main branch, in which package.json
+#   has a higher version than the version previously released on GitHub
+# This action then builds the container according to the Dockerfile,
+#   and publishes the image under the 'preview' tag
+# The preview image can then be tested to see if it's suitable for a release
+# The drafted release (made by prepare_release.yml)
+#   can then be published
+# Upon publishing the drafted release, another action (release_preview_container.yml)
+#   will automatically promote the 'preview' image to 'latest' & also add a version
+#   tag matching the release
 
 on:
   repository_dispatch:
