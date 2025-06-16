@@ -1,0 +1,86 @@
+  name: Promote preview to release tags
+
+  # This action promotes the previously built 'preview' container image
+  #   to a versioned release tag, along with 'latest' and 'stable' tags.
+  # It runs automatically after a release is published (via workflow_run),
+  #   or can be manually triggered to promote the current preview image
+  #   by specifying a desired release tag.
+
+  on:
+    workflow_dispatch:
+      inputs:
+        tag_name:
+          description: 'Release tag (e.g. v1.2.3)'
+          required: true
+    workflow_run:
+      workflows: ["Build container with preview tag"]
+      types:
+        - completed
+
+  env:
+    IMAGE_NAME: ghcr.io/kennispunttwente/tekstanalyse_met_llm
+
+  permissions:
+    contents: read
+    packages: write
+
+  jobs:
+    promote:
+      if: |
+        (github.event_name == 'workflow_run' && github.event.workflow_run.event == 'release' && github.event.workflow_run.conclusion == 'success') ||
+        github.event_name == 'workflow_dispatch'
+      runs-on: ubuntu-latest
+
+      steps:
+        - name: Log in to GHCR
+          uses: docker/login-action@v3
+          with:
+            registry: ghcr.io
+            username: ${{ github.actor }}
+            password: ${{ secrets.GHCR_PAT }}
+
+        - name: Determine tag name
+          run: |
+            if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+              TAG_NAME="${{ github.event.inputs.tag_name }}"
+            else
+              # More robustly get the latest release tag name using gh release view
+              TAG_NAME=$(gh release view --repo ${{ github.repository }} --json tagName --jq .tagName)
+            fi
+
+            if [[ -z "$TAG_NAME" ]]; then
+              echo "❌ Could not determine tag name."
+              exit 1
+            fi
+
+            echo "Promoting to release tag: $TAG_NAME"
+            echo "TAG_NAME=$TAG_NAME" >> $GITHUB_ENV
+          env:
+            GH_TOKEN: ${{ secrets.GHCR_PAT }}
+
+        - name: Get preview digest (via pull)
+          run: |
+            set -euxo pipefail
+
+            echo "Pulling remote preview image…"
+            PULL_OUTPUT=$(docker pull ${{ env.IMAGE_NAME }}:preview)
+
+            echo "$PULL_OUTPUT"
+            # extract the line that starts with "Digest:" and take the 2nd field
+            DIGEST=$(echo "$PULL_OUTPUT" \
+              | awk '/^Digest:/ {print $2}')
+
+            if [ -z "$DIGEST" ]; then
+              echo "❌ Could not find digest in pull output!"
+              exit 1
+            fi
+
+            echo "Digest found: $DIGEST"
+            echo "DIGEST=$DIGEST" >> $GITHUB_ENV
+
+        - name: Promote preview digest → version / latest / stable
+          run: |
+            docker buildx imagetools create \
+              --tag ${{ env.IMAGE_NAME }}:${{ env.TAG_NAME }} \
+              --tag ${{ env.IMAGE_NAME }}:latest \
+              ${{ env.IMAGE_NAME }}@${{ env.DIGEST }}
