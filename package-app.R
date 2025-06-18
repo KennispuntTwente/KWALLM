@@ -88,6 +88,11 @@ options(
   send_prompt_with_retries___max_tries = 10,
   send_prompt_with_retries___retry_delay_seconds = 3,
 
+  # - Prompt logging;
+  #   if prompts & LLM replies should be written to folder 'prompt_logs'; for debugging purposes;
+  #     see: R/send_prompt_with_retries.R
+  send_prompt_with_retries__log_prompts = FALSE,
+
   # - Maximum number of texts to process at once;
   #     see: R/processing.R
   processing___max_texts = 3000,

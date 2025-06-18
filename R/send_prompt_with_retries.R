@@ -17,7 +17,8 @@ send_prompt_with_retries <- function(
   retry_delay_seconds = getOption(
     "send_prompt_with_retries___retry_delay_seconds",
     3
-  )
+  ),
+  debug_logging = getOption("send_prompt_with_retries__log_prompts", FALSE)
 ) {
   tries <- 0
   result <- NULL
@@ -26,7 +27,23 @@ send_prompt_with_retries <- function(
     tries <- tries + 1
     result <- tryCatch(
       {
-        prompt |> tidyprompt::send_prompt(llm_provider)
+        result <- prompt |> tidyprompt::send_prompt(
+          llm_provider,
+          return_mode = "full"
+        )
+
+        if (debug_logging) {
+          dir.create("prompt_logs", showWarnings = FALSE)
+          # Create timestamped filename
+          timestamp <- format(Sys.time(), "%Y-%m-%d_%H-%M-%S")
+          log_file <- paste0("prompt_logs/log_", timestamp, ".json")
+          # Convert to JSON and write to file
+          result |>
+            jsonlite::toJSON(pretty = TRUE, force = TRUE, auto_unbox = TRUE) |>
+            writeLines(con = log_file)
+        }
+
+        result
       },
       error = function(e) {
         if (tries == max_tries) {
@@ -48,12 +65,24 @@ send_prompt_with_retries <- function(
   }
 
   if (is.null(result)) {
-    stop(
+    stop(paste0(
       "Failed to get a response from the LLM after ",
       max_tries,
-      " attempts. Please check your connection or the LLM provider settings."
-    )
+      " attempts. Please check your connection or the LLM provider settings"
+    ))
   }
 
-  return(result)
+  if (is.null(result$response)) {
+    stop(paste0(
+      "Reached the LLM, but failed to get a valid reply",
+      "\n\n--- Chat history: ---\n\n",
+      if (is.data.frame(result$chat_history)) {
+        tidyprompt::df_to_string(result$chat_history, how = "long")
+      } else {
+        'NULL'
+      }
+    ))
+  }
+
+  return(result$response)
 }
