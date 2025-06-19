@@ -112,7 +112,7 @@ See `Dockerfile` for an example configuration. You can also use the pre-built co
 3. Open the app in your browser (at `http://localhost:3838`)
 
 The pre-built container does not have a specific LLM provider configured, but users can
-implement an LLM provider themselves while using it (any OpenAI-compatible API from [Ollama](https://ollama.com)).
+implement an LLM provider themselves while using it (any OpenAI-compatible API or [Ollama](https://ollama.com)).
 
 Note that if you run Ollama on your own machine (i.e., not in the Docker container of this app),
 the endpoint `localhost:11434` will not work correctly (because that is a reference within the container). 
