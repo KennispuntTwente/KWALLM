@@ -125,7 +125,7 @@ processing_server <- function(
       # Helper to check if number of texts is under maximum
       # TODO: set different maximum, or set limits per user?
       number_of_texts_under_maximum <- function(
-        maximum = getOption("processing___max_texts", 3000)
+        maximum = getOption("processing__max_texts", 3000)
       ) {
         if (length(texts$preprocessed) > maximum) {
           shiny::showNotification(

@@ -83,8 +83,8 @@ options(
 
   # - Retry behaviour upon LLM API errors;
   #     see: R/send_prompt_with_retries.R
-  send_prompt_with_retries___max_tries = 10,
-  send_prompt_with_retries___retry_delay_seconds = 3,
+  send_prompt_with_retries__max_tries = 10,
+  send_prompt_with_retries__retry_delay_seconds = 3,
 
   # - Prompt logging;
   #   if prompts & LLM replies should be written to folder 'prompt_logs'; for debugging purposes;
@@ -93,7 +93,7 @@ options(
 
   # - Maximum number of texts to process at once;
   #     see: R/processing.R
-  processing___max_texts = 3000,
+  processing__max_texts = 3000,
 
   # - Configuration of LLM provider by user;
   #   these enable the user to set their own OpenAI-compatible or Ollama APIs,

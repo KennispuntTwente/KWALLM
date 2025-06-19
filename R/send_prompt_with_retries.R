@@ -13,9 +13,9 @@
 send_prompt_with_retries <- function(
   prompt,
   llm_provider = tidyprompt::llm_provider_openai(),
-  max_tries = getOption("send_prompt_with_retries___max_tries", 10),
+  max_tries = getOption("send_prompt_with_retries__max_tries", 10),
   retry_delay_seconds = getOption(
-    "send_prompt_with_retries___retry_delay_seconds",
+    "send_prompt_with_retries__retry_delay_seconds",
     3
   ),
   debug_logging = getOption("send_prompt_with_retries__log_prompts", FALSE)
