@@ -764,6 +764,12 @@
       "Repository": "RSPM",
       "Encoding": "UTF-8"
     },
+    "chromote": {
+      "Package": "chromote",
+      "Version": "0.5.1",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
     "cli": {
       "Package": "cli",
       "Version": "3.6.5",
