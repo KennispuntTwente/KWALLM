@@ -85,6 +85,9 @@ score_server <- function(
     function(input, output, session) {
       # Reactive values to store the scoring characteristic
       scoring_characteristic <- reactiveVal("")
+      shiny::exportTestValues(
+        scoring_characteristic = scoring_characteristic()
+      )
 
       # Render scoring UI
       output$scoring <- renderUI({

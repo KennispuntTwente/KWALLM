@@ -190,6 +190,12 @@ categories_server <- function(
       txt_in_fields <- reactiveVal(rep("", 3))
       isEditing <- reactiveVal(TRUE)
 
+      shiny::exportTestValues(
+        n_fields = n_fields(),
+        txt_in_fields = txt_in_fields(),
+        isEditing = isEditing()
+      )
+
       output$category_fields <- renderUI({
         tagList(
           lapply(seq_len(n_fields()), function(i) {

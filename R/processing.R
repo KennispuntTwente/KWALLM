@@ -88,6 +88,8 @@ processing_server <- function(
       #     during the topic editing modal
       #   rereduced_topics: reactiveVal to store the re-reduced topics
       #     This is used to update the topics table when the re-reduction is done
+      #   succes: reactiveVal to keep track of whether the processing
+      #     has been finished succesfully. Used for automated testing
       processing <- reactiveVal(FALSE)
       results_df <- reactiveVal(NULL)
       final_results_df <- reactiveVal(NULL)
@@ -100,6 +102,12 @@ processing_server <- function(
       topics_definitive <- reactiveVal(FALSE)
       reduction_in_progress <- reactiveVal(FALSE)
       rereduced_topics <- reactiveVal(NULL)
+      success <- reactiveVal(NULL)
+
+      shiny::exportTestValues(
+        processing = processing(),
+        success = success()
+      )
 
       # UUID for the current processing task
       uuid <- uuid::UUIDgenerate()
@@ -1344,6 +1352,9 @@ processing_server <- function(
             )
           )
         })
+
+        # Set 'success' to TRUE; process is done
+        success(TRUE)
       })
 
       # Restart button listener

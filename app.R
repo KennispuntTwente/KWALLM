@@ -20,16 +20,18 @@ library(promises)
 library(DT)
 
 # Load components in R/-folder
-r_files <- list.files(
-  path = "R",
-  pattern = "\\.R$",
-  full.names = TRUE
-)
-for (file in r_files) {
-  if (!grepl("llmQuali-package\\.R|rstudio_addin\\.R|zzz\\.R", file)) {
+load_all <- function(except = c()) {
+  r_files <- list.files(
+    path = "R",
+    pattern = "\\.R$",
+    full.names = TRUE
+  )
+  for (file in r_files) {
+    if (file %in% except) next
     source(file)
   }
 }
+load_all()
 
 
 #### 2 Settings ####
@@ -43,7 +45,9 @@ for (file in r_files) {
 #     `future::plan("sequential")`; note that the progress bar may lag behind
 #     in that case, as this is built around asynchronous processing
 # - See the documentation for `future::plan()` for more details
-future::plan(multisession, .skip = TRUE)
+if (!getOption("shiny.testmode", FALSE)) {
+  future::plan(multisession, .skip = TRUE)
+}
 
 # Set preconfigured LLM provider and available models (optional)
 # - You can preconfigure the LLM provider and available models here
@@ -77,9 +81,10 @@ preconfigured_models_large <- c(
 
 # Optionally set other options
 options(
-  # - How the Shiny app is served;
-  shiny.port = 8100,
-  shiny.host = "0.0.0.0",
+  # - Optionally set a port and host for the Shiny app;
+  #   this is useful when deploying the app to a server
+  # shiny.port = 8100,
+  # shiny.host = "0.0.0.0",
 
   # - Retry behaviour upon LLM API errors;
   #     see: R/send_prompt_with_retries.R
@@ -87,7 +92,8 @@ options(
   send_prompt_with_retries__retry_delay_seconds = 3,
 
   # - Prompt logging;
-  #   if prompts & LLM replies should be written to folder 'prompt_logs'; for debugging purposes;
+  #   if prompts & LLM replies should be written to folder 'prompt_logs',
+  #   used primarily for debugging purposes;
   #     see: R/send_prompt_with_retries.R
   send_prompt_with_retries__log_prompts = FALSE,
 
