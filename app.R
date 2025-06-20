@@ -63,11 +63,15 @@ if (!getOption("shiny.testmode", FALSE)) {
 #   You may want to replace this function with a more dynamic one,
 #     or add your own hardcoded values for the models you use
 #   The function will default to 2048 if a model is not recognised
-preconfigured_llm_provider <- tidyprompt::llm_provider_openai()
-preconfigured_llm_provider$parameters$model <- "gpt-4o-mini-2024-07-18"
+preconfigured_llm_provider <-
+  tidyprompt::llm_provider_openai()
+
+preconfigured_llm_provider$parameters$model <-
+  "gpt-4o-mini-2024-07-18"
+
 preconfigured_llm_provider$parameters$stream <- FALSE
+
 preconfigured_models_main <- c(
-  "gpt-4o-mini-2024-07-18",
   "gpt-4.1-mini-2025-04-14",
   "gpt-4.1-2025-04-14"
 )
@@ -87,9 +91,14 @@ options(
   # shiny.host = "0.0.0.0",
 
   # - Retry behaviour upon LLM API errors;
+  #   max tries defines the maximum number of retries
+  #   in connecting to the LLM API, while max interactions
+  #   defines the maximum number of messages sent to the LLM API
+  #   to evaluate the prompt once connected
   #     see: R/send_prompt_with_retries.R
-  send_prompt_with_retries__max_tries = 10,
+  send_prompt_with_retries__max_tries = 5,
   send_prompt_with_retries__retry_delay_seconds = 3,
+  send_prompt_with_retries__max_interactions = 10,
 
   # - Prompt logging;
   #   if prompts & LLM replies should be written to folder 'prompt_logs',
@@ -120,11 +129,21 @@ options(
   # - Default setting for anonymization of texts, and if user
   #   can toggle this setting;
   #     see R/text_management.R
-  anonymization__default = "regex", # Default anonymization method, either "none', "regex", or "gliner"
+  anonymization__default = "regex", # Default anonymization method ("none', "regex", or "gliner")
   anonymization__none = TRUE, # If the "none" anonymization method is available
   anonymization__regex = TRUE, # If the "regex" anonymization method is available
   anonymization__gliner_model = TRUE, # If the "gliner" anonymization method is available
-  anonymization__gliner_test = FALSE # If gliner model should be tested before launching the app. If test fails, app won't launch
+  anonymization__gliner_test = FALSE, # If gliner model should be tested before launching the app
+
+  # - If a topic 'unknown/not applicable' should always be added
+  #   to to the list of candiate topics during topic modelling;
+  #   this may be useful to avoid LLM failure in the topic assignment process;
+  #     see R/topic_modelling.R
+  topic_modelling__always_add_not_applicable = TRUE,
+
+  # - Maximum number of text chunks during candidate topic generation;
+  #     see R/context_window.R
+  topic_modelling__max_text_chunks = 100
 )
 
 if (getOption("anonymization__gliner_test", FALSE)) {

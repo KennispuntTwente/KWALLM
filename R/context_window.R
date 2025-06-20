@@ -56,6 +56,10 @@ context_window_server <- function(
     shiny.i18n::Translator$new(
       translation_json_path = "language/language.json"
     )
+  ),
+  max_number_of_chunks = getOption(
+    "topic_modelling__max_text_chunks",
+    100
   )
 ) {
   moduleServer(
@@ -140,7 +144,10 @@ context_window_server <- function(
           return(TRUE)
         }
 
-        if (is_valid_number(input$chunk_size) && input$chunk_size <= 100) {
+        if (
+          is_valid_number(input$chunk_size) &&
+            input$chunk_size <= max_number_of_chunks
+        ) {
           rv$max_chunk_size <- input$chunk_size
         }
 
@@ -281,7 +288,7 @@ context_window_server <- function(
           rv$fit_context_window_chunks <- TRUE
         }
 
-        if (length(rv$text_chunks) > 100) {
+        if (length(rv$text_chunks) > max_number_of_chunks) {
           rv$too_many_chunks <- TRUE
         } else {
           rv$too_many_chunks <- FALSE
@@ -330,7 +337,7 @@ context_window_server <- function(
                 lang()$t("Maximaal aantal teksten per chunk"),
                 value = rv$max_chunk_size,
                 min = 1,
-                max = 100
+                max = max_number_of_chunks
               ),
               numericInput(
                 ns("redrawing"),
@@ -371,7 +378,9 @@ context_window_server <- function(
             class = "ms-2",
             paste0(
               lang()$t("Te veel chunks"),
-              " (> 100)"
+              " (> ",
+              max_number_of_chunks,
+              ")"
             )
           )
         ))

@@ -5,9 +5,12 @@
 #'
 #' @param prompt A tidyprompt object representing the prompt to be sent
 #' @param llm_provider A tidyprompt LLM provider object
-#' @param max_tries Maximum number of attempts to send the prompt
+#' @param max_tries Maximum number of attempts in connecting to the LLM
 #' @param retry_delay_seconds Number of seconds to wait before retrying
-#'
+#' @param max_interactions Maximum number of interactions with the LLM
+#'  (this is the maximum number of messages that will be sent to the LLM
+#'  before stopping an interaction; this is used to prevent indefinite
+#'  loops in case the LLM does not respond in the expected format)
 #' @return The response from the LLM
 #' @export
 send_prompt_with_retries <- function(
@@ -18,6 +21,10 @@ send_prompt_with_retries <- function(
     "send_prompt_with_retries__retry_delay_seconds",
     3
   ),
+  max_interactions = getOption(
+    "send_prompt_with_retries__max_interactions",
+    10
+  ),
   debug_logging = getOption("send_prompt_with_retries__log_prompts", FALSE)
 ) {
   tries <- 0
@@ -27,10 +34,12 @@ send_prompt_with_retries <- function(
     tries <- tries + 1
     result <- tryCatch(
       {
-        result <- prompt |> tidyprompt::send_prompt(
-          llm_provider,
-          return_mode = "full"
-        )
+        result <- prompt |>
+          tidyprompt::send_prompt(
+            llm_provider,
+            return_mode = "full",
+            max_interactions = max_interactions
+          )
 
         if (debug_logging) {
           dir.create("prompt_logs", showWarnings = FALSE)

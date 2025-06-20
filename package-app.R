@@ -38,7 +38,8 @@ for (file in r_files) {
 # - To enable asynchronous processing, you need to use `future::plan()`, e.g.,
 #     `future::plan(multisession)`
 # - When you asynchronous processing is not needed, you can use
-#     `future::plan("sequential")`
+#     `future::plan("sequential")`; note that the progress bar may lag behind
+#     in that case, as this is built around asynchronous processing
 # - See the documentation for `future::plan()` for more details
 future::plan(multisession, .skip = TRUE)
 
@@ -84,9 +85,14 @@ options(
   # shiny.host = "0.0.0.0",
 
   # - Retry behaviour upon LLM API errors;
+  #   max tries defines the maximum number of retries
+  #   in connecting to the LLM API, while max interactions
+  #   defines the maximum number of messages sent to the LLM API
+  #   to evaluate the prompt once connected
   #     see: R/send_prompt_with_retries.R
-  send_prompt_with_retries__max_tries = 10,
+  send_prompt_with_retries__max_tries = 5,
   send_prompt_with_retries__retry_delay_seconds = 3,
+  send_prompt_with_retries__max_interactions = 10,
 
   # - Prompt logging;
   #   if prompts & LLM replies should be written to folder 'prompt_logs'; for debugging purposes;
@@ -120,7 +126,17 @@ options(
   anonymization__none = TRUE, # If the "none" anonymization method is available
   anonymization__regex = TRUE, # If the "regex" anonymization method is available
   anonymization__gliner_model = TRUE, # If the "gliner" anonymization method is available
-  anonymization__gliner_test = FALSE # If gliner model should be tested before launching the app. If test fails, app won't launch
+  anonymization__gliner_test = FALSE, # If gliner model should be tested before launching the app. If test fails, app won't launch
+
+  # - If a topic 'unknown/not applicable' should always be added
+  #   to to the list of candiate topics during topic modelling;
+  #   this may be useful to avoid LLM failure in the topic assignment process;
+  #     see R/topic_modelling.R
+  topic_modelling__always_add_not_applicable = TRUE,
+
+  # - Maximum number of text chunks during candidate topic generation;
+  #     see R/context_window.R
+  topic_modelling__max_text_chunks = 100
 )
 
 if (getOption("anonymization__gliner_test", FALSE)) {
