@@ -47,9 +47,6 @@ test_that("{shinytest2} recording: standard process - topic modelling", {
   app$set_inputs(`processing-rater_modal-current_rating` = "TRUE")
   app$click("processing-rater_modal-submit_next")
   Sys.sleep(3)
-  app$set_inputs(`processing-rater_modal-current_rating` = "TRUE")
-  app$click("processing-rater_modal-submit_next")
-  Sys.sleep(5)
 
   app$expect_values(
     export = c(
