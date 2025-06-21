@@ -76,6 +76,9 @@ gliner_server <- function(
         return$enabled <- TRUE
       }
 
+      # Queue object to talk to the main process when loading model from async
+      queue <- ipc::shinyQueue()
+
       # Make available to the main server:
       #   start function; done status; result (will be the anonymized texts)
       return <- reactiveValues(
@@ -199,6 +202,7 @@ gliner_server <- function(
                 style = "margin-top: 20px;",
                 icon("spinner", class = "fa-spin fa-3x")
               ),
+              uiOutput(ns("gliner_load_message_ui")),
               hr()
             )
           },
@@ -337,6 +341,9 @@ gliner_server <- function(
             detail = sprintf(lang()$t("0 van %d teksten"), n_txt)
           )
 
+          ## 3.1 Start queue to update about model loading
+          queue$consumer$start(millis = 250)
+
           ## 4 Spawn the future that runs GLiNER model on texts
           future(
             {
@@ -345,7 +352,7 @@ gliner_server <- function(
                 #   because reticulate objects cannot be passed to async processes
                 #   (in that case, ensure `gliner_model` is NULL when passing it on in 'globals')
                 # If not in async, then the gliner_model may already be loaded
-                gliner_model <- gliner_load_model()
+                gliner_model <- gliner_load_model(queue = queue)
               }
 
               purrr::imap(pii_texts, function(txt, i) {
@@ -368,7 +375,8 @@ gliner_server <- function(
               gliner_load_model = gliner_load_model,
               pii_texts = pii_texts(),
               labels = labels,
-              progress = progress
+              progress = progress,
+              queue = queue
             ),
             seed = NULL
           ) %...>%
@@ -421,11 +429,13 @@ gliner_server <- function(
               module_state("evaluating")
 
               progress$close()
+              queue$consumer$stop()
             } %...!%
             {
               ## ERROR ─ notify the user and set state to “error”
               err <- .
               progress$close()
+              queue$consumer$stop()
 
               print(err)
 
@@ -443,6 +453,18 @@ gliner_server <- function(
         },
         ignoreInit = TRUE
       )
+
+      # Gliner load message is set by queue in async process;
+      #   tells some info about the model loading progress
+      gliner_load_message <- reactiveVal(NULL)
+      output$gliner_load_message_ui <- renderUI({
+        req(gliner_load_message())
+        div(
+          class = "text-center",
+          style = "margin-top: 20px;",
+          gliner_load_message()
+        )
+      })
 
       ##### 3.2 User evaluation of PII entities #####
 

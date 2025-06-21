@@ -10,7 +10,8 @@ gliner_load_model <- function(
   model_name = "urchade/gliner_multi_pii-v1",
   use_system_python = FALSE,
   docker_env = NULL,
-  test_model = FALSE
+  test_model = FALSE,
+  queue = NULL
 ) {
   stopifnot(
     is.character(venv_name),
@@ -24,10 +25,40 @@ gliner_load_model <- function(
     is.null(docker_env) || (is.logical(docker_env) && length(docker_env) == 1)
   )
 
+  # Helper to print messages to the console + queue if needed
+  print_message <- function(
+    message,
+    type = c("info", "success")
+  ) {
+    type <- match.arg(type)
+    if (type == "success") {
+      cli::cli_alert_success(message)
+      message <- paste0(
+        cli::col_green("✔"),
+        " ",
+        message
+      )
+    } else {
+      message <- paste0(
+        cli::col_blue("ℹ"),
+        " ",
+        message
+      )
+      cli::cli_alert_info(message)
+    }
+
+    if (!is.null(queue)) {
+      queue$producer$fireAssignReactive(
+        "gliner_load_message",
+        message
+      )
+    }
+  }
+
   # Auto-detect if running in Docker via env var
   if (is.null(docker_env)) {
     docker_env <- identical(tolower(Sys.getenv("IS_DOCKER")), "true")
-    cli::cli_alert_info(paste0(
+    print_message(paste0(
       "Docker environment auto-detected: ",
       docker_env
     ))
@@ -35,14 +66,14 @@ gliner_load_model <- function(
 
   #### 1 Load/create virtual environment ####
 
-  cli::cli_alert_info(paste0(
+  print_message(paste0(
     "Loading/creating virtual environment (",
     venv_name,
     ") for GLiNER model..."
   ))
 
   if (docker_env) {
-    cli::cli_alert_info(
+    print_message(
       "Running inside Docker: assuming Python + GLiNER already installed"
     )
     reticulate::use_virtualenv("/opt/gliner-venv", required = TRUE)
@@ -51,10 +82,10 @@ gliner_load_model <- function(
 
     if (!reticulate::virtualenv_exists(venv_name)) {
       python_exec <- if (use_system_python) {
-        cli::cli_alert_info("Using system-installed Python at /usr/bin/python3")
+        print_message("Using system-installed Python at /usr/bin/python3")
         "/usr/bin/python3"
       } else {
-        cli::cli_alert_info("Installing Python with pyenv...")
+        print_message("Installing Python with pyenv...")
         reticulate::install_python(version = python_version)
         python_version
       }
@@ -77,7 +108,7 @@ gliner_load_model <- function(
 
     #### 2 Install gliner if needed ####
 
-    cli::cli_alert_info("Checking/installing 'gliner' Python package...")
+    print_message("Checking/installing 'gliner' Python package...")
 
     available_packages <- reticulate::py_list_packages(envname = venv_name)
     if (!"gliner" %in% available_packages$package) {
@@ -101,7 +132,7 @@ gliner_load_model <- function(
 
   #### 4 Load model ####
 
-  cli::cli_alert_info(paste0(
+  print_message(paste0(
     "Loading/downloading GLiNER model ('",
     model_name,
     "')..."
@@ -124,7 +155,7 @@ gliner_load_model <- function(
   #### 5 Test model ####
 
   if (test_model) {
-    cli::cli_alert_info("Testing GLiNER model...")
+    print_message("Testing GLiNER model...")
 
     test_result <- tryCatch(
       model$predict_entities(
@@ -143,6 +174,6 @@ gliner_load_model <- function(
 
   #### 6 Return model ####
 
-  cli::cli_alert_success("GLiNER model loaded successfully!")
+  print_message("GLiNER model loaded successfully!", type = "success")
   return(model)
 }
