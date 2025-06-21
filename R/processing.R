@@ -112,15 +112,6 @@ processing_server <- function(
       # UUID for the current processing task
       uuid <- uuid::UUIDgenerate()
 
-      # Progress files for primary and secondary progress bars
-      dir.create("progress", showWarnings = FALSE)
-      dir.create("progress_secondary", showWarnings = FALSE)
-      progress_file <- file.path("progress", paste0(uuid, ".txt"))
-      progress_file_secondary <- file.path(
-        "progress_secondary",
-        paste0(uuid, ".txt")
-      )
-
       #### Launch processing ####
 
       # Launch processing when button is clicked;
@@ -165,12 +156,8 @@ processing_server <- function(
         # Set processing state
         processing(TRUE)
         # Set initial progress
-        write_progress(
-          0,
-          length(texts$preprocessed),
-          "...",
-          progress_file
-        )
+        progress_primary$set_with_total(0, length(texts$preprocessed), "...")
+
         # Set model
         llm_provider <- llm_provider_rv$llm_provider$clone()
         llm_provider$parameters$model <- models$main
@@ -213,21 +200,15 @@ processing_server <- function(
               )
               results[[i]] <- result
 
-              write_progress(
-                i,
-                length(texts),
-                text,
-                progress_file
-              )
+              progress_primary$set_with_total(i, length(texts), text)
 
               if (is.na(result)) break
             }
 
-            write_progress(
+            progress_primary$set_with_total(
               length(texts),
               length(texts),
-              lang$t("Alle teksten zijn geanalyseerd..."),
-              progress_file
+              lang$t("Alle teksten zijn geanalyseerd...")
             )
 
             # Turn into data frame
@@ -265,13 +246,6 @@ processing_server <- function(
 
             # If categorization, write paragraphs
             if (mode == "Categorisatie" & write_paragraphs) {
-              write_progress(
-                0,
-                0,
-                lang$t("Rapport schrijven..."),
-                progress_file_secondary
-              )
-
               # Make list per category, with all texts assigned to that category
               categories_texts <- list()
               if (!assign_multiple_categories) {
@@ -297,6 +271,7 @@ processing_server <- function(
               ]
 
               # Write paragraphs, per category
+              progress_secondary$show()
               paragraphs <- purrr::map(
                 seq_along(categories_texts),
                 function(i) {
@@ -304,11 +279,10 @@ processing_server <- function(
                   cat_name <- names(categories_texts)[[i]]
                   cat_texts <- categories_texts[[i]]
 
-                  write_progress(
+                  progress_secondary$set_with_total(
                     i,
                     length(categories_texts),
-                    paste0(lang$t("Schrijven over '"), cat_name, "'..."),
-                    progress_file_secondary
+                    paste0(lang$t("Schrijven over '"), cat_name, "'...")
                   )
 
                   # Write paragraph about the category
@@ -321,6 +295,7 @@ processing_server <- function(
                   )
                 }
               )
+              progress_secondary$hide()
 
               # Add as attribute to the results
               attr(results, "paragraphs") <- paragraphs
@@ -329,15 +304,12 @@ processing_server <- function(
             results
           },
           globals = list(
-            write_progress = write_progress,
             llm_provider = llm_provider,
             texts = texts$preprocessed,
             research_background = research_background(),
             mode = mode(),
             categories = categories$texts(),
             scoring_characteristic = scoring_characteristic(),
-            progress_file = progress_file,
-            progress_file_secondary = progress_file_secondary,
             prompt_category = prompt_category,
             prompt_multi_category = prompt_multi_category,
             prompt_score = prompt_score,
@@ -346,7 +318,9 @@ processing_server <- function(
             send_prompt_with_retries = send_prompt_with_retries,
             write_paragraphs = write_paragraphs(),
             get_context_window_size_in_tokens = get_context_window_size_in_tokens,
-            lang = lang()
+            lang = lang(),
+            progress_primary = progress_primary$async,
+            progress_secondary = progress_secondary$async
           ),
           packages = c("tidyprompt", "tidyverse", "glue", "fs", "uuid")
         ) %...>%
@@ -430,15 +404,16 @@ processing_server <- function(
         future_promise(
           {
             # Step 1: Generate candidate topics
-            write_progress(
-              1,
+            progress_primary$set_with_total(
+              0,
               5,
-              lang$t("Onderwerpen genereren..."),
-              progress_file
+              lang$t("Onderwerpen genereren...")
             )
+
             candidate_topics <- tryCatch(
               {
                 results <- c()
+                progress_secondary$show()
                 for (i in seq_along(text_chunks)) {
                   text_chunk <- text_chunks[[i]]
 
@@ -449,22 +424,21 @@ processing_server <- function(
                     language = lang$get_translation_language()
                   )
 
-                  write_progress(
+                  progress_secondary$set_with_total(
                     i,
                     length(text_chunks),
-                    paste(result, collapse = ","),
-                    progress_file_secondary
+                    paste(result, collapse = ",")
                   )
 
                   results <- c(results, result)
                 }
 
-                write_progress(
+                progress_secondary$set_with_total(
                   length(text_chunks),
                   length(text_chunks),
-                  lang$t("Alle chunks zijn geanalyseerd."),
-                  progress_file_secondary
+                  lang$t("Alle chunks zijn geanalyseerd.")
                 )
+                progress_secondary$hide()
 
                 results
               },
@@ -472,12 +446,12 @@ processing_server <- function(
             )
 
             # Step 2: Reduce topics
-            write_progress(
+            progress_primary$set_with_total(
               2,
               5,
-              lang$t("Onderwerpen reduceren..."),
-              progress_file
+              lang$t("Onderwerpen reduceren...")
             )
+
             topics <- tryCatch(
               reduce_topics(
                 candidate_topics,
@@ -492,7 +466,6 @@ processing_server <- function(
             topics
           },
           globals = list(
-            write_progress = write_progress,
             send_prompt_with_retries = send_prompt_with_retries,
             create_candidate_topics = create_candidate_topics,
             reduce_topics = reduce_topics,
@@ -504,12 +477,12 @@ processing_server <- function(
             texts = texts$preprocessed,
             research_background = research_background(),
             mode = mode(),
-            progress_file = progress_file,
-            progress_file_secondary = progress_file_secondary,
             handle_detailed_error = handle_detailed_error,
             text_chunks = context_window$text_chunks,
             get_context_window_size_in_tokens = get_context_window_size_in_tokens,
-            lang = lang()
+            lang = lang(),
+            progress_primary = progress_primary$async,
+            progress_secondary = progress_secondary$async
           ),
           packages = c(
             "tidyprompt",
@@ -560,12 +533,10 @@ processing_server <- function(
           return()
         }
 
-        # Write progress
-        write_progress(
+        progress_primary$set_with_total(
           2.5,
           5,
-          lang()$t("Onderwerpen bewerken..."),
-          progress_file
+          lang()$t("Onderwerpen bewerken...")
         )
 
         # Show the editable modal with Add/Remove buttons
@@ -891,11 +862,10 @@ processing_server <- function(
         llm_provider$parameters$model <- models$main
 
         # Write progress
-        write_progress(
+        progress_primary$set_with_total(
           3,
           5,
-          lang()$t("Onderwerpen toekennen..."),
-          progress_file
+          lang()$t("Onderwerpen toekennen...")
         )
 
         future_promise(
@@ -909,6 +879,7 @@ processing_server <- function(
                   result = character()
                 )
 
+                progress_secondary$show()
                 for (i in seq_along(texts)) {
                   text <- texts[[i]]
                   result <- assign_topics(
@@ -920,11 +891,10 @@ processing_server <- function(
                   )
                   result <- result$result
 
-                  write_progress(
+                  progress_secondary$set_with_total(
                     i,
                     length(texts),
-                    text,
-                    progress_file_secondary
+                    text
                   )
 
                   # Append to results
@@ -934,12 +904,12 @@ processing_server <- function(
                   )
                 }
 
-                write_progress(
+                progress_secondary$set_with_total(
                   length(texts),
                   length(texts),
-                  lang$t("Alle teksten zijn geanalyseerd..."),
-                  progress_file_secondary
+                  lang$t("Alle teksten zijn geanalyseerd...")
                 )
+                progress_secondary$hide()
 
                 # If multiple categories, convert from JSON array string to
                 #   multiple binary columns
@@ -971,11 +941,10 @@ processing_server <- function(
             )
 
             ## Step 5: Write paragraphs about the topics
-            write_progress(
+            progress_primary$set_with_total(
               4,
               5,
-              lang$t("Rapport schrijven..."),
-              progress_file
+              lang$t("Onderwerpen rapporteren...")
             )
 
             if (write_paragraphs) {
@@ -1006,20 +975,19 @@ processing_server <- function(
                   ]
 
                   # Write paragraphs, per topic
+                  progress_secondary$show()
                   purrr::map(seq_along(topics_texts_list), function(i) {
                     topic_name <- names(topics_texts_list)[[i]]
                     topic_texts <- topics_texts_list[[i]]
 
-                    # Write progress to secondary progress file
-                    write_progress(
+                    progress_secondary$set_with_total(
                       i,
                       length(topics_texts_list),
                       paste0(
                         lang$t("Schrijven over '"),
                         topic_name,
                         "'..."
-                      ),
-                      progress_file_secondary
+                      )
                     )
 
                     write_paragraph(
@@ -1030,6 +998,7 @@ processing_server <- function(
                       language = lang$get_translation_language()
                     )
                   })
+                  progress_secondary$hide()
                 },
                 error = handle_detailed_error("Topic report generation")
               )
@@ -1038,18 +1007,16 @@ processing_server <- function(
               attr(texts_with_topics, "paragraphs") <- paragraphs
             }
 
-            write_progress(
+            progress_primary$set_with_total(
               4.5,
               5,
-              lang$t("Afronden..."),
-              progress_file
+              lang$t("Afronden...")
             )
 
             texts_with_topics
           },
           globals = list(
             topics = topics(),
-            write_progress = write_progress,
             send_prompt_with_retries = send_prompt_with_retries,
             create_candidate_topics = create_candidate_topics,
             reduce_topics = reduce_topics,
@@ -1061,13 +1028,13 @@ processing_server <- function(
             texts = texts$preprocessed,
             research_background = research_background(),
             mode = mode(),
-            progress_file = progress_file,
-            progress_file_secondary = progress_file_secondary,
             assign_multiple_categories = assign_multiple_categories(),
             write_paragraphs = write_paragraphs(),
             handle_detailed_error = handle_detailed_error,
             get_context_window_size_in_tokens = get_context_window_size_in_tokens,
-            lang = lang()
+            lang = lang(),
+            progress_primary = progress_primary$async,
+            progress_secondary = progress_secondary$async
           ),
           packages = c("tidyprompt", "tidyverse", "glue", "fs", "uuid"),
           seed = NULL
@@ -1110,10 +1077,6 @@ processing_server <- function(
         # Store final results df
         final_results_df(df)
 
-        # Delete progress files
-        unlink(progress_file, force = TRUE)
-        unlink(progress_file_secondary, force = TRUE)
-
         # Verify that df actually has results
         # (sometimes we have API failure, then result/topic contains NA values)
         if (any(is.na(df$result))) {
@@ -1126,12 +1089,14 @@ processing_server <- function(
         }
 
         # Update UI to show finished processing
-        progress_primary$set_progress(100)
+        progress_primary$set(
+          100,
+          paste0(
+            bsicons::bs_icon("check2-circle"),
+            lang()$t(" Verwerking voltooid!")
+          )
+        )
         progress_secondary$hide()
-        progress_primary$set_text(paste0(
-          bsicons::bs_icon("check2-circle"),
-          lang()$t(" Verwerking voltooid!")
-        ))
 
         if (interrater_reliability_toggle()) {
           all_categories <-
@@ -1587,102 +1552,10 @@ processing_server <- function(
         return(result)
       }
 
-      # Helper function to write progress to file
-      write_progress <- function(i, total, text, file) {
-        lines <- paste0(
-          i,
-          "/",
-          total,
-          "\n",
-          "<br><i>",
-          stringr::str_trunc(text, 50),
-          "</i>"
-        )
-        tryCatch(
-          {
-            writeLines(lines, file)
-          },
-          error = function(e) {
-            app_error(
-              e,
-              when = "writing progress to file",
-              fatal = FALSE,
-              lang = lang()
-            )
-          }
-        )
-      }
-
-      # Helper function to read progress from file
-      # (returns list with '$progress_value' and '$progress_text')
-      read_progress <- function(file) {
-        tryCatch(
-          {
-            if (file.exists(file)) {
-              lines <- readLines(file)
-              progress <- as.numeric(strsplit(lines, "/")[[1]])
-              progress_value <- progress[1] / progress[2] * 100
-              progress_text <- paste(lines, collapse = "\n")
-
-              list(
-                progress_value = progress_value,
-                progress_text = progress_text
-              )
-            } else {
-              NULL
-            }
-          },
-          error = function(e) {
-            app_error(
-              e,
-              when = "reading progress from file",
-              fatal = FALSE,
-              lang = lang()
-            )
-            return(NULL)
-          }
-        )
-      }
-
-      #### Progress bar update ####
-
-      # We check progress/... every 250ms;
-      #  asynchronous processes write their progress to a file,
-      #  here (main process) we read the progress from the file
-      #  and update the progress bar
+      #### Progress bars ####
 
       progress_primary <- progress_bar_server("progress_primary")
       progress_secondary <- progress_bar_server("progress_secondary")
-
-      # Poll progress file every 250ms
-      observe({
-        invalidateLater(250, session)
-        if (!processing()) return()
-
-        # Find file using uuid,
-        # read progress from file and update progress bar
-        if (!is.null(uuid)) {
-          if (file.exists(progress_file)) {
-            progress <- read_progress(progress_file)
-            progress_primary$set_progress(progress$progress_value)
-            progress_primary$set_text(progress$progress_text)
-          }
-
-          if (file.exists(progress_file_secondary)) {
-            progress <- read_progress(progress_file_secondary)
-            progress_secondary$set_progress(progress$progress_value)
-            progress_secondary$set_text(progress$progress_text)
-
-            if (isTRUE(progress$progress_value == 100)) {
-              progress_secondary$hide()
-            } else {
-              progress_secondary$show()
-            }
-          } else {
-            progress_secondary$hide()
-          }
-        }
-      })
 
       #### Processing button ####
 
