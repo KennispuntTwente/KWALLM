@@ -170,6 +170,7 @@ processing_server <- function(
             results <- vector("list", length(texts))
 
             for (i in seq_along(texts)) {
+              interrupter$execInterrupts()
               text <- texts[[i]]
 
               prompt <- if (mode == "Categorisatie") {
@@ -320,7 +321,8 @@ processing_server <- function(
             get_context_window_size_in_tokens = get_context_window_size_in_tokens,
             lang = lang(),
             progress_primary = progress_primary$async,
-            progress_secondary = progress_secondary$async
+            progress_secondary = progress_secondary$async,
+            interrupter = interrupter
           ),
           packages = c("tidyprompt", "tidyverse", "glue", "fs", "uuid")
         ) %...>%
@@ -415,6 +417,7 @@ processing_server <- function(
                 results <- c()
                 progress_secondary$show()
                 for (i in seq_along(text_chunks)) {
+                  interrupter$execInterrupts()
                   text_chunk <- text_chunks[[i]]
 
                   result <- create_candidate_topics(
@@ -446,6 +449,7 @@ processing_server <- function(
             )
 
             # Step 2: Reduce topics
+            interrupter$execInterrupts()
             progress_primary$set_with_total(
               2,
               5,
@@ -482,7 +486,8 @@ processing_server <- function(
             get_context_window_size_in_tokens = get_context_window_size_in_tokens,
             lang = lang(),
             progress_primary = progress_primary$async,
-            progress_secondary = progress_secondary$async
+            progress_secondary = progress_secondary$async,
+            interrupter = interrupter
           ),
           packages = c(
             "tidyprompt",
@@ -881,6 +886,7 @@ processing_server <- function(
 
                 progress_secondary$show()
                 for (i in seq_along(texts)) {
+                  interrupter$execInterrupts()
                   text <- texts[[i]]
                   result <- assign_topics(
                     c(text),
@@ -977,6 +983,7 @@ processing_server <- function(
                   # Write paragraphs, per topic
                   progress_secondary$show()
                   purrr::map(seq_along(topics_texts_list), function(i) {
+                    interrupter$execInterrupts()
                     topic_name <- names(topics_texts_list)[[i]]
                     topic_texts <- topics_texts_list[[i]]
 
@@ -1034,7 +1041,8 @@ processing_server <- function(
             get_context_window_size_in_tokens = get_context_window_size_in_tokens,
             lang = lang(),
             progress_primary = progress_primary$async,
-            progress_secondary = progress_secondary$async
+            progress_secondary = progress_secondary$async,
+            interrupter = interrupter
           ),
           packages = c("tidyprompt", "tidyverse", "glue", "fs", "uuid"),
           seed = NULL
@@ -1633,6 +1641,15 @@ processing_server <- function(
             )
           )
         }
+      })
+
+      #### Interruption ####
+
+      # Interrupter can stop async processing if user quits
+      interrupter <- ipc::AsyncInterruptor$new()
+
+      shiny::onStop(function() {
+        interrupter$interrupt("Shiny session was stopped (`shiny::onStop()`)")
       })
 
       return(processing)
