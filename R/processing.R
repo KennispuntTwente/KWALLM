@@ -206,12 +206,6 @@ processing_server <- function(
               if (is.na(result)) break
             }
 
-            progress_primary$set_with_total(
-              length(texts),
-              length(texts),
-              lang$t("Alle teksten zijn geanalyseerd...")
-            )
-
             # Turn into data frame
             results <- unlist(results)
             if (any(is.na(results))) results <- rep(NA, length(texts))
@@ -407,7 +401,7 @@ processing_server <- function(
           {
             # Step 1: Generate candidate topics
             progress_primary$set_with_total(
-              0,
+              1,
               5,
               lang$t("Onderwerpen genereren...")
             )
@@ -436,11 +430,6 @@ processing_server <- function(
                   results <- c(results, result)
                 }
 
-                progress_secondary$set_with_total(
-                  length(text_chunks),
-                  length(text_chunks),
-                  lang$t("Alle chunks zijn geanalyseerd.")
-                )
                 progress_secondary$hide()
 
                 results
@@ -910,11 +899,6 @@ processing_server <- function(
                   )
                 }
 
-                progress_secondary$set_with_total(
-                  length(texts),
-                  length(texts),
-                  lang$t("Alle teksten zijn geanalyseerd...")
-                )
                 progress_secondary$hide()
 
                 # If multiple categories, convert from JSON array string to
@@ -950,7 +934,7 @@ processing_server <- function(
             progress_primary$set_with_total(
               4,
               5,
-              lang$t("Onderwerpen rapporteren...")
+              lang$t("Rapport schrijven...")
             )
 
             if (write_paragraphs) {
@@ -1013,12 +997,6 @@ processing_server <- function(
               # Add as attribute to the result
               attr(texts_with_topics, "paragraphs") <- paragraphs
             }
-
-            progress_primary$set_with_total(
-              4.5,
-              5,
-              lang$t("Afronden...")
-            )
 
             texts_with_topics
           },
