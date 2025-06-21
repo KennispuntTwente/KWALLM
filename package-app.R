@@ -18,16 +18,18 @@ library(promises)
 library(DT)
 
 # Load components in R/-folder
-r_files <- list.files(
-  path = "R",
-  pattern = "\\.R$",
-  full.names = TRUE
-)
-for (file in r_files) {
-  if (!grepl("llmQuali-package\\.R|rstudio_addin\\.R|zzz\\.R", file)) {
+load_all <- function(except = c()) {
+  r_files <- list.files(
+    path = "R",
+    pattern = "\\.R$",
+    full.names = TRUE
+  )
+  for (file in r_files) {
+    if (file %in% except) next
     source(file)
   }
 }
+load_all()
 
 
 #### 2 Settings ####
@@ -41,7 +43,9 @@ for (file in r_files) {
 #     `future::plan("sequential")`; note that the progress bar may lag behind
 #     in that case, as this is built around asynchronous processing
 # - See the documentation for `future::plan()` for more details
-future::plan(multisession, .skip = TRUE)
+if (!getOption("shiny.testmode", FALSE)) {
+  future::plan(multisession, .skip = TRUE)
+}
 
 # Set preconfigured LLM provider and available models (optional)
 # - You can preconfigure the LLM provider and available models here
