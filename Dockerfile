@@ -37,6 +37,16 @@ RUN Rscript -e "source('/tmp/gliner_load.R'); \
 # ─────────────────────────── runtime stage ────────────────────────────────
 FROM rocker/r-ver:4.4.2
 
+LABEL org.opencontainers.image.title="KWALLM: Text analysis with LLM" \
+      org.opencontainers.image.version="See version tag at https://github.com/KennispuntTwente/tekstanalyse_met_llm/pkgs/" \
+      org.opencontainers.image.description="Application for (automated) qualitative text analysis with large language models (LLMs)." \
+      org.opencontainers.image.authors="Luka Koning <l.koning@kennispunttwente.nl>" \
+      org.opencontainers.image.licenses="AGPL-3.0-only" \
+      org.opencontainers.image.vendor="Kennispunt Twente" \
+      org.opencontainers.image.source="https://github.com/KennispuntTwente/tekstanalyse_met_llm" \
+      org.opencontainers.image.base.name="rocker/r-ver:4.4.2" \
+      org.opencontainers.image.ref.name="rocker/r-ver"
+
 ENV TZ=Europe/Amsterdam \
   HF_HOME=/opt/hf-cache \
   RETICULATE_PYTHON=/opt/gliner-venv/bin/python \
