@@ -108,7 +108,7 @@ function createSplashWindow() {
     autoHideMenuBar: true,
     resizable: false,
     alwaysOnTop: false,
-    title: 'Text analysis with LLM',
+    title: 'KWALLM: Text analysis with LLM',
     icon: path.join(__dirname, 'www', 'icon.ico'),
     webPreferences: {
       contextIsolation: true,
@@ -162,7 +162,7 @@ function createMainWindow(port) {
     autoHideMenuBar: true,
     resizable: true,
     alwaysOnTop: false,
-    title: 'Text analysis with LLM',
+    title: 'KWALLM: Text analysis with LLM',
     icon: path.join(__dirname, 'www', 'icon.ico'),
     webPreferences: {
       contextIsolation: true
