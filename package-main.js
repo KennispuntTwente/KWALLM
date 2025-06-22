@@ -104,7 +104,7 @@ async function waitForShiny(port) {
 function createSplashWindow() {
   splashWin = new BrowserWindow({
     width: 600,
-    height: 420,
+    height: 400,
     autoHideMenuBar: true,
     resizable: false,
     alwaysOnTop: false,
@@ -155,10 +155,10 @@ function createSplashWindow() {
 
 function createMainWindow(port) {
   mainWin = new BrowserWindow({
-    width: 800,
-    height: 1000,
-    minWidth: 500,
-    minHeight: 500,
+    width: 1000,
+    height: 1200,
+    minWidth: 600,
+    minHeight: 600,
     autoHideMenuBar: true,
     resizable: true,
     alwaysOnTop: false,
