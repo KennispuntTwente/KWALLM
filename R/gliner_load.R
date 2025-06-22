@@ -48,10 +48,10 @@ gliner_load_model <- function(
     }
 
     if (!is.null(queue)) {
-      queue$producer$fireAssignReactive(
+      try(queue$producer$fireAssignReactive(
         "gliner_load_message",
         message
-      )
+      ))
     }
   }
 
