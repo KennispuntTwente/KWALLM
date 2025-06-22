@@ -848,6 +848,11 @@
       {
         "nl": "GLiNER-anonimisering nog niet voltooid...",
         "en": "GLiNER anonymization not yet completed..."
+      },
+      {
+        "nl": "e-mail(s)",
+        "en": "e-mail(s)"
+      },
       {
         "nl": "Annuleer",
         "en": "Cancel"
