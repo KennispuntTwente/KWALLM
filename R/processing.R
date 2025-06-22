@@ -13,7 +13,12 @@ processing_ui <- function(id) {
     br(),
     div(
       class = "text-center",
-      uiOutput(ns("process_button"))
+      uiOutput(ns("process_button")),
+    ),
+    div(
+      class = "text-center",
+      style = "margin-top: 10px;",
+      uiOutput(ns("cancel_button"))
     ),
     uiOutput(ns("download_ui"))
   )
@@ -170,7 +175,7 @@ processing_server <- function(
             results <- vector("list", length(texts))
 
             for (i in seq_along(texts)) {
-              interrupter$execInterrupts()
+              try(interrupter$execInterrupts())
               text <- texts[[i]]
 
               prompt <- if (mode == "Categorisatie") {
@@ -411,7 +416,7 @@ processing_server <- function(
                 results <- c()
                 progress_secondary$show()
                 for (i in seq_along(text_chunks)) {
-                  interrupter$execInterrupts()
+                  try(interrupter$execInterrupts())
                   text_chunk <- text_chunks[[i]]
 
                   result <- create_candidate_topics(
@@ -438,7 +443,7 @@ processing_server <- function(
             )
 
             # Step 2: Reduce topics
-            interrupter$execInterrupts()
+            try(interrupter$execInterrupts())
             progress_primary$set_with_total(
               2,
               5,
@@ -875,7 +880,7 @@ processing_server <- function(
 
                 progress_secondary$show()
                 for (i in seq_along(texts)) {
-                  interrupter$execInterrupts()
+                  try(interrupter$execInterrupts())
                   text <- texts[[i]]
                   result <- assign_topics(
                     c(text),
@@ -967,7 +972,7 @@ processing_server <- function(
                   # Write paragraphs, per topic
                   progress_secondary$show()
                   purrr::map(seq_along(topics_texts_list), function(i) {
-                    interrupter$execInterrupts()
+                    try(interrupter$execInterrupts())
                     topic_name <- names(topics_texts_list)[[i]]
                     topic_texts <- topics_texts_list[[i]]
 
@@ -1075,6 +1080,7 @@ processing_server <- function(
         }
 
         # Update UI to show finished processing
+        progress_primary$async$stop()
         progress_primary$set(
           100,
           paste0(
@@ -1082,6 +1088,7 @@ processing_server <- function(
             lang()$t(" Verwerking voltooid!")
           )
         )
+        progress_secondary$async$stop()
         progress_secondary$hide()
 
         if (interrater_reliability_toggle()) {
@@ -1627,7 +1634,78 @@ processing_server <- function(
       interrupter <- ipc::AsyncInterruptor$new()
 
       shiny::onStop(function() {
-        interrupter$interrupt("Shiny session was stopped (`shiny::onStop()`)")
+        tryCatch(
+          {
+            interrupter$interrupt(
+              "Shiny session was stopped (`shiny::onStop()`)"
+            )
+          },
+          error = function(e) {
+            print(paste0(
+              "Error while interrupting (`onStop()`): ",
+              conditionMessage(e)
+            ))
+          }
+        )
+      })
+
+      output$cancel_button <- renderUI({
+        req(isTRUE(processing()))
+        # Not preparing download
+        req(!isTRUE(preparing_download()))
+        # Not zip file ready
+        req(is.null(zip_file()))
+
+        actionButton(
+          inputId = ns("cancel"),
+          label = lang()$t("Annuleer"),
+          class = "btn",
+          style = "
+            color: #000;
+            background-color: transparent;
+            border: 1px solid rgba(0,0,0,0.3);
+          "
+        )
+      })
+
+      # Cancel button observer
+      observeEvent(input$cancel, {
+        req(isTRUE(processing()))
+        # Show modal dialog to confirm cancellation
+        removeModal()
+        showModal(modalDialog(
+          title = lang()$t("Annuleren?"),
+          lang()$t("Weet je zeker dat je de analyse wilt annuleren?"),
+          footer = tags$div(
+            style = "display: flex; justify-content: space-between; width: 100%;",
+            modalButton(lang()$t("Nee, niet annuleren")),
+            actionButton(
+              ns("confirm_cancel"),
+              label = lang()$t("Ja, annuleren"),
+              class = "btn btn-danger"
+            )
+          )
+        ))
+      })
+
+      # Confirm cancel button observer
+      observeEvent(input$confirm_cancel, {
+        req(isTRUE(processing()))
+
+        tryCatch(
+          {
+            interrupter$interrupt("User cancelled")
+          },
+          error = function(e) {
+            print(paste0(
+              "Error while interrupting (user initiated): ",
+              conditionMessage(e)
+            ))
+          }
+        )
+
+        removeModal()
+        session$reload()
       })
 
       return(processing)

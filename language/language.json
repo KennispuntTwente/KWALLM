@@ -848,6 +848,21 @@
       {
         "nl": "GLiNER-anonimisering nog niet voltooid...",
         "en": "GLiNER anonymization not yet completed..."
+      {
+        "nl": "Annuleer",
+        "en": "Cancel"
+      },
+      {
+        "nl": "Weet je zeker dat je de analyse wilt annuleren?",
+        "en": "Are you sure you want to cancel the analysis?"
+      },
+      {
+        "nl": "Nee, niet annuleren",
+        "en": "No, do not cancel"
+      },
+      {
+        "nl": "Ja, annuleren",
+        "en": "Yes, cancel"
       }
     ]
 }

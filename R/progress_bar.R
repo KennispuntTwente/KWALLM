@@ -188,30 +188,30 @@ AsyncProgressBarController <- R6::R6Class(
     },
 
     start = function(millis = 250) {
-      self$queue$consumer$start(millis = millis)
+      try(self$queue$consumer$start(millis = millis))
     },
 
     stop = function() {
-      self$queue$consumer$stop()
+      try(self$queue$consumer$stop())
     },
 
     show = function() {
-      self$queue$producer$fireAssignReactive("hidden", FALSE)
+      try(self$queue$producer$fireAssignReactive("hidden", FALSE))
     },
 
     hide = function() {
-      self$queue$producer$fireAssignReactive("hidden", TRUE)
+      try(self$queue$producer$fireAssignReactive("hidden", TRUE))
     },
 
     set = function(value, txt) {
       if (is.numeric(value) && value >= 0 && value <= 100) {
-        self$queue$producer$fireAssignReactive("progress", value)
+        try(self$queue$producer$fireAssignReactive("progress", value))
       } else {
         stop("Progress value must be a number between 0 and 100.")
       }
 
       if (!is.null(txt) && is.character(txt) && length(txt) == 1) {
-        self$queue$producer$fireAssignReactive("text", txt)
+        try(self$queue$producer$fireAssignReactive("text", txt))
       } else {
         stop("Text must be a character string.")
       }
@@ -234,14 +234,14 @@ AsyncProgressBarController <- R6::R6Class(
         "</i>"
       )
 
-      self$queue$producer$fireAssignReactive(
+      try(self$queue$producer$fireAssignReactive(
         "progress",
         round((i / total) * 100, 0)
-      )
-      self$queue$producer$fireAssignReactive(
+      ))
+      try(self$queue$producer$fireAssignReactive(
         "text",
         formatted_txt
-      )
+      ))
     }
   )
 )
