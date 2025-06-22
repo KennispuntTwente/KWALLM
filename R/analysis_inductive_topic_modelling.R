@@ -256,7 +256,11 @@ reduce_topics <- function(
   ),
   desired_number = NULL,
   desired_number_type = c("max", "goal"),
-  language = c("nl", "en")
+  language = c("nl", "en"),
+  always_add_not_applicable = getOption(
+    "topic_modelling__always_add_not_applicable",
+    TRUE
+  )
 ) {
   language <- match.arg(language)
   stopifnot(
@@ -430,6 +434,42 @@ reduce_topics <- function(
     all(!is.null(result$topics))
   )
 
+  if (always_add_not_applicable) {
+    # Check if the 'not applicable' topic is already present, by asking LLM
+    if (language == "nl") {
+      not_applicable_topic <- "Onbekend/niet van toepassing"
+    } else if (language == "en") {
+      not_applicable_topic <- "Unknown/not applicable"
+    }
+
+    is_present <- paste0(
+      "Is a topic like '",
+      not_applicable_topic,
+      "' present in the following topics?\n\n",
+      "<topics>\n",
+      paste(result$topics, collapse = "\n"),
+      "\n</topics>"
+    ) |>
+      tidyprompt::answer_as_boolean(
+        true_definition = paste0(
+          "Yes, a topic like '",
+          not_applicable_topic,
+          "' is present"
+        ),
+        false_definition = paste0(
+          "No, a topic like '",
+          not_applicable_topic,
+          "' is not present"
+        )
+      ) |>
+      send_prompt_with_retries(llm_provider)
+
+    if (!isTRUE(is_present)) {
+      # If not present, add it
+      result$topics <- c(result$topics, not_applicable_topic)
+    }
+  }
+
   return(result$topics)
 }
 
@@ -503,6 +543,7 @@ assign_topics <- function(
 
   return(texts_with_topics)
 }
+
 
 #### 2 Example usage ####
 
