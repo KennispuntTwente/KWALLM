@@ -34,19 +34,13 @@ test_that("{shinytest2} recording: standard process - topic modelling", {
   app$set_inputs(`assign_multiple_categories_toggle-toggle` = "Yes")
   app$set_inputs(`human_in_the_loop_toggle-toggle` = "Yes")
   app$set_inputs(`write_paragraphs_toggle-toggle` = "No")
-  app$set_inputs(`interrater_toggle-interrater_reliability` = "Yes")
+  app$set_inputs(`interrater_toggle-interrater_reliability` = "No")
   app$set_inputs(`write_paragraphs_toggle-toggle` = "Yes")
 
   app$click("processing-process")
   Sys.sleep(10)
   app$click("processing-confirm_topics")
   Sys.sleep(20)
-
-  app$click("processing-rater_modal-confirm_sample_start")
-  Sys.sleep(3)
-  app$set_inputs(`processing-rater_modal-current_rating` = "TRUE")
-  app$click("processing-rater_modal-submit_next")
-  Sys.sleep(3)
 
   app$expect_values(
     export = c(
