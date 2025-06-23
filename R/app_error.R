@@ -13,7 +13,7 @@ app_error <- function(
   in_shiny = TRUE,
   admin_name = getOption("app_admin_name", NULL),
   admin_email = getOption("app_admin_email", NULL),
-  github_repo = "https://github.com/KennispuntTwente/tekstanalyse-app",
+  github_repo = "https://github.com/KennispuntTwente/tekstanalyse_met_llm",
   lang = shiny.i18n::Translator$new(
     translation_json_path = "language/language.json"
   )
