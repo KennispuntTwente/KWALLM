@@ -55,6 +55,8 @@ test_that("{shinytest2} recording: standard process - topic modelling", {
       "processing-success"
     )
   )
+
+  app$stop()
 })
 
 test_that("{shinytest2} recording: standard process - scoring", {
@@ -113,6 +115,8 @@ test_that("{shinytest2} recording: standard process - scoring", {
       "processing-success"
     )
   )
+
+  app$stop()
 })
 
 test_that("{shinytest2} recording: standard process - categorization", {
@@ -168,4 +172,6 @@ test_that("{shinytest2} recording: standard process - categorization", {
       "processing-success"
     )
   )
+
+  app$stop()
 })
