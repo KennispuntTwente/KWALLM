@@ -13,7 +13,7 @@
           description: 'Release tag (e.g. v1.2.3)'
           required: true
     workflow_run:
-      workflows: ["Build container with preview tag"]
+      workflows: ["(2) Build preview container"]
       types:
         - completed
 
