@@ -75,20 +75,15 @@ test_that("{shinytest2} recording: standard process - scoring", {
   Sys.sleep(3)
 
   app$set_inputs(
-    `text_management-select_gliner` = 0.971645182970787,
+    `text_management-select_none` = 0.123,
     allow_no_input_binding_ = TRUE
   )
-  app$set_inputs(
-    `text_management-select_simple` = 0.151148967333833,
-    allow_no_input_binding_ = TRUE
-  )
-  app$set_inputs(
-    `text_management-select_none` = 0.740603319266595,
-    allow_no_input_binding_ = TRUE
-  )
+  Sys.sleep(3)
 
   app$set_inputs(`mode-mode` = "Scoring")
+  Sys.sleep(3)
   app$set_inputs(`scoring-scoring_characteristic` = "Positive sentiment")
+  Sys.sleep(3)
 
   app$set_inputs(
     `llm_provider-select_openai` = 0.123,
@@ -98,9 +93,10 @@ test_that("{shinytest2} recording: standard process - scoring", {
   app$click("llm_provider-get_models")
   Sys.sleep(10)
   app$set_inputs(`model-main_model` = "gpt-4.1-nano-2025-04-14")
+  Sys.sleep(3)
 
   app$click("processing-process")
-  Sys.sleep(15)
+  Sys.sleep(20)
 
   app$expect_values(
     export = c(
