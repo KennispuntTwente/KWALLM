@@ -1420,14 +1420,14 @@ processing_server <- function(
           # Add chunking information
           chunking_parameters <- tibble::tibble(
             parameter = c(
-              "max_chunk_size",
-              "max_redrawing",
+              "chunk_size",
+              "draws",
               "n_tokens_context_window",
               "n_chunks"
             ),
             value = c(
-              context_window$max_chunk_size,
-              context_window$max_redrawing,
+              context_window$chunk_size,
+              context_window$draws,
               context_window$n_tokens_context_window,
               context_window$n_chunks
             )

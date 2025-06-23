@@ -57,9 +57,25 @@ context_window_server <- function(
       translation_json_path = "language/language.json"
     )
   ),
-  max_number_of_chunks = getOption(
-    "topic_modelling__max_text_chunks",
+  chunk_size_default = getOption(
+    "topic_modelling__chunk_size_default",
+    25
+  ),
+  chunk_size_limit = getOption(
+    "topic_modelling__chunk_size_limit",
+    50
+  ),
+  number_of_chunks_limit = getOption(
+    "topic_modelling__number_of_chunks_limit",
     100
+  ),
+  draws_default = getOption(
+    "topic_modelling__draws_default",
+    1
+  ),
+  draws_limit = getOption(
+    "topic_modelling__draws_limit",
+    5
   )
 ) {
   moduleServer(
@@ -116,8 +132,8 @@ context_window_server <- function(
         fit_context_window_assigning = NULL,
 
         # Chunking parameters
-        max_chunk_size = 50,
-        max_redrawing = 1,
+        chunk_size = chunk_size_default,
+        draws = draws_default,
         n_tokens_context_window = 2048,
         n_char_base_prompt = NULL
       )
@@ -146,17 +162,48 @@ context_window_server <- function(
 
         if (
           is_valid_number(input$chunk_size) &&
-            input$chunk_size <= max_number_of_chunks
+            input$chunk_size <= chunk_size_limit
         ) {
-          rv$max_chunk_size <- input$chunk_size
+          rv$chunk_size <- input$chunk_size
         }
 
-        if (is_valid_number(input$redrawing) && input$redrawing <= 10) {
-          rv$max_redrawing <- input$redrawing
+        if (
+          is_valid_number(input$draws) &&
+            input$draws <= draws_limit
+        ) {
+          rv$draws <- input$draws
         }
 
         if (is_valid_number(input$context_window)) {
           rv$n_tokens_context_window <- input$context_window
+        }
+      })
+
+      # Enforce limit on chunk_size
+      observe({
+        req(input$chunk_size)
+        if (input$chunk_size > chunk_size_limit) {
+          updateNumericInput(session, "chunk_size", value = chunk_size_limit)
+        } else if (input$chunk_size < 1) {
+          updateNumericInput(session, "chunk_size", value = 1)
+        }
+      })
+
+      # Enforce limit on draws
+      observe({
+        req(input$draws)
+        if (input$draws > draws_limit) {
+          updateNumericInput(session, "draws", value = draws_limit)
+        } else if (input$draws < 1) {
+          updateNumericInput(session, "draws", value = 1)
+        }
+      })
+
+      # Enforce limit on context window size
+      observe({
+        req(input$context_window)
+        if (input$context_window < 0) {
+          updateNumericInput(session, "context_window", value = 0)
         }
       })
 
@@ -266,8 +313,8 @@ context_window_server <- function(
         req(mode() == "Onderwerpextractie")
         req(texts$preprocessed)
         req(rv$n_tokens_context_window)
-        req(rv$max_chunk_size)
-        req(rv$max_redrawing)
+        req(rv$chunk_size)
+        req(rv$draws)
 
         texts <- texts$preprocessed
 
@@ -276,8 +323,8 @@ context_window_server <- function(
 
         rv$text_chunks <- create_text_chunks(
           texts = texts,
-          max_chunk_size = rv$max_chunk_size,
-          max_redrawing = rv$max_redrawing,
+          chunk_size = rv$chunk_size,
+          draws = rv$draws,
           n_tokens_context_window = rv$n_tokens_context_window,
           n_char_base_prompt = n_char_base_prompt
         )
@@ -288,7 +335,7 @@ context_window_server <- function(
           rv$fit_context_window_chunks <- TRUE
         }
 
-        if (length(rv$text_chunks) > max_number_of_chunks) {
+        if (length(rv$text_chunks) > number_of_chunks_limit) {
           rv$too_many_chunks <- TRUE
         } else {
           rv$too_many_chunks <- FALSE
@@ -335,14 +382,14 @@ context_window_server <- function(
               numericInput(
                 ns("chunk_size"),
                 lang()$t("Maximaal aantal teksten per chunk"),
-                value = rv$max_chunk_size,
+                value = rv$chunk_size,
                 min = 1,
-                max = max_number_of_chunks
+                max = chunk_size_limit
               ),
               numericInput(
-                ns("redrawing"),
+                ns("draws"),
                 lang()$t("Aantal trekkingen per tekst"),
-                value = rv$max_redrawing,
+                value = rv$draws,
                 min = 1,
                 max = 5
               )
@@ -379,7 +426,7 @@ context_window_server <- function(
             paste0(
               lang()$t("Te veel chunks"),
               " (> ",
-              max_number_of_chunks,
+              number_of_chunks_limit,
               ")"
             )
           )
@@ -430,7 +477,7 @@ context_window_server <- function(
             condition = !processing()
           )
           shinyjs::toggleState(
-            "redrawing",
+            "draws",
             condition = !processing()
           )
         },
@@ -445,8 +492,8 @@ context_window_server <- function(
 #' Create text chunks
 #'
 #' @param texts A vector of texts to be chunked.
-#' @param max_chunk_size Maximum number of texts in a chunk
-#' @param max_redrawing Maximum number of times each text can be drawn into a chunk
+#' @param chunk_size Maximum number of texts in a chunk
+#' @param draws Number of times each text can be drawn into a chunk
 #' @param n_tokens_context_window Number of tokens in the context window of the LLM
 #' @param n_char_base_prompt Number of characters in the base prompt
 #'
@@ -454,18 +501,18 @@ context_window_server <- function(
 #' @export
 create_text_chunks <- function(
   texts,
-  max_chunk_size = 50,
-  max_redrawing = 1, # new parameter: maximum number of times each text can be used,
+  chunk_size = 50,
+  draws = 1, # new parameter: maximum number of times each text can be used,
   n_tokens_context_window = 2056,
   n_char_base_prompt = 600
 ) {
   stopifnot(
     is.character(texts),
     length(texts) > 0,
-    is.numeric(max_chunk_size),
-    max_chunk_size > 0,
-    is.numeric(max_redrawing),
-    max_redrawing > 0,
+    is.numeric(chunk_size),
+    chunk_size > 0,
+    is.numeric(draws),
+    draws > 0,
     is.numeric(n_tokens_context_window),
     n_tokens_context_window > 0,
     is.numeric(n_char_base_prompt),
@@ -481,8 +528,8 @@ create_text_chunks <- function(
     return(NULL)
   }
 
-  # If max_redrawing > 1, replicate each text accordingly so it can be redrawn.
-  texts <- rep(texts, times = max_redrawing)
+  # If draws > 1, replicate each text accordingly so it can be redrawn.
+  texts <- rep(texts, times = draws)
 
   # Randomize the order
   texts <- sample(texts)
@@ -499,9 +546,7 @@ create_text_chunks <- function(
     new_total <- current_total + additional_cost + nchar(txt)
 
     # If adding the new text does not exceed allowed_chars and chunk size, append it.
-    if (
-      (new_total <= allowed_chars) && (length(current_chunk) < max_chunk_size)
-    ) {
+    if ((new_total <= allowed_chars) && (length(current_chunk) < chunk_size)) {
       current_chunk <- c(current_chunk, txt)
       current_total <- new_total
     } else {

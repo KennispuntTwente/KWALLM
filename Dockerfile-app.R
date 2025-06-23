@@ -132,10 +132,13 @@ options(
   #   this may be useful to avoid LLM failure in the topic assignment process;
   #     see R/topic_modelling.R
   topic_modelling__always_add_not_applicable = TRUE,
-
-  # - Maximum number of text chunks during candidate topic generation;
+  # - Parameters for text chunking;
   #     see R/context_window.R
-  topic_modelling__max_text_chunks = 100
+  topic_modelling__chunk_size_default = 25,
+  topic_modelling__chunk_size_limit = 100,
+  topic_modelling__number_of_chunks_limit = 50,
+  topic_modelling__draws_default = 1,
+  topic_modelling__draws_limit = 5
 )
 
 if (getOption("anonymization__gliner_test", FALSE)) {
