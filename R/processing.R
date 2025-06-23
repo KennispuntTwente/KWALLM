@@ -175,7 +175,7 @@ processing_server <- function(
             results <- vector("list", length(texts))
 
             for (i in seq_along(texts)) {
-              try(interrupter$execInterrupts())
+              interrupter$execInterrupts()
               text <- texts[[i]]
 
               prompt <- if (mode == "Categorisatie") {
@@ -272,6 +272,11 @@ processing_server <- function(
 
               # Write paragraphs, per category
               progress_secondary$show()
+              progress_secondary$set_with_total(
+                0,
+                length(categories_texts),
+                "..."
+              )
               paragraphs <- purrr::map(
                 seq_along(categories_texts),
                 function(i) {
@@ -402,21 +407,26 @@ processing_server <- function(
         shinyjs::disable("process")
         shinyjs::addClass("process", "loading")
 
+        # Step 1: Generate candidate topics
+        progress_primary$set_with_total(
+          1,
+          5,
+          lang()$t("Onderwerpen genereren...")
+        )
+        progress_secondary$show()
+        progress_secondary$set_with_total(
+          0,
+          length(context_window$text_chunks),
+          lang()$t("...")
+        )
+
         future_promise(
           {
-            # Step 1: Generate candidate topics
-            progress_primary$set_with_total(
-              1,
-              5,
-              lang$t("Onderwerpen genereren...")
-            )
-
             candidate_topics <- tryCatch(
               {
                 results <- c()
-                progress_secondary$show()
                 for (i in seq_along(text_chunks)) {
-                  try(interrupter$execInterrupts())
+                  interrupter$execInterrupts()
                   text_chunk <- text_chunks[[i]]
 
                   result <- create_candidate_topics(
@@ -443,7 +453,7 @@ processing_server <- function(
             )
 
             # Step 2: Reduce topics
-            try(interrupter$execInterrupts())
+            interrupter$execInterrupts()
             progress_primary$set_with_total(
               2,
               5,
@@ -867,6 +877,13 @@ processing_server <- function(
           lang()$t("Onderwerpen toekennen...")
         )
 
+        progress_secondary$show()
+        progress_secondary$set_with_total(
+          0,
+          length(texts$preprocessed),
+          "..."
+        )
+
         future_promise(
           {
             # Step 4: Assign topics
@@ -878,9 +895,8 @@ processing_server <- function(
                   result = character()
                 )
 
-                progress_secondary$show()
                 for (i in seq_along(texts)) {
-                  try(interrupter$execInterrupts())
+                  interrupter$execInterrupts()
                   text <- texts[[i]]
                   result <- assign_topics(
                     c(text),
@@ -971,8 +987,13 @@ processing_server <- function(
 
                   # Write paragraphs, per topic
                   progress_secondary$show()
+                  progress_secondary$set_with_total(
+                    0,
+                    length(topics_texts_list),
+                    "..."
+                  )
                   purrr::map(seq_along(topics_texts_list), function(i) {
-                    try(interrupter$execInterrupts())
+                    interrupter$execInterrupts()
                     topic_name <- names(topics_texts_list)[[i]]
                     topic_texts <- topics_texts_list[[i]]
 
@@ -1548,7 +1569,10 @@ processing_server <- function(
       #### Progress bars ####
 
       progress_primary <- progress_bar_server("progress_primary")
-      progress_secondary <- progress_bar_server("progress_secondary")
+      progress_secondary <- progress_bar_server(
+        "progress_secondary",
+        initially_hidden = TRUE
+      )
 
       #### Processing button ####
 
@@ -1639,6 +1663,7 @@ processing_server <- function(
             interrupter$interrupt(
               "Shiny session was stopped (`shiny::onStop()`)"
             )
+            interrupter$destroy()
           },
           error = function(e) {
             print(paste0(
@@ -1691,19 +1716,6 @@ processing_server <- function(
       # Confirm cancel button observer
       observeEvent(input$confirm_cancel, {
         req(isTRUE(processing()))
-
-        tryCatch(
-          {
-            interrupter$interrupt("User cancelled")
-          },
-          error = function(e) {
-            print(paste0(
-              "Error while interrupting (user initiated): ",
-              conditionMessage(e)
-            ))
-          }
-        )
-
         removeModal()
         session$reload()
       })

@@ -69,7 +69,8 @@ progress_bar_ui <- function(
 #### 2 Server ####
 
 progress_bar_server <- function(
-  id
+  id,
+  initially_hidden = FALSE
 ) {
   moduleServer(id, function(input, output, session) {
     ns_id <- session$ns("")
@@ -78,7 +79,7 @@ progress_bar_server <- function(
 
     progress <- reactiveVal(0)
     text <- reactiveVal("...")
-    hidden <- reactiveVal(FALSE)
+    hidden <- reactiveVal(initially_hidden)
 
     # Synchronous control functions --------------------------------------------
 

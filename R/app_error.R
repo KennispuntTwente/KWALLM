@@ -18,6 +18,16 @@ app_error <- function(
     translation_json_path = "language/language.json"
   )
 ) {
+  # Downgrade IPC error which occurs after interrupting process
+  if (
+    isTRUE(grepl(
+      "Cannot pop from destroyed TextFileSource",
+      conditionMessage(error)
+    ))
+  ) {
+    fatal <- FALSE
+  }
+
   current_time <- Sys.time()
   formatted_time <- format(current_time, "%Y-%m-%d %H:%M:%S")
   log_message <- paste0(
