@@ -2,7 +2,7 @@ name: (1) Prepare release
 
 # This action runs on every commit to the main branch, or can be triggered manually.
 # It checks if the version in package.json is newer than the latest GitHub release
-#   (note that you can bump the version with, e.g., 'npm version patch --no-git-tag-version)
+#   (note that you can bump the version with, e.g., 'npm version patch --no-git-tag-version')
 # If so, it builds the Windows desktop app, zips the output, and drafts a GitHub release
 # It also triggers a container build via repository_dispatch for the 'preview' image
 #   (see build_preview_container.yml)
