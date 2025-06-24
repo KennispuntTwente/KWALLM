@@ -102,6 +102,12 @@ jobs:
           Compress-Archive -Path dist\kwallm-text-analysis-app-win32-x64 `
                            -DestinationPath kwallm-text-analysis-app-win32-x64.zip
 
+      - name: Delete existing draft release (if any)
+        run: |
+          gh release delete v${{ needs.check-version-and-release.outputs.version }} -y || true
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Draft GitHub release
         uses: softprops/action-gh-release@v1
         with:
