@@ -78,7 +78,13 @@ write_paragraphs_toggle_server <- function(
         ignoreInit = TRUE
       )
 
-      return(toggle)
+      return(reactive({
+        if (isTRUE(mode() %in% c("Onderwerpextractie", "Categorisatie"))) {
+          toggle()
+        } else {
+          FALSE
+        }
+      }))
     }
   )
 }

@@ -291,13 +291,15 @@ processing_server <- function(
                   )
 
                   # Write paragraph about the category
-                  write_paragraph(
+                  paragraph <- write_paragraph(
                     texts = cat_texts,
                     topic = cat_name,
                     research_background = research_background,
                     llm_provider = llm_provider,
                     language = lang$get_translation_language()
                   )
+
+                  return(paragraph)
                 }
               )
               progress_secondary$hide()
@@ -306,7 +308,7 @@ processing_server <- function(
               attr(results, "paragraphs") <- paragraphs
             }
 
-            results
+            return(results)
           },
           globals = list(
             llm_provider = llm_provider,
@@ -445,12 +447,11 @@ processing_server <- function(
                   results <- c(results, result)
                 }
 
-                progress_secondary$hide()
-
-                results
+                return(results)
               },
               error = handle_detailed_error("Candidate topic generation")
             )
+            progress_secondary$hide()
 
             # Step 2: Reduce topics
             interrupter$execInterrupts()
@@ -471,7 +472,7 @@ processing_server <- function(
             )
 
             # Make intermediate results available
-            topics
+            return(topics)
           },
           globals = list(
             send_prompt_with_retries = send_prompt_with_retries,
@@ -919,7 +920,6 @@ processing_server <- function(
                     tibble::tibble(text = text, result = as.character(result))
                   )
                 }
-
                 progress_secondary$hide()
 
                 # If multiple categories, convert from JSON array string to
@@ -946,7 +946,7 @@ processing_server <- function(
                   results <- results_new
                 }
 
-                results
+                return(results)
               },
               error = handle_detailed_error("Topic assignment")
             )
@@ -992,7 +992,7 @@ processing_server <- function(
                     length(topics_texts_list),
                     "..."
                   )
-                  purrr::map(seq_along(topics_texts_list), function(i) {
+                  paragraphs <- purrr::map(seq_along(topics_texts_list), function(i) {
                     interrupter$execInterrupts()
                     topic_name <- names(topics_texts_list)[[i]]
                     topic_texts <- topics_texts_list[[i]]
@@ -1007,24 +1007,28 @@ processing_server <- function(
                       )
                     )
 
-                    write_paragraph(
+                    paragraph <- write_paragraph(
                       texts = topic_texts,
                       topic = topic_name,
                       research_background = research_background,
                       llm_provider = llm_provider,
                       language = lang$get_translation_language()
                     )
+
+                    return(paragraph)
                   })
-                  progress_secondary$hide()
+
+                  return(paragraphs)
                 },
                 error = handle_detailed_error("Topic report generation")
               )
+              progress_secondary$hide()
 
               # Add as attribute to the result
               attr(texts_with_topics, "paragraphs") <- paragraphs
             }
 
-            texts_with_topics
+            return(texts_with_topics)
           },
           globals = list(
             topics = topics(),
@@ -1440,6 +1444,10 @@ processing_server <- function(
         if (!is.null(attr(final_results_df(), "paragraphs"))) {
           result_list$paragraphs <- attr(final_results_df(), "paragraphs")
         }
+        # Verify that paragraphs are present if write_paragraphs is TRUE
+        if (isTRUE(write_paragraphs()) && is.null(result_list$paragraphs)) {
+          stop("Paragraphs were requested by user but not present in 'result_list'")
+        }
 
         return(result_list)
       }
@@ -1502,7 +1510,7 @@ processing_server <- function(
         result <- tryCatch(
           {
             safe_write_xlsx(result_list, excel_file)
-            excel_file # Success: return path to .xlsx
+            return(excel_file) # Success: return path to .xlsx
           },
           error = function(e) {
             # Error: write message into .txt file
@@ -1543,7 +1551,7 @@ processing_server <- function(
               params = list(result_list = result_list),
               envir = new.env()
             )
-            output_file_html
+            return(output_file_html)
           },
           error = function(e) {
             # Capture detailed stack trace and message
