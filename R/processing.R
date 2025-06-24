@@ -291,15 +291,13 @@ processing_server <- function(
                   )
 
                   # Write paragraph about the category
-                  paragraph <- write_paragraph(
+                  write_paragraph(
                     texts = cat_texts,
                     topic = cat_name,
                     research_background = research_background,
                     llm_provider = llm_provider,
                     language = lang$get_translation_language()
                   )
-
-                  return(paragraph)
                 }
               )
               progress_secondary$hide()
@@ -308,7 +306,7 @@ processing_server <- function(
               attr(results, "paragraphs") <- paragraphs
             }
 
-            return(results)
+            results
           },
           globals = list(
             llm_provider = llm_provider,
@@ -447,7 +445,7 @@ processing_server <- function(
                   results <- c(results, result)
                 }
 
-                return(results)
+                results
               },
               error = handle_detailed_error("Candidate topic generation")
             )
@@ -472,7 +470,7 @@ processing_server <- function(
             )
 
             # Make intermediate results available
-            return(topics)
+            topics
           },
           globals = list(
             send_prompt_with_retries = send_prompt_with_retries,
@@ -946,7 +944,7 @@ processing_server <- function(
                   results <- results_new
                 }
 
-                return(results)
+                results
               },
               error = handle_detailed_error("Topic assignment")
             )
@@ -1015,20 +1013,21 @@ processing_server <- function(
                       language = lang$get_translation_language()
                     )
 
-                    return(paragraph)
+                    paragraph
                   })
 
-                  return(paragraphs)
+                  paragraphs
                 },
                 error = handle_detailed_error("Topic report generation")
               )
+
               progress_secondary$hide()
 
               # Add as attribute to the result
               attr(texts_with_topics, "paragraphs") <- paragraphs
             }
 
-            return(texts_with_topics)
+            texts_with_topics
           },
           globals = list(
             topics = topics(),
@@ -1515,7 +1514,7 @@ processing_server <- function(
         result <- tryCatch(
           {
             safe_write_xlsx(result_list, excel_file)
-            return(excel_file) # Success: return path to .xlsx
+            excel_file # Success: return path to .xlsx
           },
           error = function(e) {
             # Error: write message into .txt file
@@ -1556,7 +1555,8 @@ processing_server <- function(
               params = list(result_list = result_list),
               envir = new.env()
             )
-            return(output_file_html)
+
+            output_file_html
           },
           error = function(e) {
             # Capture detailed stack trace and message
