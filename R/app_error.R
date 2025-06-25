@@ -10,7 +10,7 @@ app_error <- function(
   error,
   when = "unknown",
   fatal = FALSE,
-  in_shiny = TRUE,
+  shiny_session = shiny::getDefaultReactiveDomain(),
   admin_name = getOption("app_admin_name", NULL),
   admin_email = getOption("app_admin_email", NULL),
   github_repo = "https://github.com/KennispuntTwente/tekstanalyse_met_llm",
@@ -53,7 +53,7 @@ app_error <- function(
   )
   write(log_message, file = log_file, append = TRUE)
 
-  if (!in_shiny) {
+  if (is.null(shiny_session)) {
     stop(error)
   }
 
@@ -130,7 +130,7 @@ app_error <- function(
       size = "l"
     ))
 
-    shiny::stopApp(NULL)
+    shiny_session$close()
   } else {
     showNotification(
       paste("Error:", error),
@@ -172,5 +172,6 @@ if (FALSE) {
     })
   }
 
-  shinyApp(ui, server)
+  app <- shinyApp(ui, server)
+  shiny::runApp(app)
 }
