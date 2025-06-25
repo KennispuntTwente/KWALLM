@@ -97,10 +97,13 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Zip dist
+      - name: Zip dist with version number
         run: |
+          $version = "${{ needs.check-version-and-release.outputs.version }}"
+          $zipName = "kwallm-text-analysis-app-win32-x64-v$version.zip"
           Compress-Archive -Path dist\kwallm-text-analysis-app-win32-x64 `
-                           -DestinationPath kwallm-text-analysis-app-win32-x64.zip
+                           -DestinationPath $zipName
+          echo "ZIP_NAME=$zipName" >> $env:GITHUB_ENV
 
       - name: Delete existing draft release (if any)
         run: |
@@ -127,7 +130,7 @@ jobs:
             ## Desktop app
             The files in this release are for the desktop application (Windows, x64).
             Usage is simple:
-            1. Download `kwallm-text-analysis-app-win32-x64.7z` (see ‘Assets’ below)
+            1. Download `kwallm-text-analysis-app-win32-x64-v${{ needs.check-version-and-release.outputs.version }}.zip` (see ‘Assets’ below)
             2. Unzip this to a folder, open the folder, and launch `kwallm-text-analysis-app.exe`
 
             ### Admin rights & network access
@@ -161,7 +164,7 @@ jobs:
             ## Desktop-app
             Bestanden bij deze release zijn voor de desktopapplicatie (Windows, x64).
             Gebruik is simpel:
-            1. Download `kwallm-text-analysis-app-win32-x64.7z` (zie ‘Assets’ beneden)
+            1. Download `kwallm-text-analysis-app-win32-x64-v${{ needs.check-version-and-release.outputs.version }}.zip` (zie ‘Assets’ beneden)
             2. Unzip dit naar een map, open de map, en start `kwallm-text-analysis-app.exe`
 
             ### Admin-rechten & netwerktoegang
@@ -185,6 +188,6 @@ jobs:
             Ideeën of verbeterpunten? [Open een issue](https://github.com/kennispunttwente/tekstanalyse_met_llm/issues/new).
 
             ---
-          files: kwallm-text-analysis-app-win32-x64.zip
+          files: ${{ env.ZIP_NAME }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
