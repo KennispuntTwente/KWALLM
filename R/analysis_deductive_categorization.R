@@ -56,6 +56,7 @@ prompt_category <- function(
     numbered_categories,
     "\n\n",
     "Respond with the number of the category that best describes the text.",
+    "Choose a single category.",
     "\n",
     "(Use no other words or characters.)"
   )
@@ -63,14 +64,30 @@ prompt_category <- function(
   prompt <- instruction |>
     tidyprompt::prompt_wrap(
       extraction_fn = function(x) {
+        # Check if number matches
         normalized <- trimws(tolower(x))
         if (normalized %in% as.character(seq_along(categories))) {
           return(categories[[as.integer(normalized)]])
         }
-        match <- which(tolower(categories) == normalized)
-        if (length(match) == 1) {
-          return(categories[[match]])
+
+        # Sometimes, the model may return multiple numbers
+        has_multiple_numbers <- function(normalized) {
+          # tell strsplit to use the PCRE engine (perl = TRUE)
+          tokens <- unlist(strsplit(normalized, "[,;/|\\s]+", perl = TRUE))
+
+          # keep non-empty pieces, trim, and filter to integer-like strings
+          numbers <- trimws(tokens[nzchar(tokens)])
+          numbers <- numbers[grepl("^\\d+$", numbers)]
+
+          length(numbers) > 1
         }
+        if (has_multiple_numbers(normalized)) {
+          return(tidyprompt::llm_feedback(paste0(
+            "You must select only one valid category number.",
+            "\nChoose the one category that best fits the text."
+          )))
+        }
+
         return(tidyprompt::llm_feedback(instruction))
       }
     )
