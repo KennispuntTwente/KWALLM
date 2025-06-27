@@ -787,7 +787,8 @@ processing_server <- function(
             reduce_topics = reduce_topics,
             updated_topics = updated_topics,
             research_background = research_background(),
-            llm_provider_large = llm_provider_large
+            llm_provider_large = llm_provider_large,
+            lang = lang()
           )
         ) %...>%
           (function(reduced_topics) {
@@ -990,31 +991,34 @@ processing_server <- function(
                     length(topics_texts_list),
                     "..."
                   )
-                  paragraphs <- purrr::map(seq_along(topics_texts_list), function(i) {
-                    interrupter$execInterrupts()
-                    topic_name <- names(topics_texts_list)[[i]]
-                    topic_texts <- topics_texts_list[[i]]
+                  paragraphs <- purrr::map(
+                    seq_along(topics_texts_list),
+                    function(i) {
+                      interrupter$execInterrupts()
+                      topic_name <- names(topics_texts_list)[[i]]
+                      topic_texts <- topics_texts_list[[i]]
 
-                    progress_secondary$set_with_total(
-                      i,
-                      length(topics_texts_list),
-                      paste0(
-                        lang$t("Schrijven over '"),
-                        topic_name,
-                        "'..."
+                      progress_secondary$set_with_total(
+                        i,
+                        length(topics_texts_list),
+                        paste0(
+                          lang$t("Schrijven over '"),
+                          topic_name,
+                          "'..."
+                        )
                       )
-                    )
 
-                    paragraph <- write_paragraph(
-                      texts = topic_texts,
-                      topic = topic_name,
-                      research_background = research_background,
-                      llm_provider = llm_provider,
-                      language = lang$get_translation_language()
-                    )
+                      paragraph <- write_paragraph(
+                        texts = topic_texts,
+                        topic = topic_name,
+                        research_background = research_background,
+                        llm_provider = llm_provider,
+                        language = lang$get_translation_language()
+                      )
 
-                    paragraph
-                  })
+                      paragraph
+                    }
+                  )
 
                   paragraphs
                 },
