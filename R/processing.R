@@ -784,6 +784,7 @@ processing_server <- function(
           packages = c("tidyprompt", "tidyverse"),
           globals = list(
             send_prompt_with_retries = send_prompt_with_retries,
+            get_context_window_size_in_tokens = get_context_window_size_in_tokens,
             reduce_topics = reduce_topics,
             updated_topics = updated_topics,
             research_background = research_background(),
