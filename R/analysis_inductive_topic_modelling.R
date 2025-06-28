@@ -128,11 +128,7 @@ create_candidate_topics <- function(
   llm_provider = tidyprompt::llm_provider_openai(
     parameters = list(model = "gpt-4o-mini")
   ),
-  language = c("nl", "en"),
-  always_add_not_applicable = getOption(
-    "topic_modelling__always_add_not_applicable",
-    TRUE
-  )
+  language = c("nl", "en")
 ) {
   language <- match.arg(language)
   stopifnot(
@@ -140,8 +136,7 @@ create_candidate_topics <- function(
     all(purrr::map_lgl(text_chunks, is.character)),
     length(text_chunks) > 0,
     is.character(research_background),
-    length(research_background) == 1,
-    is.logical(always_add_not_applicable)
+    length(research_background) == 1
   )
 
   candidate_topics <- purrr::map(text_chunks, function(chunk) {
@@ -181,14 +176,6 @@ create_candidate_topics <- function(
         sep = "\n"
       )
 
-    if (!always_add_not_applicable) {
-      prompt <- prompt |>
-        tidyprompt::add_text(
-          "If it occurs, you may also add a topic such as 'no topic/not applicable'.",
-          sep = "\n"
-        )
-    }
-
     if (language == "nl") {
       prompt <- prompt |>
         tidyprompt::add_text(
@@ -220,15 +207,6 @@ create_candidate_topics <- function(
   })
 
   candidate_topics <- candidate_topics |> purrr::flatten_chr()
-
-  if (always_add_not_applicable) {
-    # Always add a 'not applicable' topic
-    if (language == "nl") {
-      candidate_topics <- c(candidate_topics, "Onbekend/niet van toepassing")
-    } else if (language == "en") {
-      candidate_topics <- c(candidate_topics, "Unknown/not applicable")
-    }
-  }
 
   return(candidate_topics)
 }
@@ -470,6 +448,9 @@ reduce_topics <- function(
     }
   }
 
+  # Set to sentence case
+  result$topics <- stringr::str_to_sentence(result$topics)
+
   return(result$topics)
 }
 
@@ -495,6 +476,7 @@ assign_topics <- function(
     parameters = list(model = "gpt-4o-mini")
   ),
   assign_multiple_categories = FALSE,
+  exclusive_topics = c(),
   verbose = FALSE,
   show_progress = FALSE
 ) {
@@ -504,7 +486,8 @@ assign_topics <- function(
     is.character(topics),
     length(topics) > 0,
     is.character(research_background),
-    length(research_background) == 1
+    length(research_background) == 1,
+    all(exclusive_topics %in% topics)
   )
 
   llm_provider <- llm_provider$clone()
@@ -520,7 +503,8 @@ assign_topics <- function(
       prompt_multi_category(
         text = text,
         categories = topics,
-        research_background = research_background
+        research_background = research_background,
+        exclusive_categories = exclusive_topics
       )
     } else {
       prompt_category(

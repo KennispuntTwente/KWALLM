@@ -319,7 +319,13 @@ main_server <- function(
 
     #### 4 Category & score fields ####
 
-    categories <- categories_server("categories", mode, processing, lang)
+    categories <- categories_server(
+      "categories",
+      mode = mode,
+      processing = processing,
+      lang = lang,
+      assign_multiple_categories = assign_multiple_categories_toggle
+    )
     scoring_characteristic <- score_server("scoring", mode, processing, lang)
 
     #### 5 Processing ####

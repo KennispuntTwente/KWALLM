@@ -868,6 +868,26 @@
       {
         "nl": "Ja, annuleren",
         "en": "Yes, cancel"
+      },
+      {
+        "nl": "Verwijder lege regels",
+        "en": "Remove empty lines"
+      },
+      {
+        "nl": "Exclusief",
+        "en": "Exclusive"
+      },
+      {
+        "nl": "...",
+        "en": "..."
+      },
+      {
+        "nl": "Onbekend/niet van toepassing",
+        "en": "Unknown/not applicable"
+      },
+      {
+        "nl": "<i>Dubbel-klik op een cel om te bewerken.</i>",
+        "en": "<i>Double-click a cell to edit it.</i>"
       }
     ]
 }

@@ -39,7 +39,7 @@ test_that("{shinytest2} recording: standard process - topic modelling", {
 
   app$click("processing-process")
   Sys.sleep(10)
-  app$click("processing-confirm_topics")
+  app$click("processing-edit_topics-confirm_topics")
   Sys.sleep(20)
 
   app$expect_values(

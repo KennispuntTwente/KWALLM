@@ -258,7 +258,8 @@ context_window_server <- function(
             prompt <- prompt_multi_category(
               text = "",
               research_background = research_background(),
-              categories = categories
+              categories = categories,
+              exclusive_categories = categories[1:length(categories) %% 2 == 0]
             )
           } else {
             prompt <- prompt_category(
