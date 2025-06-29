@@ -1123,6 +1123,7 @@ processing_server <- function(
         if (mode() == "Categorisatie") {
           result_list$model <- models$main
           result_list$categories <- categories$texts()
+          result_list$exclusive_categories <- categories$exclusive_texts()
           result_list$assign_multiple_categories <- assign_multiple_categories()
           result_list$prompt <- prompt_category(
             text = lang()$t("<< TEKST >>"),
@@ -1130,6 +1131,8 @@ processing_server <- function(
             categories = categories$texts()
           ) |>
             tidyprompt::construct_prompt_text()
+          result_list$human_in_the_loop <- human_in_the_loop()
+          result_list$write_paragraphs <- write_paragraphs()
         }
 
         if (mode() == "Scoren") {
@@ -1147,7 +1150,9 @@ processing_server <- function(
           result_list$model <- models$main
           result_list$model_reductie <- models$large
           result_list$topics <- topics()
+          result_list$exclusive_topics <- exclusive_topics()
           result_list$assign_multiple_categories <- assign_multiple_categories()
+          result_list$write_paragraphs <- write_paragraphs()
 
           # Add chunking information
           chunking_parameters <- tibble::tibble(
@@ -1164,7 +1169,6 @@ processing_server <- function(
               context_window$n_chunks
             )
           )
-
           result_list$chunking_parameters <- chunking_parameters
         }
 
