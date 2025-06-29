@@ -102,7 +102,8 @@ processing_server <- function(
 
       shiny::exportTestValues(
         processing = processing(),
-        success = success()
+        success = success(),
+        final_results_df = final_results_df()
       )
 
       # UUID for the current processing task

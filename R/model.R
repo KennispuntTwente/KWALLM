@@ -190,7 +190,7 @@ model_server <- function(
 
 #### 3 Example/development usage ####
 
-if (TRUE) {
+if (FALSE) {
   library(shiny)
   library(shinyjs)
   library(bslib)

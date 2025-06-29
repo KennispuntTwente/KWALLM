@@ -19,6 +19,7 @@ edit_topics_server <- function(
       ns <- session$ns
 
       ## ── reactive stores ─────────────────────────────────────────
+      started <- reactiveVal(NULL)
       initial_topics <- topics
       initial_exclusive <- exclusive_topics
       edited_topics <- reactiveVal(NULL)
@@ -33,6 +34,10 @@ edit_topics_server <- function(
           stringsAsFactors = FALSE
         )
       }
+
+      shiny::exportTestValues(
+        started = started()
+      )
 
       ## ── first-run modal ────────────────────────────────────────
       observe({
@@ -118,6 +123,8 @@ edit_topics_server <- function(
           250,
           shinyjs::disable("reset_topics")
         )
+
+        started(TRUE)
       })
 
       ### ── rhandsontable with narrow checkbox & _always_ full-width ──────────
