@@ -31,7 +31,26 @@ assign_multiple_categories_toggle_server <- function(
           shinyjs::useShinyjs(),
           bslib::card(
             class = "card",
-            card_header(lang()$t("Meerdere categorieën")),
+            card_header(
+              lang()$t("Meerdere categorieën"),
+              tooltip(
+                bs_icon("info-circle"),
+                paste0(
+                  lang()$t(
+                    "Mag het model meerdere categorieën toekennen aan een tekst, of slechts één categorie?"
+                  ),
+                  lang()$t(
+                    " Indien je het model meerdere categorieën laat toewijzen, kan je alsnog specifieke categorieën als 'exclusief' aanmerken."
+                  ),
+                  lang()$t(
+                    " Als een exlusieve categorie wordt toegewezen aan een tekst, mogen daarnaast geen andere categorieën worden toegewezen aan de tekst."
+                  ),
+                  lang()$t(
+                    " Je kunt categorieën exclusief maken in de categorie-editor (categorisatie-modus) of bij het bewerken van de onderwerpen (onderwerpextractie-modus; zet 'human in the loop' aan)."
+                  )
+                )
+              )
+            ),
             card_body(
               # Toggle for inter-rater reliability
               p(
@@ -47,7 +66,7 @@ assign_multiple_categories_toggle_server <- function(
                     lang()$t("Nee"),
                     lang()$t("Ja")
                   ),
-                  selected = lang()$t("Nee"),
+                  selected = lang()$t("Ja"),
                   size = "sm"
                 )
               )

@@ -31,7 +31,23 @@ interrater_toggle_server <- function(
       output$card <- renderUI({
         bslib::card(
           class = "card",
-          card_header(lang()$t("Inter-rater reliability")),
+          card_header(
+            lang()$t("Inter-rater reliability"),
+            tooltip(
+              bs_icon("info-circle"),
+              paste0(
+                lang()$t(
+                  "Wil je een steekproef trekken van de teksten om interrater-reliability te berekenen?"
+                ),
+                lang()$t(
+                  " Nadat het model de teksten heeft geanalyseerd, zal een venster openen waarin je zelf teksten kunt beoordelen."
+                ),
+                lang()$t(
+                  " Je beoordelingen worden vergeleken met die van het taalmodel (bij categorisatie/onderwerpextractie wordt Cohen's Kappa berekend; bij scoren wordt een paired t-test uitgevoerd)."
+                )
+              )
+            )
+          ),
           card_body(
             # Toggle for inter-rater reliability
             p(
