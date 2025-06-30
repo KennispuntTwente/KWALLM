@@ -130,7 +130,7 @@ prompt_multi_category <- function(
 
   annotated_categories <- ifelse(
     categories %in% exclusive_categories,
-    paste0(categories, " [exclusive])"),
+    paste0(categories, " [exclusive]"),
     categories
   )
 
@@ -159,8 +159,8 @@ prompt_multi_category <- function(
     numbered_categories,
     "\n\n",
     "Respond with the numbers of all categories that apply to this text, separated by commas.",
-    "\n",
-    "(Use only numbers separated by commas, no extra words or characters.)"
+    "\n(E.g., \"1, 3, 5\" to select categories 1, 3, and 5.)",
+    "\n(Use only numbers separated by commas, no extra words or characters.)"
   )
 
   if (length(exclusive_categories) > 0) {
@@ -176,13 +176,14 @@ prompt_multi_category <- function(
     tidyprompt::prompt_wrap(
       extraction_fn = function(x) {
         normalized <- trimws(tolower(x))
-        numbers <- unlist(strsplit(normalized, ",\\s*"))
+        numbers <- unlist(strsplit(normalized, "[,\\s]+"))
         valid_numbers <- numbers[
           numbers %in% as.character(seq_along(categories))
         ]
         if (length(valid_numbers) == 0) {
           return(tidyprompt::llm_feedback(
-            "You must select at least one valid category number."
+            "You must select at least one valid category number.",
+            "Format your response as a comma-separated list of numbers (e.g., \"1, 3, 5\")."
           ))
         }
         categories_selected <- categories[as.integer(valid_numbers)]
@@ -191,7 +192,7 @@ prompt_multi_category <- function(
         if (any(categories_selected %in% exclusive_categories)) {
           if (length(categories_selected) > 1) {
             return(tidyprompt::llm_feedback(paste0(
-              "You have selected one or more of the exclusive categories ('",
+              "You have selected one or more of the exclusive categories (selected: '",
               paste(
                 categories_selected[
                   categories_selected %in% exclusive_categories
@@ -199,8 +200,7 @@ prompt_multi_category <- function(
                 collapse = ", "
               ),
               "').",
-              "\nWhen you select an exclusive category, you are not allowed to choose other categories.",
-              "\n(It is also not allowed to choose multiple exclusive categories at once.)"
+              "\nWhen you select an exclusive category, you must select only one exclusive category and no other categories."
             )))
           }
         }
