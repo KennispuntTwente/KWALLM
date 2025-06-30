@@ -191,7 +191,7 @@ prompt_multi_category <- function(
         if (any(categories_selected %in% exclusive_categories)) {
           if (length(categories_selected) > 1) {
             return(tidyprompt::llm_feedback(paste0(
-              "You have selected an exclusive category ('",
+              "You have selected one or more of the exclusive categories ('",
               paste(
                 categories_selected[
                   categories_selected %in% exclusive_categories
@@ -199,7 +199,7 @@ prompt_multi_category <- function(
                 collapse = ", "
               ),
               "').",
-              "\nWhen you select an exclusive category, you may only choose that category and no other categories.",
+              "\nWhen you select an exclusive category, you are not allowed to choose other categories.",
               "\n(It is also not allowed to choose multiple exclusive categories at once.)"
             )))
           }
