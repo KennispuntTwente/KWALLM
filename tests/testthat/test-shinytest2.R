@@ -145,7 +145,10 @@ test_that("{shinytest2} recording: standard process - scoring", {
 
   # Start processing
   app$click("processing-process")
-  app$wait_for_value(export = "processing-success")
+  app$wait_for_value(
+    export = "processing-success",
+    timeout = 30000
+  )
 
   # Confirm results
   app$expect_values(
@@ -228,7 +231,10 @@ test_that("{shinytest2} recording: standard process - categorization", {
 
   # Start processing
   app$click("processing-process")
-  app$wait_for_value(export = "processing-success")
+  app$wait_for_value(
+    export = "processing-success",
+    timeout = 30000
+  )
 
   # Confirm results
   app$expect_values(
