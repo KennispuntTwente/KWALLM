@@ -46,7 +46,7 @@ load_all()
 #     in that case, as this is built around asynchronous processing
 # - See the documentation for `future::plan()` for more details
 if (!getOption("shiny.testmode", FALSE)) {
-  future::plan(.skip = TRUE)
+  future::plan(multisession, .skip = TRUE)
 }
 
 # Set preconfigured LLM provider and available models (optional)
