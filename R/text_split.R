@@ -270,8 +270,12 @@ text_split_server <- function(
 
           # Handle errors
           showNotification(
-            lang()$t(
-              "Er is een fout opgetreden bij het splitsen van de teksten: {error}"
+            paste0(
+              lang()$t(
+                "Er is een fout opgetreden bij het splitsen van de teksten:"
+              ),
+              " ",
+              error$message
             ),
             type = "error",
             duration = 5

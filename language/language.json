@@ -976,6 +976,10 @@
       {
         "nl": " Een waarde tussen 0 en 1 wordt geïnterpreteerd als een ratio van de tekstlengte; een waarde groter dan 1 wordt geïnterpreteerd als een absoluut aantal tokens.",
         "en": " A value between 0 and 1 is interpreted as a ratio of the text length; a value greater than 1 is interpreted as an absolute number of tokens."
+      },
+      {
+        "nl": "Er is een fout opgetreden bij het splitsen van de teksten:",
+        "en": "An error occurred while splitting the texts:"
       }
     ]
 }
