@@ -916,6 +916,54 @@
       {
         "nl": " Je beoordelingen worden vergeleken met die van het taalmodel (bij categorisatie/onderwerpextractie wordt Cohen's Kappa berekend; bij scoren wordt een paired t-test uitgevoerd).",
         "en": " Your assessments will be compared with those of the model (Cohen's Kappa is calculated for categorization/topic extraction; for scoring, a paired t-test is performed)."
+      },
+      {
+        "nl": "Splits teksten",
+        "en": "Split texts"
+      },
+      {
+        "nl": "Wil je teksten splitsen naar kortere teksten?",
+        "en": "Do you want to split texts into shorter texts?"
+      },
+      {
+        "nl": " Als je teksten erg lang zijn (bijv., interviews) kan een taalmodel hier mogelijk minder goed mee omgaan.",
+        "en": "If your texts are very long (e.g., interviews), a language model may have difficulty processing them."
+      },
+      {
+        "nl": " Het kan dan nuttig zijn om je teksten op te splitsen in kortere teksten.",
+        "en": " It may be useful to split your texts into shorter texts."
+      },
+      {
+        "nl": " Dit kan gedaan worden met behulp van semantische chunking, waarbij teksten worden gesplitst op basis van hun inhoud.",
+        "en": " This can be done using semantic chunking, where texts are split based on their content."
+      },
+      {
+        "nl": " De teksten worden hier met Python package 'semchunk' gesplitst in stukken van een opgegeven maximale lengte (in tokens, naar OpenAI's gpt-4; een token is ongeveer 4 karakters).",
+        "en": " The texts are split here using the Python package 'semchunk' into chunks of a specified maximum length (in tokens, according to OpenAI's gpt-4; one token is approximately 4 characters)."
+      },
+      {
+        "nl": " Hierbij wordt rekening gehouden met de inhoud van de tekst: de teksten worden gesplitst op natuurlijke plekken, zodat de betekenis behouden blijft.",
+        "en": " The content of the text is taken into account: the texts are split at natural points, so that the meaning is preserved."
+      },
+      {
+        "nl": "Teksten splitsen naar kortere teksten?",
+        "en": "Split texts into shorter texts?"
+      },
+      {
+        "nl": "Maximale lengte per tekst (tokens)",
+        "en": "Maximum length per text (tokens)"
+      },
+      {
+        "nl": "Originele ",
+        "en": "Original "
+      },
+      {
+        "nl": " teksten zijn gesplitst naar ",
+        "en": " texts have been split into "
+      },
+      {
+        "nl": " teksten",
+        "en": " texts"
       }
     ]
 }
