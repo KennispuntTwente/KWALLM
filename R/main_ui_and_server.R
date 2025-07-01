@@ -101,16 +101,16 @@ main_server <- function(
           language_ui("language"),
           div(
             style = "
-        max-width: 800px;
-        margin: 10px auto 0 auto;
-        padding: 15px 20px;
-        background-color: #f8f9fa;
-        border: 1px solid #dee2e6;
-        border-radius: 5px;
-        font-size: 0.9em;
-        color: #495057;
-        text-align: center;
-      ",
+              max-width: 800px;
+              margin: 10px auto 0 auto;
+              padding: 15px 20px;
+              background-color: #f8f9fa;
+              border: 1px solid #dee2e6;
+              border-radius: 5px;
+              font-size: 0.9em;
+              color: #495057;
+              text-align: center;
+            ",
             p(
               HTML(paste0(
                 lang()$t(
@@ -175,6 +175,7 @@ main_server <- function(
             class = "card-container",
 
             text_upload_ui("text_upload"),
+            text_split_ui("text_split"),
             text_management_ui("text_management"),
             research_background_ui("research_background"),
             mode_ui("mode"),
@@ -200,10 +201,10 @@ main_server <- function(
         # Footer
         div(
           style = "
-        text-align: center;
-        padding: 20px 0;
-        background-color: #f8f9fa;
-      ",
+            text-align: center;
+            padding: 20px 0;
+            background-color: #f8f9fa;
+          ",
           a(
             href = "https://www.kennispunttwente.nl",
             target = "_blank",
@@ -233,11 +234,19 @@ main_server <- function(
     # Text upload
     raw_texts <- text_upload_server("text_upload", processing, lang)
 
+    # Split texts
+    split_texts <- text_split_server(
+      "text_split",
+      processing = processing,
+      raw_texts = raw_texts,
+      lang = lang
+    )
+
     # Pre-process texts, show table
     texts <- text_management_server(
       id = "text_management",
       processing = processing,
-      raw_texts = raw_texts,
+      raw_texts = split_texts,
       lang = lang,
       gliner_model = gliner_model
     )
