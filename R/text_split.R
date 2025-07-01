@@ -27,8 +27,13 @@ text_split_server <- function(
         return(raw_texts())
       }
 
+      # If splitting is in progress, return NULL
+      if (isTRUE(split_in_progress())) {
+        return(NULL)
+      }
+
+      # If split not in progress and no split texts, return raw texts
       if (is.null(split_texts())) {
-        # If no split texts yet, return raw texts
         return(raw_texts())
       }
 
@@ -44,6 +49,9 @@ text_split_server <- function(
         FALSE
       }
     })
+
+    # If right now we are running the splitting process
+    split_in_progress <- reactiveVal(FALSE)
 
     # Upon observing new raw texts, reset the split texts and message
     observeEvent(raw_texts(), {
@@ -75,7 +83,6 @@ text_split_server <- function(
 
     # Reactive value to hold the overlap value
     overlap_val <- reactiveVal(0)
-
 
     # -- UI: main card -------------------------------------------
 
@@ -138,7 +145,6 @@ text_split_server <- function(
       )
     })
 
-
     # -- UI: splitting UI
 
     output$split_ui <- renderUI({
@@ -190,7 +196,6 @@ text_split_server <- function(
       )
     })
 
-
     # Listen for user inputs ---------------------------------------
 
     observeEvent(input$split_texts, {
@@ -199,6 +204,8 @@ text_split_server <- function(
       req(input$max_tokens)
       req(isFALSE(processing()))
 
+      # Set processing state
+      split_in_progress(TRUE)
       # Reset previous split texts
       split_texts(NULL)
       # Disable the button while splitting
@@ -230,10 +237,13 @@ text_split_server <- function(
       ) %...>%
         {
           result <- .
+          split_in_progress(FALSE)
           split_texts(result)
 
           if (identical(raw_texts(), split_texts())) {
-            semchunk_message(lang()$t("Splitsing resulteerde niet in meer teksten"))
+            semchunk_message(lang()$t(
+              "Splitsing resulteerde niet in meer teksten"
+            ))
           } else {
             n <- length(raw_texts())
             m <- length(split_texts())
@@ -254,12 +264,15 @@ text_split_server <- function(
           error <- .
           print(error)
 
+          split_in_progress(FALSE)
           split_texts(NULL)
           semchunk_message("...")
 
           # Handle errors
           showNotification(
-            lang()$t("Er is een fout opgetreden bij het splitsen van de teksten: {error}"),
+            lang()$t(
+              "Er is een fout opgetreden bij het splitsen van de teksten: {error}"
+            ),
             type = "error",
             duration = 5
           )
@@ -293,6 +306,16 @@ text_split_server <- function(
       }
     })
 
+    # Disable inputs when processing -------------------------------
+
+    observe({
+      # Disable the toggle and inputs when processing
+      shinyjs::toggleState("toggle", condition = !processing())
+      shinyjs::toggleState("max_tokens", condition = !processing())
+      shinyjs::toggleState("overlap", condition = !processing())
+      shinyjs::toggleState("split_texts", condition = !processing())
+    })
+
     # Return -------------------------------------------------------
     return(texts)
   })
@@ -313,10 +336,21 @@ split_texts_with_semchunk <- function(
   )
 
   if (!is.null(queue)) {
-    try(queue$producer$fireAssignReactive("semchunk_message", "Splitting texts..."), silent = TRUE)
+    try(
+      queue$producer$fireAssignReactive(
+        "semchunk_message",
+        "Splitting texts..."
+      ),
+      silent = TRUE
+    )
   }
 
-  result <- chunker(texts, progress = FALSE, offsets = FALSE, overlap = overlap) |>
+  result <- chunker(
+    texts,
+    progress = FALSE,
+    offsets = FALSE,
+    overlap = overlap
+  ) |>
     unlist()
 
   return(result)
@@ -350,7 +384,9 @@ if (FALSE) {
     ))
 
     lang <- reactive({
-      shiny.i18n::Translator$new(translation_json_path = "language/language.json")
+      shiny.i18n::Translator$new(
+        translation_json_path = "language/language.json"
+      )
     })
 
     text_split_server("text_split", raw_texts, processing, lang)
