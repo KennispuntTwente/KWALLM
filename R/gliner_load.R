@@ -5,7 +5,7 @@
 Sys.setenv(FOR_DISABLE_CONSOLE_CTRL_HANDLER = "1")
 
 gliner_load_model <- function(
-  venv_name = "portable-gliner-venv",
+  venv_name = "py-venv",
   python_version = "3.12.10",
   model_name = "urchade/gliner_multi_pii-v1",
   use_system_python = FALSE,
@@ -76,7 +76,7 @@ gliner_load_model <- function(
     print_message(
       "Running inside Docker: assuming Python + GLiNER already installed"
     )
-    reticulate::use_virtualenv("/opt/gliner-venv", required = TRUE)
+    reticulate::use_virtualenv("/opt/py-venv", required = TRUE)
   } else {
     Sys.setenv("RETICULATE_VIRTUALENV_ROOT" = getwd())
 
@@ -108,7 +108,7 @@ gliner_load_model <- function(
 
     #### 2 Install gliner if needed ####
 
-    print_message("Checking/installing 'gliner' Python package...")
+    print_message("Checking/installing 'gliner' Python package ...")
 
     available_packages <- reticulate::py_list_packages(envname = venv_name)
     if (!"gliner" %in% available_packages$package) {

@@ -15,19 +15,15 @@ RUN apt-get update -qq && \
   ln -sf /usr/bin/python${PY_VER} /usr/local/bin/python3 && \
   apt-get clean && rm -rf /var/lib/apt/lists/*
 
-# Create self-contained venv with GLiNER installation
-RUN python3 -m venv --copies /opt/gliner-venv && \
-  /opt/gliner-venv/bin/pip install --no-cache-dir -U pip && \
-  /opt/gliner-venv/bin/pip install --no-cache-dir \
+# Create self-contained venv with GLiNER & semchunk installation
+RUN python3 -m venv --copies /opt/py-venv && \
+  /opt/py-venv/bin/pip install --no-cache-dir -U pip && \
+  /opt/py-venv/bin/pip install --no-cache-dir \
     torch==2.3.0+cpu --index-url https://download.pytorch.org/whl/cpu && \
-  /opt/gliner-venv/bin/pip install --no-cache-dir gliner && \
-  /opt/gliner-venv/bin/pip cache purge
-
-# Create self-contained venv with semchunk installation
-RUN python3 -m venv --copies /opt/semchunk-venv && \
-  /opt/semchunk-venv/bin/pip install --no-cache-dir -U pip && \
-  /opt/semchunk-venv/bin/pip install --no-cache-dir semchunk && \
-  /opt/semchunk-venv/bin/pip cache purge
+  /opt/py-venv/bin/pip install --no-cache-dir gliner && \
+  /opt/py-venv/bin/pip install --no-cache-dir semchunk && \
+  /opt/py-venv/bin/pip install --no-cache-dir tiktoken && \
+  /opt/py-venv/bin/pip cache purge
 
 # Install R packages
 COPY renv.lock renv.lock
@@ -55,7 +51,7 @@ LABEL org.opencontainers.image.title="KWALLM: Text analysis with LLM" \
 
 ENV TZ=Europe/Amsterdam \
   HF_HOME=/opt/hf-cache \
-  RETICULATE_PYTHON=/opt/gliner-venv/bin/python \
+  RETICULATE_PYTHON=/opt/py-venv/bin/python \
   IS_DOCKER=true \
   OMP_NUM_THREADS=1 \
   HF_HUB_OFFLINE=1
@@ -70,9 +66,8 @@ RUN apt-get update -qq && \
 # Create non-root user
 RUN useradd -ms /bin/bash appuser
 
-# Copy R library & Python venvs
-COPY --from=builder /opt/gliner-venv /opt/gliner-venv
-COPY --from=builder /opt/semchunk-venv /opt/semchunk-venv
+# Copy R library & Python venv
+COPY --from=builder /opt/py-venv /opt/py-venv
 COPY --from=builder /usr/local/lib/R/site-library /usr/local/lib/R/site-library
 COPY --from=builder --chown=appuser:appuser /opt/hf-cache /opt/hf-cache
 

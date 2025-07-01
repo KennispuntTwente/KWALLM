@@ -9,7 +9,7 @@ app.log
 /dist
 /portable-pandoc
 /portable-r
-/portable-gliner-venv
+/py-venv
 /node_modules
 R-4.4.2.exe
 R/report_Onderwerpextractie.html

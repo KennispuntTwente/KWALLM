@@ -4,24 +4,24 @@
 Sys.setenv(FOR_DISABLE_CONSOLE_CTRL_HANDLER = "1")
 
 semchunk_load_chunker <- function(
-    venv_name        = "portable-semchunk-venv",
-    python_version   = "3.12.10",
-    tokenizer        = "gpt-4",        # name, HF repo, tiktoken encoding, or a custom Python object
-    chunk_size       = 64,            # tokens per chunk (remember to subtract special tokens)
-    use_system_python = FALSE,
-    docker_env       = NULL,           # autodetected if NULL
-    test_chunker     = FALSE,          # run a quick round-trip on sample text?
-    queue            = NULL            # 'ipc' queue for reactive logs
+  venv_name = "py-venv",
+  python_version = "3.12.10",
+  tokenizer = "gpt-4", # name, HF repo, tiktoken encoding, or a custom Python object
+  chunk_size = 64, # tokens per chunk (remember to subtract special tokens)
+  use_system_python = FALSE,
+  docker_env = NULL, # autodetected if NULL
+  test_chunker = FALSE, # run a quick round-trip on sample text?
+  queue = NULL # 'ipc' queue for reactive logs
 ) {
   #### ───────── Argument checks ──────────────────────────────────────────────
   stopifnot(
-    is.character(venv_name)      && length(venv_name)      == 1,
+    is.character(venv_name) && length(venv_name) == 1,
     is.character(python_version) && length(python_version) == 1,
     (is.character(tokenizer) || inherits(tokenizer, "python.builtin.object")),
-    is.numeric(chunk_size)       && length(chunk_size)     == 1 && chunk_size > 0,
+    is.numeric(chunk_size) && length(chunk_size) == 1 && chunk_size > 0,
     is.logical(use_system_python) && length(use_system_python) == 1,
     is.null(docker_env) || (is.logical(docker_env) && length(docker_env) == 1),
-    is.logical(test_chunker)     && length(test_chunker)   == 1
+    is.logical(test_chunker) && length(test_chunker) == 1
   )
 
   #### ───────── Helper: log to console (+ shiny queue) ───────────────────────
@@ -62,11 +62,15 @@ semchunk_load_chunker <- function(
   }
 
   #### ───────── Create / activate virtual-env ────────────────────────────────
-  print_message(paste0("Loading/creating virtual environment (", venv_name, ") …"))
+  print_message(paste0(
+    "Loading/creating virtual environment (",
+    venv_name,
+    ") …"
+  ))
 
   if (docker_env) {
     print_message("Inside Docker: assuming Python + semchunk already installed")
-    reticulate::use_virtualenv("/opt/semchunk-venv", required = TRUE)
+    reticulate::use_virtualenv("/opt/py-venv", required = TRUE)
   } else {
     Sys.setenv(RETICULATE_VIRTUALENV_ROOT = getwd())
 
@@ -85,21 +89,34 @@ semchunk_load_chunker <- function(
     reticulate::use_virtualenv(venv_name, required = TRUE)
 
     #### ───── Install semchunk (+ helpers) if missing ──────────────────
-    needed <- c("semchunk")
-    pkgs   <- reticulate::py_list_packages(envname = venv_name)$package
+    needed <- c()
+    pkgs <- reticulate::py_list_packages(envname = venv_name)$package
     if (!"semchunk" %in% pkgs) needed <- c(needed, "semchunk")
 
     # Rough heuristic: install helpers only if the user *might* need them
     if (is.character(tokenizer)) {
-      if (grepl("^cl\\d+k_|^gpt-", tokenizer, ignore.case = TRUE) &&
-          !"tiktoken" %in% pkgs)                needed <- c(needed, "tiktoken")
-      if (grepl("/", tokenizer) &&             # looks like HF repo name
-          !"transformers" %in% pkgs)           needed <- c(needed, "transformers")
+      if (
+        grepl("^cl\\d+k_|^gpt-", tokenizer, ignore.case = TRUE) &&
+          !"tiktoken" %in% pkgs
+      )
+        needed <- c(needed, "tiktoken")
+      if (
+        grepl("/", tokenizer) && # looks like HF repo name
+          !"transformers" %in% pkgs
+      )
+        needed <- c(needed, "transformers")
     }
 
-    if (length(setdiff(needed, pkgs))) {
-      print_message(paste0("Installing Python packages: ", paste(setdiff(needed, pkgs), collapse = ", ")))
-      reticulate::py_install(envname = venv_name, packages = setdiff(needed, pkgs))
+    if (length(setdiff(needed, pkgs)) > 0) {
+      print_message(paste0(
+        "Installing Python packages: ",
+        paste(setdiff(needed, pkgs), collapse = ", "),
+        " ..."
+      ))
+      reticulate::py_install(
+        envname = venv_name,
+        packages = setdiff(needed, pkgs)
+      )
     }
   }
 
@@ -109,7 +126,7 @@ semchunk_load_chunker <- function(
   if (inherits(tokenizer, "python.builtin.object")) {
     tokenizer_obj <- tokenizer
   } else {
-    tokenizer_obj <- tokenizer  # let semchunk decide what to do with the string
+    tokenizer_obj <- tokenizer # let semchunk decide what to do with the string
   }
 
   #### ───────── Build the chunker ────────────────────────────────────────────
@@ -121,7 +138,7 @@ semchunk_load_chunker <- function(
     print_message("Testing chunker on sample sentence …")
     sample_text <- "The quick brown fox jumps over the lazy dog."
     # Returns a Python list, automatically converted
-    chunks      <- chunker(sample_text)
+    chunks <- chunker(sample_text)
     print_message(paste0("Chunks: ", paste(chunks, collapse = " | ")))
   }
 
@@ -132,7 +149,6 @@ semchunk_load_chunker <- function(
 #### 2 Example/development usage ####
 
 if (FALSE) {
-
   chunker <- semchunk_load_chunker(chunk_size = 32)
 
   chunker(
@@ -195,7 +211,4 @@ if (FALSE) {
 
   # View the chunked result
   print(chunked_df)
-
 }
-
-
