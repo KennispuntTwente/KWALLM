@@ -42,6 +42,9 @@ This helps protect respondent privacy:
    - Simple PII detection with regex (email addresses, phone numbers, Dutch postal codes)
    
    - Advanced PII detection with a local, specialised model ([GLiNER](https://huggingface.co/urchade/gliner_multi_pii-v1))
+
+- **Splitting texts**: Users can split long texts (such as transcribed interviews) into smaller parts via semantic chunking (using '[semchunk](https://pypi.org/project/semchunk/)'),
+which may improve analysis quality and helps to avoid context window limits
    
 ### Configurable
 
@@ -235,6 +238,11 @@ zoals categorisatie, scoren op kenmerken, en topic modelling.
       - Eenvoudige PII-detectie met regex (e-mailadressen, telefoonnummers, Nederlandse postcodes)
    
       - Geavanceerde PII-detectie met een lokaal, gespecialiseerd model ([GLiNER](https://huggingface.co/urchade/gliner_multi_pii-v1))
+      
+-   **Splitsen van teksten**: gebruikers kunnen lange teksten (zoals
+    getranscribeerde interviews) splitsen in kleinere delen via semantic
+    chunking (met '[semchunk](https://pypi.org/project/semchunk/)'),
+    wat de kwaliteit van de analyse kan verbeteren en helpt om context window-limieten te vermijden
 
 ### Configureerbaar
 
