@@ -29,10 +29,14 @@ RUN R -q -e "install.packages('renv', repos='https://cloud.r-project.org'); \
   renv::restore()"
 
 # Copy the GLiNER model loader script; run once to pre-cache the model
-COPY R/gliner_load.R /tmp/gliner_load.R
 ENV IS_DOCKER=true
+COPY R/gliner_load.R /tmp/gliner_load.R
 RUN Rscript -e "source('/tmp/gliner_load.R'); \
-  gliner_load_model()"
+  gliner_load_model();"
+# Also do this for semchunk
+COPY R/semchunk_load.R /tmp/semchunk_load.R
+RUN Rscript -e "source('/tmp/semchunk_load.R'); \
+  semchunk_load_chunker();"
 
 # ─────────────────────────── runtime stage ────────────────────────────────
 FROM rocker/r-ver:4.4.2
