@@ -345,6 +345,13 @@ categories_server <- function(
         simplify = TRUE,
         USE.NAMES = FALSE
       ))
+
+      txt_in_fields(sapply(
+        seq_len(n_fields()),
+        function(i) isolate(input[[paste0("category", i)]]) %||% txt_in_fields()[i],
+        simplify = TRUE,
+        USE.NAMES = FALSE
+      ))
     })
 
     ## Add/remove categories -----------------------------------------
