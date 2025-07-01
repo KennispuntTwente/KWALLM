@@ -73,6 +73,9 @@ text_split_server <- function(
     # Reactive value to hold the maximum token size for splitting
     max_tokens_val <- reactiveVal(128)
 
+    # Reactive value to hold the overlap value
+    overlap_val <- reactiveVal(0)
+
 
     # -- UI: main card -------------------------------------------
 
@@ -152,6 +155,30 @@ text_split_server <- function(
           min = 1,
           step = 1
         ),
+        # Overlap
+        # '`overlap` argument to overlap chunks by a ratio (if < 1) or
+        #   an absolute number of tokens (if >= 1)'
+        numericInput(
+          ns("overlap"),
+          label = span(
+            lang()$t("Overlap tussen teksten (tokens)"),
+            tooltip(
+              bs_icon("info-circle"),
+              paste0(
+                lang()$t(
+                  "Waarde die de toegestane overlap tussen de teksten bepaalt."
+                ),
+                lang()$t(
+                  " Een waarde tussen 0 en 1 wordt geïnterpreteerd als een ratio van de tekstlengte; een waarde groter dan 1 wordt geïnterpreteerd als een absoluut aantal tokens."
+                )
+              ),
+              placement = "bottom"
+            )
+          ),
+          value = 0,
+          min = 0,
+          step = 1
+        ),
         # Button to perform the splitting
         actionButton(
           ns("split_texts"),
@@ -187,12 +214,14 @@ text_split_server <- function(
           split_texts_with_semchunk(
             texts = raw_texts,
             chunk_size = chunk_size,
+            overlap = overlap,
             queue = queue
           )
         },
         globals = list(
           raw_texts = raw_texts(),
           chunk_size = max_tokens_val(),
+          overlap = overlap_val(),
           queue = queue,
           split_texts_with_semchunk = split_texts_with_semchunk,
           semchunk_load_chunker = semchunk_load_chunker
@@ -253,7 +282,16 @@ text_split_server <- function(
       }
     })
 
+    # Ensure overlap value stays valid
+    observeEvent(input$overlap, {
+      req(input$overlap)
+      overlap_val(input$overlap)
 
+      # Ensure minimum value
+      if (input$overlap < 0) {
+        updateNumericInput(session, "overlap", value = 0)
+      }
+    })
 
     # Return -------------------------------------------------------
     return(texts)
@@ -266,6 +304,7 @@ text_split_server <- function(
 split_texts_with_semchunk <- function(
   texts,
   chunk_size = 128,
+  overlap = 0,
   queue = NULL
 ) {
   chunker <- semchunk_load_chunker(
@@ -277,7 +316,7 @@ split_texts_with_semchunk <- function(
     try(queue$producer$fireAssignReactive("semchunk_message", "Splitting texts..."), silent = TRUE)
   }
 
-  result <- chunker(texts, progress = FALSE, offsets = FALSE, overlap = FALSE) |>
+  result <- chunker(texts, progress = FALSE, offsets = FALSE, overlap = overlap) |>
     unlist()
 
   return(result)
@@ -285,8 +324,7 @@ split_texts_with_semchunk <- function(
 
 #### 3 Example/development usage ####
 
-if (TRUE) {
-
+if (FALSE) {
   library(shiny)
   library(shinyjs)
   library(shinyWidgets)
@@ -319,6 +357,4 @@ if (TRUE) {
   }
 
   shinyApp(ui, server)
-
 }
-
