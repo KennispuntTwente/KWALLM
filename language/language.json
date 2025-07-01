@@ -964,6 +964,18 @@
       {
         "nl": " teksten",
         "en": " texts"
+      },
+      {
+        "nl": "Overlap tussen teksten (tokens)",
+        "en": "Overlap between texts (tokens)"
+      },
+      {
+        "nl": "Waarde die de toegestane overlap tussen de teksten bepaalt.",
+        "en": "Value that determines the allowed overlap between the texts."
+      },
+      {
+        "nl": " Een waarde tussen 0 en 1 wordt geïnterpreteerd als een ratio van de tekstlengte; een waarde groter dan 1 wordt geïnterpreteerd als een absoluut aantal tokens.",
+        "en": " A value between 0 and 1 is interpreted as a ratio of the text length; a value greater than 1 is interpreted as an absolute number of tokens."
       }
     ]
 }
