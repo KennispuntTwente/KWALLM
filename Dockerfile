@@ -23,6 +23,12 @@ RUN python3 -m venv --copies /opt/gliner-venv && \
   /opt/gliner-venv/bin/pip install --no-cache-dir gliner && \
   /opt/gliner-venv/bin/pip cache purge
 
+# Create self-contained venv with semchunk installation
+RUN python3 -m venv --copies /opt/semchunk-venv && \
+  /opt/semchunk-venv/bin/pip install --no-cache-dir -U pip && \
+  /opt/semchunk-venv/bin/pip install --no-cache-dir semchunk && \
+  /opt/semchunk-venv/bin/pip cache purge
+
 # Install R packages
 COPY renv.lock renv.lock
 RUN R -q -e "install.packages('renv', repos='https://cloud.r-project.org'); \
@@ -33,10 +39,6 @@ ENV IS_DOCKER=true
 COPY R/gliner_load.R /tmp/gliner_load.R
 RUN Rscript -e "source('/tmp/gliner_load.R'); \
   gliner_load_model();"
-# Also do this for semchunk
-COPY R/semchunk_load.R /tmp/semchunk_load.R
-RUN Rscript -e "source('/tmp/semchunk_load.R'); \
-  semchunk_load_chunker();"
 
 # ─────────────────────────── runtime stage ────────────────────────────────
 FROM rocker/r-ver:4.4.2
@@ -68,8 +70,9 @@ RUN apt-get update -qq && \
 # Create non-root user
 RUN useradd -ms /bin/bash appuser
 
-# Copy R library & Python venv
+# Copy R library & Python venvs
 COPY --from=builder /opt/gliner-venv /opt/gliner-venv
+COPY --from=builder /opt/semchunk-venv /opt/semchunk-venv
 COPY --from=builder /usr/local/lib/R/site-library /usr/local/lib/R/site-library
 COPY --from=builder --chown=appuser:appuser /opt/hf-cache /opt/hf-cache
 
