@@ -46,7 +46,7 @@ assign_multiple_categories_toggle_server <- function(
                     " Als een exlusieve categorie wordt toegewezen aan een tekst, mogen daarnaast geen andere categorieën worden toegewezen aan de tekst."
                   ),
                   lang()$t(
-                    " Je kunt categorieën exclusief maken in de categorie-editor (categorisatie-modus) of bij het bewerken van de onderwerpen (onderwerpextractie-modus; zet 'human in the loop' aan)."
+                    " Je kunt categorieën exclusief maken in de categorie-editor (modus 'categorisatie') of bij het bewerken van de onderwerpen (modus 'onderwerpextractie'; zet 'human-in-the-loop' aan)."
                   )
                 )
               )

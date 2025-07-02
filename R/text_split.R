@@ -111,9 +111,6 @@ text_split_server <- function(
                 ),
                 lang()$t(
                   " De teksten worden hier met Python package 'semchunk' gesplitst in stukken van een opgegeven maximale lengte (in tokens, naar OpenAI's gpt-4; een token is ongeveer 4 karakters)."
-                ),
-                lang()$t(
-                  " Hierbij wordt rekening gehouden met de inhoud van de tekst: de teksten worden gesplitst op natuurlijke plekken, zodat de betekenis behouden blijft."
                 )
               )
             )
@@ -137,15 +134,27 @@ text_split_server <- function(
                 size = "sm"
               )
             ),
-            # Area for options for splitting & button to split texts
-            uiOutput(ns("split_ui")),
-            uiOutput(ns("semchunk_message_ui"))
+            uiOutput(ns("split_section"))
           )
         )
       )
     })
 
     # -- UI: splitting UI
+
+    output$split_section <- renderUI({
+      if (!isTRUE(splitting())) {
+        return(div(style = "display: none;"))
+      }
+
+      tagList(
+        div(
+          class = "d-flex flex-column align-items-center",
+          uiOutput(ns("split_ui")),
+          uiOutput(ns("semchunk_message_ui"))
+        )
+      )
+    })
 
     output$split_ui <- renderUI({
       req(splitting())
@@ -191,8 +200,7 @@ text_split_server <- function(
           icon = shiny::icon("scissors"),
           label = lang()$t("Splits teksten"),
           class = "btn btn-primary"
-        ),
-        textOutput(ns("semchunk_message"), inline = TRUE)
+        )
       )
     })
 
@@ -362,7 +370,7 @@ split_texts_with_semchunk <- function(
 
 #### 3 Example/development usage ####
 
-if (FALSE) {
+if (TRUE) {
   library(shiny)
   library(shinyjs)
   library(shinyWidgets)

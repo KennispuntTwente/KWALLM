@@ -374,7 +374,7 @@ context_window_server <- function(
           class = "d-flex flex-column align-items-center",
           numericInput(
             ns("context_window"),
-            lang()$t("Context-window grootte (# tokens)"),
+            lang()$t("Context-window grootte (tokens)"),
             value = rv$n_tokens_context_window,
             min = 0
           ),

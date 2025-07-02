@@ -36,7 +36,15 @@ write_paragraphs_toggle_server <- function(
           shinyjs::useShinyjs(),
           bslib::card(
             class = "card",
-            card_header(lang()$t("Rapport schrijven")),
+            card_header(
+              lang()$t("Rapport schrijven"),
+              bslib::tooltip(
+                bsicons::bs_icon("info-circle"),
+                lang()$t(
+                  "Indien je dit aanzet, zal het model per categorie een samenvattende paragraaf schrijven met quotes uit de bijbehorende teksten."
+                )
+              )
+            ),
             card_body(
               # Toggle for inter-rater reliability
               p(

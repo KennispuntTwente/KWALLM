@@ -94,7 +94,17 @@ score_server <- function(
         if (mode() == "Scoren") {
           bslib::card(
             class = "card",
-            card_header(lang()$t("Karakteristiek")),
+            card_header(
+              lang()$t("Karakteristiek"),
+              tooltip(
+                bs_icon("info-circle"),
+                paste0(
+                  lang()$t(
+                    "Voer hier een karakteristiek (kenmerk) in."
+                  )
+                )
+              )
+            ),
             card_body(
               paste0(lang()$t(
                 "Geef de karakteristiek op waarop de tekst gescoord moet worden (bijv. 'emotionele lading', 'duidelijkheid')."

@@ -138,7 +138,23 @@ llm_provider_server <- function(
             card_header(
               div(
                 class = "d-flex justify-content-between align-items-center w-100",
-                span(lang()$t("LLM-provider")),
+                span(
+                  lang()$t("LLM-provider"),
+                  tooltip(
+                    bs_icon("info-circle"),
+                    paste0(
+                      lang()$t(
+                        "Hier staan details over de geconfigureerde LLM-provider.",
+                      ),
+                      lang()$t(
+                        " Een LLM-provider is een API die toegang biedt tot een taalmodel (LLM). Dit kan een lokale API of externe API zijn."
+                      ),
+                      lang()$t(
+                        " Er kan hier een vooraf geconfigureerde LLM-provider gebruikt worden, of er kan tijdens gebruik van de app een verbinding gelegd worden met een OpenAI-compatible API of Ollama."
+                      )
+                    )
+                  )
+                ),
                 uiOutput(ns("provider_mode_selection")),
               )
             ),

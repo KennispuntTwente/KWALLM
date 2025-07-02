@@ -36,7 +36,21 @@ human_in_the_loop_toggle_server <- function(
           shinyjs::useShinyjs(),
           bslib::card(
             class = "card",
-            card_header(lang()$t("Human-in-the-loop")),
+            card_header(
+              lang()$t("Human-in-the-loop"),
+              bslib::tooltip(
+                bsicons::bs_icon("info-circle"),
+                lang()$t(
+                  "Indien je dit aanzet, kun je de de onderwerpen die het taalmodel heeft geïdentificeerd in de teksten bekijken en bewerken."
+                ),
+                lang()$t(
+                  " Dit kan je dan doen dan voordat de onderwerpen worden toegewezen aan de teksten."
+                ),
+                lang()$t(
+                  " Je kan bijvoorbeeld zelf bepaalde onderwerpen toevoegen, verwijderen, samenvoegen, of uitsplitsen."
+                )
+              )
+            ),
             card_body(
               # Toggle for inter-rater reliability
               p(

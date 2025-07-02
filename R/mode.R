@@ -55,8 +55,45 @@ mode_server <- function(
                 selected = lang()$t("Categorisatie"),
                 size = "sm"
               )
-            )
+            ),
+            uiOutput(ns("mode_description_ui"))
           )
+        )
+      })
+
+      # Reactive value which holds text message about the splitting progress
+      #   (set from async process via 'ipc' package, queue object)
+      output$mode_description_ui <- renderUI({
+        req(mode())
+
+        msg <- switch(
+          mode(),
+          "Categorisatie" = lang()$t(
+            "Teksten worden door het model ingedeeld op basis van categorieën die jij opgeeft. Per categorie kan het model een samenvatting met quotes schrijven."
+          ),
+          "Scoren" = lang()$t(
+            "Teksten worden door het model beoordeeld op een score (van 0 t/m 100) voor in hoeverre ze overeenkomen met een door jou opgegeven kenmerk."
+          ),
+          "Onderwerpextractie" = lang()$t(
+            "Het model zal verschillende perspectieven extraheren uit de teksten, en de teksten hiernaar categoriseren. Per categorie kan het model een samenvatting met quotes schrijven."
+          )
+        )
+
+        div(
+          class = "llm-narrow-container",
+          style = "
+            margin: 10px auto 15px auto;
+            padding: 15px 20px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            font-size: 0.9em;
+            color: #495057;
+            text-align: center;
+            word-break: normal;
+            overflow-wrap: normal;
+          ",
+          HTML(msg)
         )
       })
 
