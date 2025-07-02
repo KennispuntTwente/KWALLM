@@ -370,7 +370,7 @@ if (length(rl$paragraphs) > 0) {
 htmltools::tags$footer(
   style = "text-align:center; font-size: 0.8em; color: #888; margin-top: 50px; padding-top: 20px; border-top: 1px solid #eee;",
   htmltools::HTML(paste0(
-    "This analysis was performed by KWALLM, an open-source app for automated qualitative text analysis. Developed by ",
+    "This analysis was performed by KWALLM, an open-source app for automated qualitative text analysis.<br>Developed by ",
     "<a href='https://www.kennispunttwente.nl' target='_blank'>Kennispunt Twente</a> in collaboration with GGD Twente.<br>",
     "Visit the <a href='https://github.com/kennispunttwente/tekstanalyse_met_llm' target='_blank'>GitHub-repository</a> for more information.",
     "<br>",
