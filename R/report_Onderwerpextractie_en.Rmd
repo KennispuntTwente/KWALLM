@@ -307,11 +307,11 @@ for (i in seq_along(rl$paragraphs)) {
         stringr::str_detect(supporting_texts, stringr::fixed(q_clean, ignore_case = TRUE))
       ) {
         icon_html <- as.character(
-          bsicons::bs_icon("check-circle-fill", title = "Quote geverifieerd", class = "text-success")
+          bsicons::bs_icon("check-circle-fill", title = "Quote verified", class = "text-success")
         )
       } else {
         icon_html <- as.character(
-          bsicons::bs_icon("exclamation-triangle-fill", title = "Quote niet teruggevonden in teksten", class = "text-warning")
+          bsicons::bs_icon("exclamation-triangle-fill", title = "Quote not found in texts", class = "text-warning")
         )
       }
   
