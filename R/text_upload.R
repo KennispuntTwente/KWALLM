@@ -38,7 +38,23 @@ text_upload_server <- function(
         card_header(
           div(
             class = "d-flex justify-content-between align-items-center w-100",
-            span(lang()$t("Upload teksten")),
+            span(
+              lang()$t("Upload teksten"),
+              tooltip(
+                bs_icon("info-circle"),
+                paste0(
+                  lang()$t(
+                    "Upload de teksten die je wilt analyseren. Je kunt een platte tekstbestand (.txt), een CSV-bestand (.csv), een Excel-bestand (.xlsx) of een SPSS-bestand (.sav) uploaden."
+                  ),
+                  lang()$t(
+                    " Let op dat .txt-bestanden worden gesplitst in een tekst per nieuwe regel. Voor de andere bestanden kun je een specifieke kolom met teksten selecteren. Voor Excel-bestanden kun je ook een specifiek werkblad selecteren."
+                  ),
+                  lang()$t(
+                    " Via het filter-icoon kun je de data filteren, voor wanneer je alleen een subset van de data wilt analyseren."
+                  )
+                )
+              )
+            ),
             # Dynamic filter icon (updated from server for colour change)
             uiOutput(ns("filter_icon"))
           )

@@ -150,7 +150,26 @@ text_management_server <- function(
           card_header(
             div(
               class = "d-flex justify-content-between align-items-center w-100",
-              span(lang()$t('Teksten')),
+              span(
+                lang()$t('Teksten'),
+                tooltip(
+                  bs_icon("info-circle"),
+                  paste0(
+                    lang()$t(
+                      "Hier kun je de teksten bekijken die zullen worden verwerkt."
+                    ),
+                    lang()$t(
+                      " Dubbele teksten worden automatisch gereduceerd tot één tekst."
+                    ),
+                    lang()$t(
+                      " Daarnaast kan je kiezen om de teksten te anonimiseren met behulp van regex of een GLiNER-model. Regex verwijdert e-mailadressen, telefoonnummers en (Nederlandse) postcodes. Het GLiNER-model kan verschillende vormen van PII detecteren."
+                    ),
+                    lang()$t(
+                      " Anonimisering vindt lokaal plaats voordat de teksten naar het grote taalmodel worden gestuurd."
+                    )
+                  )
+                )
+              ),
               uiOutput(ns('mode_selection'))
             )
           ),

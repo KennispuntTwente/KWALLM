@@ -138,7 +138,23 @@ llm_provider_server <- function(
             card_header(
               div(
                 class = "d-flex justify-content-between align-items-center w-100",
-                span(lang()$t("LLM-provider")),
+                span(
+                  lang()$t("LLM-provider"),
+                  tooltip(
+                    bs_icon("info-circle"),
+                    paste0(
+                      lang()$t(
+                        "Hier staan details over de geconfigureerde LLM-provider.",
+                      ),
+                      lang()$t(
+                        " Een LLM-provider is een API die toegang biedt tot een taalmodel (LLM). Dit kan een lokale API of externe API zijn."
+                      ),
+                      lang()$t(
+                        " Er kan hier een vooraf geconfigureerde LLM-provider gebruikt worden, of er kan tijdens gebruik van de app een verbinding gelegd worden met een OpenAI-compatible API of Ollama."
+                      )
+                    )
+                  )
+                ),
                 uiOutput(ns("provider_mode_selection")),
               )
             ),
@@ -169,9 +185,14 @@ llm_provider_server <- function(
         "http://localhost:11434/api"
       ))
       api_key_input <- reactiveVal(Sys.getenv("OPENAI_API_KEY"))
-      available_models_openai <- reactiveVal(character(0))
-      available_models_ollama <- reactiveVal(character(0))
+      available_models_openai <- reactiveVal(NULL)
+      available_models_ollama <- reactiveVal(NULL)
       last_model_request_time <- reactiveVal(Sys.time() - 10) # initialize as 10 seconds ago
+
+      shiny::exportTestValues(
+        available_models_openai = available_models_openai(),
+        available_models_ollama = available_models_ollama()
+      )
 
       initial_provider_mode <- if (!is.null(preconfigured_llm_provider)) {
         "preconfigured"

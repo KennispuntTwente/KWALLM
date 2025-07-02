@@ -83,16 +83,9 @@ processing_server <- function(
       #     Enables showing a loading animation
       #   zip_file: reactiveVal to store the path to the zip file
       #     Is populated when the files are ready, and passed to the download handler
-      #   topics: reactiveVal to store the topics
-      #   topics_table_data: reactiveVal to store the topics table data;
-      #     shown during editing of topics
+      #   topics: reactiveVal to store topics
       #   topics_definitive: reactiveVal to keep track of whether the topics are definitive
       #     Is false when the user is editing the topics, otherwise true
-      #   reduction_in_progress: reactiveVal to keep track of whether the topic reduction
-      #     is in progress; happens when the user clicks the "Reduce again" button
-      #     during the topic editing modal
-      #   rereduced_topics: reactiveVal to store the re-reduced topics
-      #     This is used to update the topics table when the re-reduction is done
       #   succes: reactiveVal to keep track of whether the processing
       #     has been finished succesfully. Used for automated testing
       processing <- reactiveVal(FALSE)
@@ -103,15 +96,14 @@ processing_server <- function(
       preparing_download <- reactiveVal(NULL)
       zip_file <- reactiveVal(NULL)
       topics <- reactiveVal(NULL)
-      topics_table_data <- reactiveVal(NULL)
+      exclusive_topics <- reactiveVal(NULL)
       topics_definitive <- reactiveVal(FALSE)
-      reduction_in_progress <- reactiveVal(FALSE)
-      rereduced_topics <- reactiveVal(NULL)
       success <- reactiveVal(NULL)
 
       shiny::exportTestValues(
         processing = processing(),
-        success = success()
+        success = success(),
+        final_results_df = final_results_df()
       )
 
       # UUID for the current processing task
@@ -189,7 +181,8 @@ processing_server <- function(
                   prompt_multi_category(
                     text = text,
                     research_background = research_background,
-                    categories = categories
+                    categories = categories,
+                    exclusive_categories = exclusive_categories
                   )
                 }
               } else {
@@ -314,6 +307,7 @@ processing_server <- function(
             research_background = research_background(),
             mode = mode(),
             categories = categories$texts(),
+            exclusive_categories = categories$exclusive_texts(),
             scoring_characteristic = scoring_characteristic(),
             prompt_category = prompt_category,
             prompt_multi_category = prompt_multi_category,
@@ -515,9 +509,7 @@ processing_server <- function(
         print("Started async processing for topic modelling (step 1-2)")
       })
 
-      ####### >> Topics generated ####
-
-      initial_topics <- reactiveVal(NULL)
+      ####### >> Topics generated; editing ####
 
       # Listen for topics completion
       # Present modal dialog to edit/confirm topics
@@ -526,14 +518,17 @@ processing_server <- function(
         req(topics())
         req(!topics_definitive())
 
-        # Stash the originals
-        initial_topics(isolate(topics()))
-
-        # Initialize the topics table data
-        topics_table_data(data.frame(
-          topic = topics(),
-          stringsAsFactors = FALSE
-        ))
+        # Set 'Onbekend/niet van toepassing' as exclusive topic (if present)
+        if (lang()$t("Onbekend/niet van toepassing") %in% topics()) {
+          exclusive_topics(c(
+            exclusive_topics(),
+            lang()$t("Onbekend/niet van toepassing")
+          ))
+        }
+        # Remove any exclusive topics which may ont be present in the topics
+        exclusive_topics(
+          exclusive_topics()[exclusive_topics() %in% topics()]
+        )
 
         # If no human in the loop, auto-confirm
         if (!isTRUE(human_in_the_loop())) {
@@ -541,324 +536,54 @@ processing_server <- function(
           return()
         }
 
+        # Human in the loop, so launch topic editing...
         progress_primary$set_with_total(
           2.5,
           5,
           lang()$t("Onderwerpen bewerken...")
         )
 
-        # Show the editable modal with Add/Remove buttons
-        showModal(modalDialog(
-          title = lang()$t("Onderwerpen"),
-          size = "l",
-          easyClose = FALSE,
-          tagList(
-            shinyjs::useShinyjs(),
-            lang()$t("Controleer de onderwerpen en pas ze aan waar nodig."),
-            br(),
-            HTML(lang()$t(
-              "<i>Dubbel-klik op een onderwerp om het te bewerken.</i>"
-            )),
-            hr(),
-            fluidRow(
-              column(
-                12,
-                div(
-                  class = "d-flex flex-column flex-md-row justify-content-center",
-                  # Left-aligned on md+, centered on xs
-                  div(
-                    class = "d-flex justify-content-center justify-content-md-start mb-2 mb-md-0 me-md-auto",
-                    actionButton(
-                      ns("add_topic"),
-                      lang()$t("Voeg onderwerp toe"),
-                      icon = icon("plus")
-                    )
-                  ),
-                  # Center-aligned always
-                  div(
-                    class = "d-flex justify-content-center mb-2 mb-md-0",
-                    actionButton(
-                      ns("reduce_again"),
-                      lang()$t("Reduceer opnieuw"),
-                      icon = icon("robot")
-                    )
-                  ),
-                  # Right-aligned on md+, centered on xs
-                  div(
-                    class = "d-flex justify-content-center justify-content-md-end ms-md-auto",
-                    actionButton(
-                      ns("remove_topic"),
-                      lang()$t("Verwijder geselecteerd"),
-                      icon = icon("trash")
-                    )
-                  )
-                )
-              )
-            ),
-            hr(),
-            DT::dataTableOutput(ns("topics_table")),
-            hr(),
-            div(
-              class = "clearfix",
-              # float reset all the way left
-              div(
-                style = "float: left; margin: 0;",
-                actionButton(
-                  ns("reset_topics"),
-                  "Reset",
-                  icon = icon("undo"),
-                  class = "btn-warning"
-                )
-              ),
-              # float confirm all the way right
-              div(
-                style = "float: right; margin: 0;",
-                actionButton(
-                  ns("confirm_topics"),
-                  lang()$t("Bevestig"),
-                  class = "btn btn-primary",
-                  # Continue icon/arrow
-                  icon = icon("arrow-right"),
-                )
-              )
-            ),
-          ),
-          footer = NULL
-        ))
-
-        shinyjs::disable("reset_topics")
-      })
-
-      ####### >> Edit & confirm topics ####
-
-      # Render editable table
-      output$topics_table <- DT::renderDataTable(
-        {
-          req(topics_table_data())
-          DT::datatable(
-            topics_table_data(),
-            options = list(
-              paging = FALSE,
-              ordering = TRUE,
-              searching = FALSE
-              # dom = "t"
-            ),
-            rownames = FALSE,
-            editable = list(target = "cell"),
-            # ← allow row selection
-            selection = list(mode = "multiple", target = "row"),
-            colnames = setNames(
-              "topic",
-              c(lang()$t("Onderwerp"))
-            )
-          )
-        },
-        server = TRUE
-      )
-
-      # Proxy for efficient updates
-      proxy <- DT::dataTableProxy("topics_table")
-
-      # Handle edits
-      observeEvent(input[["topics_table_cell_edit"]], {
-        info <- input[["topics_table_cell_edit"]]
-        str(info) # optional: view edit info
-        topics_df <- topics_table_data()
-        topics_df[info$row, info$col + 1] <- info$value # +1 because DT uses 0-based indexing
-        topics_table_data(topics_df)
-      })
-
-      # Add topic button
-      observeEvent(input$add_topic, {
-        df <- topics_table_data()
-        topics_table_data(rbind(df, data.frame(topic = "")))
-        # push updated data back without resetting paging
-        replaceData(proxy, topics_table_data(), resetPaging = FALSE)
-      })
-
-      # Remove selected rows
-      observeEvent(input$remove_topic, {
-        sel <- input$topics_table_rows_selected
-        if (length(sel)) {
-          df <- topics_table_data()
-          df <- df[-sel, , drop = FALSE]
-          topics_table_data(df)
-          replaceData(proxy, df, resetPaging = FALSE)
-        }
-      })
-
-      # Reset topics button
-      observeEvent(input$reset_topics, {
-        # pull back the original topics
-        orig <- initial_topics()
-        df <- data.frame(topic = orig, stringsAsFactors = FALSE)
-
-        # update your reactiveVal and the DT proxy
-        topics_table_data(df)
-        replaceData(proxy, df, resetPaging = FALSE)
-      })
-
-      # Disable reset when no changes (or enable)
-      observe({
-        req(initial_topics(), topics_table_data())
-        curr <- topics_table_data()$topic
-        orig <- initial_topics()
-
-        if (identical(curr, orig)) {
-          shinyjs::disable("reset_topics")
-        } else {
-          shinyjs::enable("reset_topics")
-        }
-      })
-
-      # Confirm topics button
-      observeEvent(input$confirm_topics, {
-        req(topics_table_data())
-        req(reduction_in_progress() == FALSE)
-        final_df <- topics_table_data()
-        updated_topics <- final_df$topic[final_df$topic != ""]
-
-        # Topics must be unique
-        if (anyDuplicated(updated_topics)) {
-          shiny::showNotification(
-            lang()$t("Onderwerpen moeten uniek zijn."),
-            type = "error"
-          )
-          return()
-        }
-
-        # There must be at least 2 unique topics
-        if (length(unique(updated_topics)) < 2) {
-          shiny::showNotification(
-            lang()$t("Je moet minimaal 2 onderwerpen opgeven."),
-            type = "error"
-          )
-          return()
-        }
-
-        # 1) prevent any further modal re‑opens
-        topics_definitive(TRUE)
-        # 2) close the existing modal
-        removeModal()
-        # 3) finally update the reactive — now it won't re‑show the modal
-        topics(updated_topics)
-      })
-
-      # Listen for re-reduce topics button
-      observeEvent(input$reduce_again, {
-        req(isolate(topics_table_data()))
-        req(isolate(reduction_in_progress()) == FALSE)
-        updated_topics <- topics_table_data()$topic
-        updated_topics <- updated_topics[updated_topics != ""]
-
-        if (length(updated_topics) < 2) {
-          shiny::showNotification(
-            lang()$t("Je moet minimaal 2 onderwerpen opgeven om te reduceren."),
-            type = "error"
-          )
-          return()
-        }
-
-        # Randomize order of updated topics
-        updated_topics <- sample(updated_topics)
-
-        shiny::showNotification(
-          lang()$t("Onderwerpen re-reduceren..."),
-          type = "message"
-        )
-        reduction_in_progress(TRUE)
-        rereduced_topics(NULL)
-
+        # Build LLM provider for re-reducing topics during editing
         llm_provider_large <- llm_provider_rv$llm_provider$clone()
         llm_provider_large$parameters$model <- models$large
 
-        future_promise(
+        # Launch modal dialog to edit topics
+        edited_topics <- edit_topics_server(
+          "edit_topics",
+          topics = topics,
+          exclusive_topics = exclusive_topics,
+          llm_provider = llm_provider_large,
+          research_background = research_background,
+          assign_multiple_categories = assign_multiple_categories,
+          lang = lang
+        )
+
+        # When edited_topics is no longer NULL,
+        #   set the topics and mark them as definitive
+        edited_topics_observer <- observe(
           {
-            reduce_topics(
-              updated_topics,
-              research_background,
-              llm_provider_large,
-              language = lang$get_translation_language()
-            )
+            req(edited_topics())
+            topics(edited_topics())
+            topics_definitive(TRUE)
+            edited_topics_observer$suspend()
           },
-          packages = c("tidyprompt", "tidyverse"),
-          globals = list(
-            send_prompt_with_retries = send_prompt_with_retries,
-            reduce_topics = reduce_topics,
-            updated_topics = updated_topics,
-            research_background = research_background(),
-            llm_provider_large = llm_provider_large
-          )
-        ) %...>%
-          (function(reduced_topics) {
-            # Only update if the result is valid
-            if (length(reduced_topics) < 2 || anyDuplicated(reduced_topics)) {
-              app_error(
-                lang()$t(
-                  "Re-reductie mislukt of ongeldige onderwerpen gegenereerd"
-                ),
-                when = "re-reducing topics",
-                fatal = FALSE,
-                lang = lang()
-              )
-              reduction_in_progress(FALSE)
-              return()
-            }
-            # Update topics
-            rereduced_topics(reduced_topics)
-          }) %...!%
-          {
-            app_error(
-              .,
-              when = "re-reducing topics",
-              fatal = FALSE,
-              lang = lang()
-            )
-            reduction_in_progress(FALSE)
-          }
+          suspended = FALSE,
+          autoDestroy = TRUE
+        )
       })
 
-      # Listen for re-reduced topics completion
-      observe({
-        req(rereduced_topics())
-        print(paste0(
-          "Received rereduced topics: ",
-          paste(rereduced_topics(), collapse = ", ")
-        ))
-        # Update the topics table with the new topics
-        updated_topics <- rereduced_topics()
-        df <- data.frame(topic = updated_topics, stringsAsFactors = FALSE)
-        topics_table_data(df)
-        # Reset the reduction_in_progress flag
-        reduction_in_progress(FALSE)
-      })
-
-      # Disable inputs during re-reduction
-      observe({
-        if (reduction_in_progress()) {
-          shinyjs::disable("add_topic")
-          shinyjs::disable("remove_topic")
-          shinyjs::disable("reset_topics")
-          shinyjs::disable("confirm_topics")
-          shinyjs::disable("reduce_again")
-          shinyjs::disable("topics_table")
-        } else {
-          shinyjs::enable("add_topic")
-          shinyjs::enable("remove_topic")
-          shinyjs::enable("reset_topics")
-          shinyjs::enable("confirm_topics")
-          shinyjs::enable("reduce_again")
-          shinyjs::enable("topics_table")
-        }
-      })
-
-      ####### >> Assign topics ######
+      ####### >> Topics definitive; assigning ######
 
       # Listen for definitive topics
       # Launch processing for assigning topics to paragraphs
       observeEvent(topics_definitive(), {
         if (!isTRUE(topics_definitive())) return()
         req(topics())
+
+        if (!assign_multiple_categories()) {
+          # If not assigning multiple categories, set each topic is exclusive
+          exclusive_topics(topics())
+        }
 
         print(paste0(
           "Starting topic assignment with topics: ",
@@ -902,7 +627,8 @@ processing_server <- function(
                     topics,
                     research_background,
                     llm_provider,
-                    assign_multiple_categories = assign_multiple_categories
+                    assign_multiple_categories = assign_multiple_categories,
+                    exclusive_topics = exclusive_topics
                   )
                   result <- result$result
 
@@ -990,31 +716,34 @@ processing_server <- function(
                     length(topics_texts_list),
                     "..."
                   )
-                  paragraphs <- purrr::map(seq_along(topics_texts_list), function(i) {
-                    interrupter$execInterrupts()
-                    topic_name <- names(topics_texts_list)[[i]]
-                    topic_texts <- topics_texts_list[[i]]
+                  paragraphs <- purrr::map(
+                    seq_along(topics_texts_list),
+                    function(i) {
+                      interrupter$execInterrupts()
+                      topic_name <- names(topics_texts_list)[[i]]
+                      topic_texts <- topics_texts_list[[i]]
 
-                    progress_secondary$set_with_total(
-                      i,
-                      length(topics_texts_list),
-                      paste0(
-                        lang$t("Schrijven over '"),
-                        topic_name,
-                        "'..."
+                      progress_secondary$set_with_total(
+                        i,
+                        length(topics_texts_list),
+                        paste0(
+                          lang$t("Schrijven over '"),
+                          topic_name,
+                          "'..."
+                        )
                       )
-                    )
 
-                    paragraph <- write_paragraph(
-                      texts = topic_texts,
-                      topic = topic_name,
-                      research_background = research_background,
-                      llm_provider = llm_provider,
-                      language = lang$get_translation_language()
-                    )
+                      paragraph <- write_paragraph(
+                        texts = topic_texts,
+                        topic = topic_name,
+                        research_background = research_background,
+                        llm_provider = llm_provider,
+                        language = lang$get_translation_language()
+                      )
 
-                    paragraph
-                  })
+                      paragraph
+                    }
+                  )
 
                   paragraphs
                 },
@@ -1049,7 +778,8 @@ processing_server <- function(
             lang = lang(),
             progress_primary = progress_primary$async,
             progress_secondary = progress_secondary$async,
-            interrupter = interrupter
+            interrupter = interrupter,
+            exclusive_topics = exclusive_topics()
           ),
           packages = c("tidyprompt", "tidyverse", "glue", "fs", "uuid"),
           seed = NULL
@@ -1394,6 +1124,7 @@ processing_server <- function(
         if (mode() == "Categorisatie") {
           result_list$model <- models$main
           result_list$categories <- categories$texts()
+          result_list$exclusive_categories <- categories$exclusive_texts()
           result_list$assign_multiple_categories <- assign_multiple_categories()
           result_list$prompt <- prompt_category(
             text = lang()$t("<< TEKST >>"),
@@ -1401,6 +1132,8 @@ processing_server <- function(
             categories = categories$texts()
           ) |>
             tidyprompt::construct_prompt_text()
+          result_list$human_in_the_loop <- human_in_the_loop()
+          result_list$write_paragraphs <- write_paragraphs()
         }
 
         if (mode() == "Scoren") {
@@ -1418,7 +1151,9 @@ processing_server <- function(
           result_list$model <- models$main
           result_list$model_reductie <- models$large
           result_list$topics <- topics()
+          result_list$exclusive_topics <- exclusive_topics()
           result_list$assign_multiple_categories <- assign_multiple_categories()
+          result_list$write_paragraphs <- write_paragraphs()
 
           # Add chunking information
           chunking_parameters <- tibble::tibble(
@@ -1435,7 +1170,6 @@ processing_server <- function(
               context_window$n_chunks
             )
           )
-
           result_list$chunking_parameters <- chunking_parameters
         }
 
@@ -1739,7 +1473,7 @@ processing_server <- function(
 }
 
 
-##### 2 Example/development usage ####
+#### 2 Example/development usage ####
 
 if (FALSE) {
   library(shiny)

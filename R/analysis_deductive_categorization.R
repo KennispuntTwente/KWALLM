@@ -56,6 +56,7 @@ prompt_category <- function(
     numbered_categories,
     "\n\n",
     "Respond with the number of the category that best describes the text.",
+    "Choose a single category.",
     "\n",
     "(Use no other words or characters.)"
   )
@@ -63,14 +64,30 @@ prompt_category <- function(
   prompt <- instruction |>
     tidyprompt::prompt_wrap(
       extraction_fn = function(x) {
+        # Check if number matches
         normalized <- trimws(tolower(x))
         if (normalized %in% as.character(seq_along(categories))) {
           return(categories[[as.integer(normalized)]])
         }
-        match <- which(tolower(categories) == normalized)
-        if (length(match) == 1) {
-          return(categories[[match]])
+
+        # Sometimes, the model may return multiple numbers
+        has_multiple_numbers <- function(normalized) {
+          # tell strsplit to use the PCRE engine (perl = TRUE)
+          tokens <- unlist(strsplit(normalized, "[,;/|\\s]+", perl = TRUE))
+
+          # keep non-empty pieces, trim, and filter to integer-like strings
+          numbers <- trimws(tokens[nzchar(tokens)])
+          numbers <- numbers[grepl("^\\d+$", numbers)]
+
+          length(numbers) > 1
         }
+        if (has_multiple_numbers(normalized)) {
+          return(tidyprompt::llm_feedback(paste0(
+            "You must select only one valid category number.",
+            "\nChoose the one category that best fits the text."
+          )))
+        }
+
         return(tidyprompt::llm_feedback(instruction))
       }
     )
@@ -93,7 +110,11 @@ prompt_multi_category <- function(
     "positive review",
     "negative review",
     "mentions color",
-    "does not mention color"
+    "does not mention color",
+    "unclear/not applicable"
+  ),
+  exclusive_categories = c(
+    "unclear/not applicable"
   )
 ) {
   stopifnot(
@@ -103,13 +124,20 @@ prompt_multi_category <- function(
     length(text) == 1,
     length(research_background) == 1,
     length(categories) > 0,
-    !any(duplicated(categories))
+    !any(duplicated(categories)),
+    all(exclusive_categories %in% categories)
+  )
+
+  annotated_categories <- ifelse(
+    categories %in% exclusive_categories,
+    paste0(categories, " [exclusive]"),
+    categories
   )
 
   numbered_categories <- paste0(
-    seq_along(categories),
+    seq_along(annotated_categories),
     ". ",
-    categories,
+    annotated_categories,
     collapse = "\n  "
   )
 
@@ -131,24 +159,52 @@ prompt_multi_category <- function(
     numbered_categories,
     "\n\n",
     "Respond with the numbers of all categories that apply to this text, separated by commas.",
-    "\n",
-    "(Use only numbers separated by commas, no extra words or characters.)"
+    "\n(E.g., \"1, 3, 5\" to select categories 1, 3, and 5.)",
+    "\n(Use only numbers separated by commas, no extra words or characters.)"
   )
+
+  if (length(exclusive_categories) > 0) {
+    instruction <- paste0(
+      instruction,
+      "\n(If you choose an exclusive category",
+      " (indicated with '[exclusive]'), ",
+      "you may not choose any other categories.)"
+    )
+  }
 
   prompt <- instruction |>
     tidyprompt::prompt_wrap(
       extraction_fn = function(x) {
         normalized <- trimws(tolower(x))
-        numbers <- unlist(strsplit(normalized, ",\\s*"))
+        numbers <- unlist(strsplit(normalized, "[,\\s]+"))
         valid_numbers <- numbers[
           numbers %in% as.character(seq_along(categories))
         ]
         if (length(valid_numbers) == 0) {
           return(tidyprompt::llm_feedback(
-            "You must select at least one valid category number."
+            "You must select at least one valid category number.",
+            "Format your response as a comma-separated list of numbers (e.g., \"1, 3, 5\")."
           ))
         }
         categories_selected <- categories[as.integer(valid_numbers)]
+
+        # Validate exclusive categories
+        if (any(categories_selected %in% exclusive_categories)) {
+          if (length(categories_selected) > 1) {
+            return(tidyprompt::llm_feedback(paste0(
+              "You have selected one or more of the exclusive categories (selected: '",
+              paste(
+                categories_selected[
+                  categories_selected %in% exclusive_categories
+                ],
+                collapse = ", "
+              ),
+              "').",
+              "\nWhen you select an exclusive category, you must select only one exclusive category and no other categories."
+            )))
+          }
+        }
+
         return(
           jsonlite::toJSON(categories_selected, auto_unbox = FALSE)
         )
@@ -160,8 +216,6 @@ prompt_multi_category <- function(
 
 
 #### 2 Categories UI & server ####
-
-# User interface for entering categories, + server logic to manage them
 
 categories_ui <- function(id) {
   ns <- NS(id)
@@ -175,205 +229,265 @@ categories_server <- function(
   id,
   mode,
   processing,
+  assign_multiple_categories = reactiveVal(FALSE),
   lang = reactiveVal(
     shiny.i18n::Translator$new(
       translation_json_path = "language/language.json"
     )
   )
 ) {
-  moduleServer(
-    id,
-    function(input, output, session) {
-      ns <- NS(id)
+  moduleServer(id, function(input, output, session) {
+    ns <- NS(id)
 
-      n_fields <- reactiveVal(3)
-      txt_in_fields <- reactiveVal(rep("", 3))
-      isEditing <- reactiveVal(TRUE)
+    ## State/reactive values ---------------------------------------------
+    n_fields <- reactiveVal(3)
+    txt_in_fields <- reactiveVal(rep("", 3))
+    exclusive_vals <- reactiveVal(rep(FALSE, 3))
+    isEditing <- reactiveVal(TRUE)
 
-      shiny::exportTestValues(
-        n_fields = n_fields(),
-        txt_in_fields = txt_in_fields(),
-        isEditing = isEditing()
-      )
+    shiny::exportTestValues(
+      n_fields = n_fields(),
+      txt_in_fields = txt_in_fields(),
+      exclusive_sel = exclusive_vals(),
+      isEditing = isEditing()
+    )
 
-      output$category_fields <- renderUI({
-        tagList(
-          lapply(seq_len(n_fields()), function(i) {
-            value <- txt_in_fields()[i] %||% ""
+    ##  Helper: current exclusivity flags -------------------------------
+    exclusive_flags <- reactive({
+      if (!assign_multiple_categories()) rep(TRUE, n_fields()) else
+        exclusive_vals()
+    })
+
+    # Vector of texts which are exclusive
+    exclusive_texts <- reactive({
+      txt_in_fields()[exclusive_flags()]
+    })
+
+    ## UI ---------------------------------------------------------------
+    output$category_fields <- renderUI({
+      multi <- assign_multiple_categories()
+
+      tagList(lapply(seq_len(n_fields()), function(i) {
+        value <- txt_in_fields()[i] %||% ""
+        excl_value <- exclusive_vals()[i] %||% FALSE
+
+        fluidRow(
+          column(
+            width = if (multi) 10 else 12,
             textAreaInput(
-              inputId = ns(paste0("category", i)),
+              ns(paste0("category", i)),
               label = paste(lang()$t("Categorie"), i),
               value = value,
               rows = 1,
               width = "100%"
             )
-          })
-        )
-      })
-
-      output$editButtonUI <- renderUI({
-        button_label <- if (isEditing()) icon("save") else icon("pencil")
-        actionButton(
-          ns("toggleEdit"),
-          label = tagList(button_label, ""),
-          class = "btn btn-primary",
-          style = "min-width: 75px;"
-        )
-      })
-
-      output$categories <- renderUI({
-        if (mode() == "Categorisatie") {
-          bslib::card(
-            class = "card",
-            card_header(lang()$t("Categorieën")),
-            card_body(
-              p(lang()$t(
-                "Geef beknopte, duidelijke omschrijvingen. Overweeg een categorie 'Overig'/'Onbekend'/'Geen antwoord'."
-              )),
-              div(
-                class = "category-button-container",
-                actionButton(
-                  ns("addCategory"),
-                  label = icon("plus"),
-                  class = "btn btn-success category-button",
-                  style = "min-width: 75px;"
-                ),
-                actionButton(
-                  ns("removeCategory"),
-                  label = icon("minus"),
-                  class = "btn btn-danger category-button",
-                  style = "min-width: 75px;"
-                ),
-                uiOutput(ns("editButtonUI"))
-              ),
-              uiOutput(ns("category_fields"))
-            )
-          )
-        }
-      })
-
-      observeEvent(input$addCategory, {
-        if (isEditing()) {
-          current_texts <- sapply(
-            seq_len(n_fields()),
-            function(i) input[[paste0("category", i)]],
-            simplify = TRUE,
-            USE.NAMES = FALSE
-          )
-          new_texts <- c(current_texts, "")
-          txt_in_fields(new_texts)
-          n_fields(length(new_texts))
-        }
-      })
-
-      observeEvent(input$removeCategory, {
-        if (isEditing()) {
-          current_texts <- sapply(
-            seq_len(n_fields()),
-            function(i) input[[paste0("category", i)]],
-            simplify = TRUE,
-            USE.NAMES = FALSE
-          )
-          if (length(current_texts) > 1) {
-            new_texts <- utils::head(current_texts, -1)
-            txt_in_fields(new_texts)
-            n_fields(length(new_texts))
-          }
-        }
-      })
-
-      observeEvent(input$toggleEdit, {
-        if (isEditing()) {
-          current_texts <- sapply(
-            seq_len(n_fields()),
-            function(i) {
-              input[[paste0("category", i)]]
-            },
-            simplify = TRUE,
-            USE.NAMES = FALSE
-          )
-
-          txt_in_fields(current_texts)
-          isEditing(FALSE)
-
-          shinyjs::disable("addCategory")
-          shinyjs::disable("removeCategory")
-
-          shinyjs::delay(0, {
-            lapply(seq_len(n_fields()), function(i) {
-              shinyjs::disable(paste0("category", i))
-            })
-          })
-        } else {
-          isEditing(TRUE)
-
-          shinyjs::enable("addCategory")
-          shinyjs::enable("removeCategory")
-
-          shinyjs::delay(0, {
-            lapply(seq_len(n_fields()), function(i) {
-              shinyjs::enable(paste0("category", i))
-            })
-          })
-        }
-      })
-
-      observe({
-        if (processing()) {
-          shinyjs::disable("addCategory")
-          shinyjs::disable("removeCategory")
-          shinyjs::disable("toggleEdit")
-          lapply(seq_len(n_fields()), function(i) {
-            shinyjs::disable(paste0("category", i))
-          })
-        }
-      })
-
-      observeEvent(lang(), {
-        shinyjs::delay(100, {
-          if (mode() == "Categorisatie") {
-            if (!isEditing() || processing()) {
-              lapply(seq_len(n_fields()), function(i) {
-                shinyjs::disable(paste0("category", i))
-              })
-            } else {
-              lapply(seq_len(n_fields()), function(i) {
-                shinyjs::enable(paste0("category", i))
-              })
-            }
-
-            # Re-render the edit button (pencil/save)
-            output$editButtonUI <- renderUI({
-              button_label <- if (isEditing()) icon("save") else icon("pencil")
-              actionButton(
-                ns("toggleEdit"),
-                label = tagList(button_label, ""),
-                class = "btn btn-primary",
-                style = "min-width: 75px;"
+          ),
+          if (multi)
+            column(
+              width = 2,
+              checkboxInput(
+                ns(paste0("exclusive", i)),
+                label = lang()$t("Exclusief"),
+                value = excl_value
               )
-            })
+            )
+        )
+      }))
+    })
+
+    output$editButtonUI <- renderUI({
+      button_label <- if (isEditing()) icon("save") else icon("pencil")
+      actionButton(
+        ns("toggleEdit"),
+        label = tagList(button_label, ""),
+        class = "btn btn-primary",
+        style = "min-width: 75px;"
+      )
+    })
+
+    output$categories <- renderUI({
+      if (mode() == "Categorisatie") {
+        bslib::card(
+          class = "card",
+          card_header(
+            lang()$t("Categorieën"),
+            tooltip(
+              bs_icon("info-circle"),
+              paste0(
+                lang()$t(
+                  "Bewerk hier de categorieën waarin het taalmodel de teksten kan indelen."
+                ),
+                lang()$t(
+                  " Gebruik de '+'- en '-'-knoppen om categorieën toe te voegen of te verwijderen."
+                ),
+                lang()$t(
+                  " Gebruik tenslotte de save/edit-knop om de categorieën op te slaan (of weer te kunnen bewerken)."
+                ),
+                lang()$t(
+                  " In een verder blok hieronder kun je kiezen of het model meerdere categorieën mag toewijzen aan een tekst, of slechts één categorie."
+                ),
+                lang()$t(
+                  " Indien je het model meerdere categorieën laat toewijzen, kan je alsnog specifieke categorieën als 'exclusief' aanmerken."
+                ),
+                lang()$t(
+                  " Als een exlusieve categorie wordt toegewezen aan een tekst, mogen daarnaast geen andere categorieën worden toegewezen aan de tekst."
+                )
+              )
+            )
+          ),
+          card_body(
+            p(lang()$t(
+              "Geef beknopte, duidelijke omschrijvingen. Overweeg een categorie 'Overig'/'Onbekend'/'Geen antwoord'."
+            )),
+            div(
+              class = "category-button-container",
+              actionButton(
+                ns("addCategory"),
+                label = icon("plus"),
+                class = "btn btn-success category-button",
+                style = "min-width: 75px;"
+              ),
+              actionButton(
+                ns("removeCategory"),
+                label = icon("minus"),
+                class = "btn btn-danger category-button",
+                style = "min-width: 75px;"
+              ),
+              uiOutput(ns("editButtonUI"))
+            ),
+            uiOutput(ns("category_fields"))
+          )
+        )
+      }
+    })
+
+    ## Remember check-box changes while editing ------------------------
+    observe({
+      req(assign_multiple_categories(), isEditing())
+      exclusive_vals(sapply(
+        seq_len(n_fields()),
+        function(i) input[[paste0("exclusive", i)]] %||% exclusive_vals()[i],
+        simplify = TRUE,
+        USE.NAMES = FALSE
+      ))
+
+      txt_in_fields(sapply(
+        seq_len(n_fields()),
+        function(i)
+          isolate(input[[paste0("category", i)]]) %||% txt_in_fields()[i],
+        simplify = TRUE,
+        USE.NAMES = FALSE
+      ))
+    })
+
+    ## Add/remove categories -----------------------------------------
+    observeEvent(input$addCategory, {
+      req(isEditing())
+      txt_in_fields(c(txt_in_fields(), ""))
+      exclusive_vals(c(exclusive_vals(), FALSE))
+      n_fields(n_fields() + 1)
+    })
+
+    observeEvent(input$removeCategory, {
+      req(isEditing(), n_fields() > 1)
+      txt_in_fields(utils::head(txt_in_fields(), -1))
+      exclusive_vals(utils::head(exclusive_vals(), -1))
+      n_fields(n_fields() - 1)
+    })
+
+    ##  Toggle edit/save ----------------------------------------------
+    observeEvent(input$toggleEdit, {
+      if (isEditing()) {
+        # ----> SAVE
+        txt_in_fields(sapply(
+          seq_len(n_fields()),
+          function(i) input[[paste0("category", i)]] %||% txt_in_fields()[i]
+        ))
+        if (assign_multiple_categories()) {
+          exclusive_vals(sapply(
+            seq_len(n_fields()),
+            function(i) input[[paste0("exclusive", i)]] %||% exclusive_vals()[i]
+          ))
+        }
+        isEditing(FALSE)
+      } else {
+        # ----> EDIT
+        isEditing(TRUE)
+      }
+    })
+
+    ##  Unified input-state updater (always in sync) -----------------
+    update_input_state <- function() {
+      lapply(seq_len(n_fields()), function(i) {
+        txt_id <- paste0("category", i)
+        ex_id <- paste0("exclusive", i)
+        if (!isEditing() || processing()) {
+          shinyjs::disable(txt_id)
+          if (assign_multiple_categories()) shinyjs::disable(ex_id)
+        } else {
+          shinyjs::enable(txt_id)
+          if (assign_multiple_categories()) shinyjs::enable(ex_id)
+        }
+      })
+      if (!isEditing()) {
+        shinyjs::disable(c("addCategory", "removeCategory"))
+      } else if (!processing()) {
+        shinyjs::enable(c("addCategory", "removeCategory"))
+      }
+    }
+
+    ## Trigger updater whenever any relevant reactive changes -----------
+    observe({
+      assign_multiple_categories()
+      isEditing()
+      processing()
+      lang()
+      n_fields()
+      shinyjs::delay(50, update_input_state())
+    })
+
+    ##  Reactives returned to caller ------------------------------------
+    nonEmptyTexts <- reactive({
+      vals <- txt_in_fields()
+      unique(trimws(vals))[nzchar(trimws(vals))]
+    })
+
+    nonEmptyUniqueCount <- reactive({
+      sum(nzchar(nonEmptyTexts()))
+    })
+
+    ## Disable inputs when processing
+    observe({
+      if (isTRUE(processing())) {
+        shinyjs::disable("addCategory")
+        shinyjs::disable("removeCategory")
+        shinyjs::disable("toggleEdit")
+        lapply(seq_len(n_fields()), function(i) {
+          shinyjs::disable(paste0("category", i))
+          if (assign_multiple_categories()) {
+            shinyjs::disable(paste0("exclusive", i))
           }
         })
-      })
+      } else {
+        shinyjs::enable("addCategory")
+        shinyjs::enable("removeCategory")
+        shinyjs::enable("toggleEdit")
+        lapply(seq_len(n_fields()), function(i) {
+          shinyjs::enable(paste0("category", i))
+          if (assign_multiple_categories()) {
+            shinyjs::enable(paste0("exclusive", i))
+          }
+        })
+      }
+    })
 
-      # Also create reactive for unique, non-empty texts
-      nonEmptyTexts <- reactive({
-        values <- txt_in_fields()
-        unique_values <- unique(trimws(values))
-        unique_values[nzchar(unique_values)]
-      })
-
-      nonEmptyUniqueCount <- reactive({
-        sum(nzchar(nonEmptyTexts()))
-      })
-
-      return(list(
-        texts = nonEmptyTexts,
-        editing = isEditing,
-        unique_non_empty_count = nonEmptyUniqueCount
-      ))
-    }
-  )
+    return(list(
+      texts = nonEmptyTexts,
+      editing = isEditing,
+      unique_non_empty_count = nonEmptyUniqueCount,
+      exclusive_texts = exclusive_texts
+    ))
+  })
 }
 
 
@@ -388,14 +502,25 @@ if (FALSE) {
     useShinyjs(),
     css_js_head(),
     categories_ui("categories_module"),
+    assign_multiple_categories_toggle_ui("multiple"),
     uiOutput("categories_entered")
   )
 
   server <- function(input, output, session) {
     mode <- reactiveVal("Categorisatie")
     processing <- reactiveVal(FALSE)
+    assign_multiple_categories <- assign_multiple_categories_toggle_server(
+      "multiple",
+      processing = reactiveVal(FALSE),
+      mode = mode
+    )
 
-    categories <- categories_server("categories_module", mode, processing)
+    categories <- categories_server(
+      "categories_module",
+      mode = mode,
+      processing = processing,
+      assign_multiple_categories = assign_multiple_categories
+    )
 
     output$categories_entered <- renderPrint({
       if (categories$editing()) {
@@ -407,6 +532,11 @@ if (FALSE) {
           "\nUnique non-empty categories count: ",
           categories$unique_non_empty_count()
         )
+        cat("\nExclusive categories selected:\n")
+        cat(paste(
+          categories$exclusive_texts(),
+          collapse = "\n"
+        ))
       }
     })
   }

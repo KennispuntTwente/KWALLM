@@ -270,8 +270,8 @@
         "en": " You can set the size of the chunks and the number of extractions per text with parameters."
       },
       {
-        "nl": "Context-window grootte (# tokens)",
-        "en": "Context window size (# tokens)"
+        "nl": "Context-window grootte (tokens)",
+        "en": "Context window size (tokens)"
       },
       {
         "nl": "Maximaal aantal teksten per chunk",
@@ -868,6 +868,242 @@
       {
         "nl": "Ja, annuleren",
         "en": "Yes, cancel"
+      },
+      {
+        "nl": "Verwijder lege regels",
+        "en": "Remove empty lines"
+      },
+      {
+        "nl": "Exclusief",
+        "en": "Exclusive"
+      },
+      {
+        "nl": "...",
+        "en": "..."
+      },
+      {
+        "nl": "Onbekend/niet van toepassing",
+        "en": "Unknown/not applicable"
+      },
+      {
+        "nl": "<i>Dubbel-klik op een cel om te bewerken.</i>",
+        "en": "<i>Double-click a cell to edit it.</i>"
+      },
+      {
+        "nl": "Mag het model meerdere categorieën toekennen aan een tekst, of slechts één categorie?",
+        "en": "May the model assign multiple categories to a text, or only one category?"
+      },
+      {
+        "nl": " Indien je het model meerdere categorieën laat toewijzen, kan je alsnog specifieke categorieën als 'exclusief' aanmerken.",
+        "en": " If you allow the model to assign multiple categories, you can still mark specific categories as 'exclusive'."
+      },
+      {
+        "nl": " Als een exlusieve categorie wordt toegewezen aan een tekst, mogen daarnaast geen andere categorieën worden toegewezen aan de tekst.",
+        "en": " If an exclusive category is assigned to a text, no other categories may be assigned to that text."
+      },
+      {
+        "nl": " Je kunt categorieën exclusief maken in de categorie-editor (modus 'categorisatie') of bij het bewerken van de onderwerpen (modus 'onderwerpextractie'; zet 'human-in-the-loop' aan).",
+        "en": " You can make categories exclusive in the category editor (categorization mode) or when editing topics (topic extraction mode; enable 'human in the loop')."
+      },
+      {
+        "nl": "Wil je een steekproef trekken van de teksten om interrater-reliability te berekenen?",
+        "en": "Do you want to draw a sample of the texts to calculate interrater reliability?"
+      },
+      {
+        "nl": " Nadat het model de teksten heeft geanalyseerd, zal een venster openen waarin je zelf teksten kunt beoordelen.",
+        "en": " After the model has analyzed the texts, a window will open where you can assess texts yourself."
+      },
+      {
+        "nl": " Je beoordelingen worden vergeleken met die van het taalmodel (bij categorisatie/onderwerpextractie wordt Cohen's Kappa berekend; bij scoren wordt een paired t-test uitgevoerd).",
+        "en": " Your assessments will be compared with those of the model (Cohen's Kappa is calculated for categorization/topic extraction; for scoring, a paired t-test is performed)."
+      },
+      {
+        "nl": "Splits teksten",
+        "en": "Split texts"
+      },
+      {
+        "nl": "Wil je teksten splitsen naar kortere teksten?",
+        "en": "Do you want to split texts into shorter texts?"
+      },
+      {
+        "nl": " Als je teksten erg lang zijn (bijv., interviews) kan een taalmodel hier mogelijk minder goed mee omgaan.",
+        "en": " If your texts are very long (e.g., interviews), a language model may have difficulty processing them."
+      },
+      {
+        "nl": " Het kan dan nuttig zijn om je teksten op te splitsen in kortere teksten.",
+        "en": " It may be useful to split your texts into shorter texts."
+      },
+      {
+        "nl": " Dit kan gedaan worden met behulp van semantische chunking, waarbij teksten worden gesplitst op basis van hun inhoud.",
+        "en": " This can be done using semantic chunking, where texts are split based on their content."
+      },
+      {
+        "nl": " De teksten worden hier met Python package 'semchunk' gesplitst in stukken van een opgegeven maximale lengte (in tokens, naar OpenAI's gpt-4; een token is ongeveer 4 karakters).",
+        "en": " The texts are split here using the Python package 'semchunk' into chunks of a specified maximum length (in tokens, according to OpenAI's gpt-4; one token is approximately 4 characters)."
+      },
+      {
+        "nl": " Hierbij wordt rekening gehouden met de inhoud van de tekst: de teksten worden gesplitst op natuurlijke plekken, zodat de betekenis behouden blijft.",
+        "en": " The content of the text is taken into account: the texts are split at natural points, so that the meaning is preserved."
+      },
+      {
+        "nl": "Teksten splitsen naar kortere teksten?",
+        "en": "Split texts into shorter texts?"
+      },
+      {
+        "nl": "Maximale lengte per tekst (tokens)",
+        "en": "Maximum length per text (tokens)"
+      },
+      {
+        "nl": "Originele ",
+        "en": "Original "
+      },
+      {
+        "nl": " teksten zijn gesplitst naar ",
+        "en": " texts have been split into "
+      },
+      {
+        "nl": " teksten",
+        "en": " texts"
+      },
+      {
+        "nl": "Overlap tussen teksten (tokens)",
+        "en": "Overlap between texts (tokens)"
+      },
+      {
+        "nl": "Waarde die de toegestane overlap tussen de teksten bepaalt.",
+        "en": "Value that determines the allowed overlap between the texts."
+      },
+      {
+        "nl": " Een waarde tussen 0 en 1 wordt geïnterpreteerd als een ratio van de tekstlengte; een waarde groter dan 1 wordt geïnterpreteerd als een absoluut aantal tokens.",
+        "en": " A value between 0 and 1 is interpreted as a ratio of the text length; a value greater than 1 is interpreted as an absolute number of tokens."
+      },
+      {
+        "nl": "Er is een fout opgetreden bij het splitsen van de teksten:",
+        "en": "An error occurred while splitting the texts:"
+      },
+      {
+        "en": "Upload the texts which you want to analyze. You can upload a plain text file (.txt), a CSV file (.csv), an Excel file (.xlsx), or a SPSS file (.sav).",
+        "nl": "Upload de teksten die je wilt analyseren. Je kunt een platte tekstbestand (.txt), een CSV-bestand (.csv), een Excel-bestand (.xlsx) of een SPSS-bestand (.sav) uploaden."
+      },
+      {
+        "en": " Note that .txt files will be split into a text per new line. For the other files, you can select a specific column with texts. For Excel files, you can also select a specific sheet.",
+        "nl": " Let op dat .txt-bestanden worden gesplitst in een tekst per nieuwe regel. Voor de andere bestanden kun je een specifieke kolom met teksten selecteren. Voor Excel-bestanden kun je ook een specifiek werkblad selecteren."
+      },
+      {
+        "nl": " Via het filter-icoon kun je de data filteren, voor wanneer je alleen een subset van de data wilt analyseren.",
+        "en": " Via the filter icon you can filter the data, for when you only want to analyze a subset of the data."
+      },
+      {
+        "nl": "Hier kun je de teksten bekijken die zullen worden verwerkt.",
+        "en": "Here you can view the texts that will be processed."
+      },
+      {
+        "nl": " Dubbele teksten worden automatisch gereduceerd tot één tekst.",
+        "en": " Duplicate texts are automatically reduced to one entry."
+      },
+      {
+        "nl": " Daarnaast kan je kiezen om de teksten te anonimiseren met behulp van regex of een GLiNER-model. Regex verwijdert e-mailadressen, telefoonnummers en (Nederlandse) postcodes. Het GLiNER-model kan verschillende vormen van PII detecteren.",
+        "en": " Furthermore, you can choose to anonymize the texts using regex or a GLiNER model. Regex will remove e-mail addresses, phone numbers, and (Dutch) postal codes. The GLinER model can detect various forms of PII."
+      },
+      {
+        "nl": " Anonimisering vindt lokaal plaats voordat de teksten naar het grote taalmodel worden gestuurd.",
+        "en": " Anonymization is performed locally before the texts are sent to the large language model."
+      },
+      {
+        "nl": "Hier kan je een korte beschrijving van je onderzoek geven, zodat het LLM de teksten beter kan begrijpen.",
+        "en": "Here you can provide a brief description of your research, so that the LLM can better understand the texts."
+      },
+      {
+        "nl": " De beschrijving wordt meegegeven in alle prompts die naar het LLM worden gestuurd.",
+        "en": " The description is included in all prompts sent to the LLM."
+      },
+      {
+        "nl": " Je kan bijvoorbeeld aangeven wat je onderzoekt en waar de teksten uit voortkomen (bijv., welke vraag hebben respondenten hebben beantwoord).",
+        "en": " You can, for example, indicate what you are researching and what the texts stem from (e.g., what question respondents answered)."
+      },
+      {
+        "nl": "Indien je dit aanzet, zal het model per categorie een samenvattende paragraaf schrijven met quotes uit de bijbehorende teksten.",
+        "en": "If you enable this, the model will write a summary paragraph per category with quotes from the corresponding texts."
+      },
+      {
+        "nl": "Hier staan details over de geconfigureerde LLM-provider.",
+        "en": "Here are details about the configured LLM provider."
+      },
+      {
+        "nl": " Een LLM-provider is een API die toegang biedt tot een taalmodel (LLM). Dit kan een lokale API of externe API zijn.",
+        "en": " A LLM provider is an API that provides access to a language model (LLM). This can be a local API or an external API."
+      },
+      {
+        "nl": "Kies hier het LLM (large language model) dat je wilt gebruiken.",
+        "en": "Choose the LLM (large language model) you want to use."
+      },
+      {
+        "nl": " Verschillende modellen hebben verschillende kwaliteiten; het ene model is sneller/goedkoper,",
+        "en": " Different models have different qualities; one model is faster/cheaper,"
+      },
+      {
+        "nl": " terwijl het andere model bijvoorbeeld duurder/langzamer is maar wel betere resultaten oplevert.",
+        "en": " while another model may be more expensive/slower but delivers better results."
+      },
+      {
+        "nl": " Hoe goed het model moet zijn is afhankelijk van de complexiteit van de analysevraag die je hebt.",
+        "en": " How good the model needs to be depends on the complexity of the analysis question you have."
+      },
+      {
+        "nl": "Bewerk hier de categorieën waarin het taalmodel de teksten kan indelen.",
+        "en": "Edit the categories in which the language model can categorize the texts."
+      },
+      {
+        "nl": " Gebruik de '+'- en '-'-knoppen om categorieën toe te voegen of te verwijderen.",
+        "en": " Use the '+' and '-' buttons to add or remove categories."
+      },
+      {
+        "nl": " Gebruik tenslotte de save/edit-knop om de categorieën op te slaan (of weer te kunnen bewerken).",
+        "en": " Finally use the save/edit button to save the categories (or to be able to edit them again)."
+      },
+      {
+        "nl": " In een verder blok hieronder kun je kiezen of het model meerdere categorieën mag toewijzen aan een tekst, of slechts één categorie.",
+        "en": " In a block further below, you can choose whether the model may assign multiple categories to a text or only one category."
+      },
+      {
+        "nl": "Teksten worden door het model ingedeeld op basis van categorieën die jij opgeeft. Per categorie kan het model een samenvatting met quotes schrijven.",
+        "en": "Texts are categorized by the model based on categories specified by you. For each category, the model can write a summary with quotes."
+      },
+      {
+        "nl": " Er kan hier een vooraf geconfigureerde LLM-provider gebruikt worden, of er kan tijdens gebruik van de app een verbinding gelegd worden met een OpenAI-compatible API of Ollama.' translation does not exist.",
+        "en": " A pre-configured LLM provider can be used here, or a connection can be established with an OpenAI-compatible API or Ollama during the use of the app."
+      },
+      {
+        "nl": "Voer hier een karakteristiek (kenmerk) in.",
+        "en": "Enter a characteristic (feature) here."
+      },
+      {
+        "nl": "Teksten worden door het model beoordeeld op een score (van 0 t/m 100) voor in hoeverre ze overeenkomen met een door jou opgegeven kenmerk.",
+        "en": "Texts are assessed by the model on a score (from 0 to 100) in how much they match a characteristic specified by you."
+      },
+      {
+        "nl": "Indien je dit aanzet, kun je de de onderwerpen die het taalmodel heeft geïdentificeerd in de teksten bekijken en bewerken.",
+        "en": "If you enable this, you can view and edit the topics identified by the language model in the texts."
+      },
+      {
+        "nl": " Dit kan je dan doen dan voordat de onderwerpen worden toegewezen aan de teksten.",
+        "en": " You can do this before the topics are assigned to the texts."
+      },
+      {
+        "nl": " Je kan bijvoorbeeld zelf bepaalde onderwerpen toevoegen, verwijderen, samenvoegen, of uitsplitsen.",
+        "en": " You can, for example, add, remove, merge, or split certain topics yourself."
+      },
+      {
+        "nl": "Het model zal verschillende perspectieven extraheren uit de teksten, en de teksten hiernaar categoriseren. Per categorie kan het model een samenvatting met quotes schrijven.",
+        "en": "The model will extract different perspectives from the texts and categorize the texts accordingly. For each category, the model can write a summary with quotes."
+      },
+      {
+        "nl": "Bij onderwerpextractie kan je een apart model kiezen dat gebruikt zal worden voor het terugbrengen van mogelijke onderwerpen tot een finale lijst van onderwerpen.",
+        "en": "During topic extraction, you can choose a separate model that will be used to reduce potential topics to a final list of topics."
+      },
+      {
+        "nl": " Omdat deze stap slechts één keer gebeurt maar wel grote invloed heeft op de resultaten, wordt aangeraden om een groter model te kiezen (mogelijk een 'thinking'-model zoals OpenAI's o3 of Deepseek's R1).",
+        "en": " Because this step only happens once but has a significant impact on the results, it is recommended to choose a larger model (possibly a 'thinking' model like OpenAI's o3 or Deepseek's R1)."
       }
     ]
 }

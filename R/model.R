@@ -48,8 +48,19 @@ model_server <- function(
             "Model",
             bslib::tooltip(
               bsicons::bs_icon("info-circle"),
-              lang()$t(
-                "Details over het LLM (large language model) dat je gebruikt."
+              paste0(
+                lang()$t(
+                  "Kies hier het LLM (large language model) dat je wilt gebruiken."
+                ),
+                lang()$t(
+                  " Verschillende modellen hebben verschillende kwaliteiten; het ene model is sneller/goedkoper,",
+                ),
+                lang()$t(
+                  " terwijl het andere model bijvoorbeeld duurder/langzamer is maar wel betere resultaten oplevert."
+                ),
+                lang()$t(
+                  " Hoe goed het model moet zijn is afhankelijk van de complexiteit van de analysevraag die je hebt."
+                )
               )
             )
           ),
@@ -106,7 +117,20 @@ model_server <- function(
           class = "selector-container text-center",
           selectInput(
             inputId = ns("large_model"),
-            label = HTML(paste0(lang()$t("Model voor onderwerpreductie"))),
+            label = span(
+              HTML(paste0(lang()$t("Model voor onderwerpreductie"))),
+              tooltip(
+                bs_icon("info-circle"),
+                paste0(
+                  lang()$t(
+                    "Bij onderwerpextractie kan je een apart model kiezen dat gebruikt zal worden voor het terugbrengen van mogelijke onderwerpen tot een finale lijst van onderwerpen."
+                  ),
+                  lang()$t(
+                    " Omdat deze stap slechts één keer gebeurt maar wel grote invloed heeft op de resultaten, wordt aangeraden om een groter model te kiezen (mogelijk een 'thinking'-model zoals OpenAI's o3 of Deepseek's R1)."
+                  )
+                )
+              )
+            ),
             choices = llm_provider_rv$available_models_large,
             # Use the reactive value or the initial value
             selected = models$large # Use the reactive value
@@ -190,7 +214,7 @@ model_server <- function(
 
 #### 3 Example/development usage ####
 
-if (TRUE) {
+if (FALSE) {
   library(shiny)
   library(shinyjs)
   library(bslib)

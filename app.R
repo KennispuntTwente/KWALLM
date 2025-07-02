@@ -67,7 +67,7 @@ preconfigured_llm_provider <-
   tidyprompt::llm_provider_openai()
 
 preconfigured_llm_provider$parameters$model <-
-  "gpt-4o-mini-2024-07-18"
+  "gpt-4.1-mini-2025-04-14"
 
 preconfigured_llm_provider$parameters$stream <- FALSE
 
@@ -76,7 +76,6 @@ preconfigured_models_main <- c(
   "gpt-4.1-2025-04-14"
 )
 preconfigured_models_large <- c(
-  "gpt-4o-mini-2024-07-18",
   "gpt-4.1-mini-2025-04-14",
   "gpt-4.1-2025-04-14",
   "o3-2025-04-16",

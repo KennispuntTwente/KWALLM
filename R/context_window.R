@@ -258,7 +258,8 @@ context_window_server <- function(
             prompt <- prompt_multi_category(
               text = "",
               research_background = research_background(),
-              categories = categories
+              categories = categories,
+              exclusive_categories = categories[1:length(categories) %% 2 == 0]
             )
           } else {
             prompt <- prompt_category(
@@ -373,7 +374,7 @@ context_window_server <- function(
           class = "d-flex flex-column align-items-center",
           numericInput(
             ns("context_window"),
-            lang()$t("Context-window grootte (# tokens)"),
+            lang()$t("Context-window grootte (tokens)"),
             value = rv$n_tokens_context_window,
             min = 0
           ),
