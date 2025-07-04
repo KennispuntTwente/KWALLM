@@ -505,7 +505,11 @@ text_management_server <- function(
       },
       content = function(file) {
         req(texts$df)
-        readr::write_csv(texts$df, file)
+        vroom::vroom_write(
+          x = texts$df,
+          file = file,
+          delim = ";"
+        )
       }
     )
 
