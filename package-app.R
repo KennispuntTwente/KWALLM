@@ -65,14 +65,19 @@ preconfigured_llm_provider <- NULL
 preconfigured_models_main <- NULL
 preconfigured_models_large <- NULL
 if (FALSE) {
-  preconfigured_llm_provider <- tidyprompt::llm_provider_openai()
-  preconfigured_llm_provider$parameters$model <- "gpt-4.1-mini-2025-04-14"
-  preconfigured_llm_provider$parameters$stream <- FALSE
+  preconfigured_llm_provider <-
+    tidyprompt::llm_provider_openai()
+  preconfigured_llm_provider$parameters$model <-
+    "gpt-4.1-mini-2025-04-14"
+  preconfigured_llm_provider$parameters$stream <-
+    FALSE
   preconfigured_models_main <- c(
+    # For most prompts:
     "gpt-4.1-mini-2025-04-14",
     "gpt-4.1-2025-04-14"
   )
   preconfigured_models_large <- c(
+    # For topic reduction during topic modelling:
     "gpt-4.1-mini-2025-04-14",
     "gpt-4.1-2025-04-14",
     "o3-2025-04-16",
