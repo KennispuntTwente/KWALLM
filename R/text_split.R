@@ -13,7 +13,8 @@ text_split_server <- function(
   processing = reactiveVal(FALSE),
   lang = reactiveVal(
     shiny.i18n::Translator$new(translation_json_path = "language/language.json")
-  )
+  ),
+  enabled = getOption("text_split__enabled", TRUE)
 ) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -42,8 +43,7 @@ text_split_server <- function(
 
     # If text splitting is activated
     splitting <- reactive({
-      req(input$toggle)
-      if (input$toggle == lang()$t("Ja")) {
+      if (isTRUE(input$toggle == lang()$t("Ja")) && isTRUE(enabled)) {
         TRUE
       } else {
         FALSE
@@ -60,7 +60,7 @@ text_split_server <- function(
     })
 
     # Reactive value which holds the split texts
-    split_texts <- reactiveVal("...")
+    split_texts <- reactiveVal(NULL)
 
     # Reactive value which holds text message about the splitting progress
     #   (set from async process via 'ipc' package, queue object)
@@ -84,10 +84,21 @@ text_split_server <- function(
     # Reactive value to hold the overlap value
     overlap_val <- reactiveVal(0)
 
+    # Export test values
+    shiny::exportTestValues(
+      splitting = splitting,
+      split_in_progress = split_in_progress,
+      split_texts = split_texts,
+      semchunk_message = semchunk_message,
+      max_tokens_val = max_tokens_val,
+      overlap_val = overlap_val
+    )
+
     # -- UI: main card -------------------------------------------
 
     output$card <- renderUI({
       req(lang())
+      req(isTRUE(enabled))
 
       tagList(
         bslib::card(
@@ -211,6 +222,7 @@ text_split_server <- function(
       req(isTRUE(splitting()))
       req(input$max_tokens)
       req(isFALSE(processing()))
+      req(isTRUE(enabled))
 
       # Set processing state
       split_in_progress(TRUE)

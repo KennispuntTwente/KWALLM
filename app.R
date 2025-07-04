@@ -134,6 +134,11 @@ options(
   anonymization__gliner_model = TRUE, # If the "gliner" anonymization method is available
   anonymization__gliner_test = FALSE, # If gliner model should be tested before launching the app
 
+  # - If text splitting via semantic chunking can be used
+  #   to split texts into smaller chunks for LLM processing;
+  #     see R/text_split.R
+  text_split__enabled = TRUE,
+
   # - If a topic 'unknown/not applicable' should always be added
   #   to to the list of candiate topics during topic modelling;
   #   this may be useful to avoid LLM failure in the topic assignment process;
