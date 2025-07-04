@@ -86,6 +86,10 @@ options(
   # shiny.port = 8100,
   # shiny.host = "0.0.0.0",
 
+  # Set max file upload size
+  # - This is the maximum size of the file that can be uploaded to the app;
+  shiny.maxRequestSize = 100 * 1024^2, # 100 MB
+
   # - Retry behaviour upon LLM API errors;
   #   max tries defines the maximum number of retries
   #   in connecting to the LLM API, while max interactions
