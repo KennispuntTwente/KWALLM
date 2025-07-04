@@ -10,7 +10,7 @@ RUN apt-get update -qq && \
   apt-get install -y --no-install-recommends \
     curl git ca-certificates \
       libcurl4-openssl-dev libssl-dev libxml2-dev \
-      libopenblas-dev liblapack-dev \
+      libopenblas-dev liblapack-dev libnode-dev \
       python${PY_VER} python${PY_VER}-venv python${PY_VER}-dev && \
   ln -sf /usr/bin/python${PY_VER} /usr/local/bin/python3 && \
   apt-get clean && rm -rf /var/lib/apt/lists/*
