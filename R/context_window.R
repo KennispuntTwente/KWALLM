@@ -135,7 +135,7 @@ context_window_server <- function(
         chunk_size = chunk_size_default,
         draws = draws_default,
         n_tokens_context_window = 2048,
-        n_char_base_prompt = NULL
+        base_prompt_text = NULL
       )
 
       #### Sync user input to internal state ####
@@ -242,67 +242,74 @@ context_window_server <- function(
       observe({
         req(mode())
         req(!is.null(research_background()))
-        prompt <- NULL
+        rv$base_prompt_text <- NULL
 
-        if (mode() %in% c("Categorisatie", "Onderwerpextractie")) {
-          if (mode() %in% c("Categorisatie")) {
+        prompt <- switch(
+          mode(),
+          "Categorisatie" = {
             req(categories$texts())
-            categories <- categories$texts()
-          } else {
-            # Onderwerpextractie, categories are defined by LLM
-            # Going to assume ~ 500 characters, as a guess
-            categories <- paste0("Category ", seq(1, 50))
-          }
-
-          if (assign_multiple_categories()) {
-            prompt <- prompt_multi_category(
+            if (assign_multiple_categories()) {
+              prompt_multi_category(
+                text = "",
+                research_background = research_background(),
+                categories = categories$texts(),
+                exclusive_categories = categories$texts()[
+                  1:length(categories$texts()) %% 2 == 0
+                ]
+              )
+            } else {
+              prompt_category(
+                text = "",
+                research_background = research_background(),
+                categories = categories$texts()
+              )
+            }
+          },
+          "Onderwerpextractie" = {
+            # Approximate categories (as they are not known yet; assume a long list of 50)
+            prompt_multi_category(
               text = "",
               research_background = research_background(),
-              categories = categories,
-              exclusive_categories = categories[1:length(categories) %% 2 == 0]
+              categories = paste0("Category ", seq(1, 50)),
+              exclusive_categories = paste0("Category ", seq(2, 50, by = 2))
             )
-          } else {
-            prompt <- prompt_category(
+          },
+          "Scoren" = {
+            req(scoring_characteristic())
+            prompt_score(
               text = "",
               research_background = research_background(),
-              categories = categories
+              scoring_characteristic = scoring_characteristic()
             )
-          }
-        }
-
-        if (mode() %in% c("Scoren")) {
-          req(scoring_characteristic())
-
-          prompt <- prompt_score(
-            text = "",
-            research_background = research_background(),
-            scoring_characteristic = scoring_characteristic()
-          )
-        }
+          },
+          NULL
+        )
 
         if (!is.null(prompt)) {
-          rv$n_char_base_prompt <-
-            prompt |> tidyprompt::construct_prompt_text() |> nchar()
+          rv$base_prompt_text <- prompt |> tidyprompt::construct_prompt_text()
         } else {
-          rv$n_char_base_prompt <- NULL
+          rv$base_prompt_text <- NULL
         }
       })
 
       #### Check if longest text + base prompt fit ####
-      # (for categorizing, scoring)
       observe({
         req(mode() %in% c("Categorisatie", "Scoren", "Onderwerpextractie"))
         req(texts$preprocessed)
-        req(rv$n_char_base_prompt)
+        req(rv$base_prompt_text)
 
         texts <- texts$preprocessed
+        base_prompt_text <- rv$base_prompt_text
 
         # Check if the longest text + base prompt fits in the context window
         # Ensure only one longest text is selected
-        longest_text <- texts[which.max(nchar(texts))]
-        total_length <- nchar(longest_text) + rv$n_char_base_prompt
+        longest_text <- texts[which.max(count_tokens(texts))]
+        total_length <- count_tokens(longest_text) +
+          count_tokens(base_prompt_text)
 
-        if (total_length > (rv$n_tokens_context_window * 4)) {
+        mode <- mode()
+
+        if (total_length > (rv$n_tokens_context_window)) {
           rv$fit_context_window_assigning <- FALSE
         } else {
           rv$fit_context_window_assigning <- TRUE
@@ -320,14 +327,19 @@ context_window_server <- function(
         texts <- texts$preprocessed
 
         # Based on prompt for candidate topic generation; 600 characters + background
-        n_char_base_prompt <- 600 + nchar(research_background())
+        base_prompt_text <- prompt_candidate_topics(
+          text_chunk = c(""),
+          research_background = research_background(),
+          language = lang()$get_translation_language()
+        ) |>
+          tidyprompt::construct_prompt_text()
 
         rv$text_chunks <- create_text_chunks(
           texts = texts,
           chunk_size = rv$chunk_size,
           draws = rv$draws,
           n_tokens_context_window = rv$n_tokens_context_window,
-          n_char_base_prompt = n_char_base_prompt
+          base_prompt_text = base_prompt_text
         )
 
         if (is.null(rv$text_chunks)) {
@@ -438,7 +450,7 @@ context_window_server <- function(
       output$fit_context_window_warning <- renderUI({
         req(length(texts$preprocessed) > 0)
         req(
-          (!is.null(rv$n_char_base_prompt) |
+          (!is.null(rv$base_prompt_text) |
             isTRUE(mode() == "Onderwerpextractie"))
         )
 
@@ -496,7 +508,7 @@ context_window_server <- function(
 #' @param chunk_size Maximum number of texts in a chunk
 #' @param draws Number of times each text can be drawn into a chunk
 #' @param n_tokens_context_window Number of tokens in the context window of the LLM
-#' @param n_char_base_prompt Number of characters in the base prompt
+#' @param base_prompt_text Text of the base prompt to be used for candidate topic generation
 #'
 #' @return A list of text chunks, where each chunk is a vector of texts.
 #' @export
@@ -505,7 +517,7 @@ create_text_chunks <- function(
   chunk_size = 50,
   draws = 1, # new parameter: maximum number of times each text can be used,
   n_tokens_context_window = 2056,
-  n_char_base_prompt = 600
+  base_prompt_text = ""
 ) {
   stopifnot(
     is.character(texts),
@@ -516,15 +528,15 @@ create_text_chunks <- function(
     draws > 0,
     is.numeric(n_tokens_context_window),
     n_tokens_context_window > 0,
-    is.numeric(n_char_base_prompt),
-    n_char_base_prompt > 0
+    is.character(base_prompt_text),
+    length(base_prompt_text) == 1
   )
 
-  n_char_context_window <- n_tokens_context_window * 4
-  allowed_chars <- n_char_context_window - n_char_base_prompt
+  n_tokens_base_prompt <- count_tokens(base_prompt_text)
+  allowed_tokens <- n_tokens_context_window - n_tokens_base_prompt
 
-  # First check that each individual text does not exceed allowed_chars
-  if (any(nchar(texts) > allowed_chars)) {
+  # First check that each individual text does not exceed allowed_tokens
+  if (any(count_tokens(texts) > allowed_tokens)) {
     # warning("One or more texts exceed the maximum allowed characters")
     return(NULL)
   }
@@ -537,17 +549,15 @@ create_text_chunks <- function(
 
   chunks <- list()
   current_chunk <- character(0)
-  # current_total stores the effective character count (includes an extra 1 for each subsequent text added)
+  # current_total stores the effective token count for the current chunk
   current_total <- 0
 
   for (txt in texts) {
-    # For texts that fit, consider whether to add to the current chunk or start a new one.
-    # additional_cost is 1 if the current chunk is non-empty (to account for a newline)
-    additional_cost <- if (length(current_chunk) > 0) 1 else 0
-    new_total <- current_total + additional_cost + nchar(txt)
+    txt_tokens <- count_tokens(txt)
+    new_total <- current_total + txt_tokens
 
-    # If adding the new text does not exceed allowed_chars and chunk size, append it.
-    if ((new_total <= allowed_chars) && (length(current_chunk) < chunk_size)) {
+    # If adding the new text does not exceed allowed_tokens and chunk size, append it.
+    if ((new_total <= allowed_tokens) && (length(current_chunk) < chunk_size)) {
       current_chunk <- c(current_chunk, txt)
       current_total <- new_total
     } else {
@@ -556,7 +566,7 @@ create_text_chunks <- function(
         chunks <- c(chunks, list(current_chunk))
       }
       current_chunk <- c(txt)
-      current_total <- nchar(txt)
+      current_total <- txt_tokens
     }
   }
 

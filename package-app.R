@@ -162,6 +162,10 @@ if (getOption("anonymization__gliner_test", FALSE)) {
   invisible(gliner_load_model(test_model = TRUE))
 }
 
+if (!getOption("shiny.testmode", FALSE)) {
+  try(tiktoken_load_tokenizer())
+}
+
 
 #### 3 Run app ####
 

@@ -143,63 +143,11 @@ create_candidate_topics <- function(
     # (A chunk is a vector of texts)
     # Create a prompt for the chunk; present texts to LLM,
     # ask to return a list of potential topics
-
-    chunk_formatted <- purrr::map_chr(seq_along(chunk), function(i) {
-      paste0("<text ", i, ">\n", chunk[[i]], "\n</text ", i, ">")
-    })
-
-    base <- "Your task is to distill a list of topics from the following texts: "
-    if (research_background != "") {
-      base <- paste0(
-        "We have obtained texts during a research.\n\nBackground information about the research:\n",
-        research_background,
-        "\n\n",
-        base
-      )
-    }
-
-    prompt <- base |>
-      tidyprompt::add_text(paste(chunk_formatted, collapse = "\n\n")) |>
-      tidyprompt::add_text(
-        "Topics should not be too specific, but also not too general."
-      ) |>
-      tidyprompt::add_text(
-        "For example, 'food' is too general, but 'lemon cake' might be too specific.",
-        sep = "\n"
-      ) |>
-      tidyprompt::add_text(
-        "A topic does not need to be present in multiple documents.",
-        sep = "\n"
-      ) |>
-      tidyprompt::add_text(
-        "Create separate topics when the same topic is mentioned but with a different sentiment.",
-        sep = "\n"
-      )
-
-    if (language == "nl") {
-      prompt <- prompt |>
-        tidyprompt::add_text(
-          "Please list the topics in Dutch.",
-          sep = "\n"
-        )
-    }
-
-    prompt <- prompt |>
-      tidyprompt::answer_as_json(
-        schema = list(
-          type = "object",
-          properties = list(
-            topics = list(
-              type = "array",
-              items = list(
-                type = "string"
-              )
-            )
-          ),
-          required = list("topics")
-        ),
-        type = "auto"
-      )
+    prompt <- prompt_candidate_topics(
+      text_chunk = chunk,
+      research_background = research_background,
+      language = language
+    )
 
     result <- send_prompt_with_retries(prompt, llm_provider)
 
@@ -209,6 +157,73 @@ create_candidate_topics <- function(
   candidate_topics <- candidate_topics |> purrr::flatten_chr()
 
   return(candidate_topics)
+}
+
+prompt_candidate_topics <- function(
+  text_chunk,
+  research_background = "",
+  language = c("nl", "en")
+) {
+  language <- match.arg(language)
+
+  chunk_formatted <- purrr::map_chr(seq_along(text_chunk), function(i) {
+    paste0("<text ", i, ">\n", text_chunk[[i]], "\n</text ", i, ">")
+  })
+
+  base <- "Your task is to distill a list of topics from the following texts: "
+  if (research_background != "") {
+    base <- paste0(
+      "We have obtained texts during a research.\n\nBackground information about the research:\n",
+      research_background,
+      "\n\n",
+      base
+    )
+  }
+
+  prompt <- base |>
+    tidyprompt::add_text(paste(chunk_formatted, collapse = "\n\n")) |>
+    tidyprompt::add_text(
+      "Topics should not be too specific, but also not too general."
+    ) |>
+    tidyprompt::add_text(
+      "For example, 'food' is too general, but 'lemon cake' might be too specific.",
+      sep = "\n"
+    ) |>
+    tidyprompt::add_text(
+      "A topic does not need to be present in multiple documents.",
+      sep = "\n"
+    ) |>
+    tidyprompt::add_text(
+      "Create separate topics when the same topic is mentioned but with a different sentiment.",
+      sep = "\n"
+    )
+
+  if (language == "nl") {
+    prompt <- prompt |>
+      tidyprompt::add_text(
+        "Please list the topics in Dutch.",
+        sep = "\n"
+      )
+  }
+
+  prompt <- prompt |>
+    tidyprompt::answer_as_json(
+      schema = list(
+        type = "object",
+        properties = list(
+          topics = list(
+            type = "array",
+            items = list(
+              type = "string"
+            )
+          )
+        ),
+        required = list("topics")
+      ),
+      type = "auto"
+    )
+
+  return(prompt)
 }
 
 

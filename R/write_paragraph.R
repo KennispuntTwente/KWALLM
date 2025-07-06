@@ -116,9 +116,9 @@ write_paragraph <- function(
     2048,
     n_tokens_context_window
   )
-  n_char_prompt <- prompt$construct_prompt_text() |> nchar()
+  n_tokens_prompt <- prompt$construct_prompt_text() |> count_tokens()
   prompt_fits <- TRUE
-  if (isTRUE(n_char_prompt > (n_tokens_context_window * 4))) {
+  if (isTRUE(n_tokens_prompt > n_tokens_context_window)) {
     prompt_fits <- FALSE
   }
 
