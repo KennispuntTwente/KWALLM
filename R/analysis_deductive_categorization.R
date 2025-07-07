@@ -410,9 +410,15 @@ categories_server <- function(
           ))
         }
         isEditing(FALSE)
+        # Disable + & - buttons when not editing
+        shinyjs::disable("addCategory")
+        shinyjs::enable("removeCategory")
       } else {
         # ----> EDIT
         isEditing(TRUE)
+        # Enable + & - buttons when editing
+        shinyjs::enable("addCategory")
+        shinyjs::enable("removeCategory")
       }
     })
 
