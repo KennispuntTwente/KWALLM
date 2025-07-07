@@ -200,9 +200,11 @@ marking_codes_server <- function(
         }
       })
       if (!isEditing()) {
-        shinyjs::disable(c("addCode", "removeCode"))
-      } else if (!processing()) {
-        shinyjs::enable(c("addCode", "removeCode"))
+        shinyjs::disable("addCode")
+        shinyjs::disable("removeCode")
+      } else {
+        shinyjs::enable("addCode")
+        shinyjs::enable("removeCode")
       }
     }
 
@@ -407,7 +409,7 @@ marking_codes_server <- function(
       txt_in_fields(codes)
 
       # Update all text areas with generated codes
-      lapply(seq_len(n_fields()), function(i) {
+      lapply(seq_len(isolate(n_fields())), function(i) {
         shiny::updateTextAreaInput(
           session,
           paste0("code", i),
