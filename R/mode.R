@@ -83,7 +83,10 @@ mode_server <- function(
               "Het model zal per opgegeven code de relevante delen bij in teksten markeren. Bijvoorbeeld, bij code 'kleur' zou het model 'geel' markeren in de tekst 'de zon is geel'."
             ),
             lang()$t(
-              " (Let op: deze modus is nog in ontwikkeling. Je krijgt voorlopig alleen een databestand met de gemarkeerde teksten terug. De modus kan nog bugs bevatten.)"
+              " Deze modus is met name bedoeld voor langere teksten, zoals interviews. (Het is bij deze modus niet nodig om teksten gesplitst te hebben naar kleinere stukken; dat gebeurt automatisch.)"
+            ),
+            lang()$t(
+              " (Let op: deze modus is nog in ontwikkeling, en kan nog bugs bevatten. Je krijgt voorlopig alleen een databestand met de gemarkeerde teksten.)"
             )
           )
         )
