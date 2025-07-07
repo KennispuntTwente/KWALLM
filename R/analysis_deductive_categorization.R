@@ -436,9 +436,11 @@ categories_server <- function(
         }
       })
       if (!isEditing()) {
-        shinyjs::disable(c("addCategory", "removeCategory"))
+        shinyjs::disable("addCategory")
+        shinyjs::disable("removeCategory")
       } else if (!processing()) {
-        shinyjs::enable(c("addCategory", "removeCategory"))
+        shinyjs::enable("addCategory")
+        shinyjs::enable("removeCategory")
       }
     }
 
