@@ -470,6 +470,7 @@ processing_server <- function(
           globals = list(
             send_prompt_with_retries = send_prompt_with_retries,
             create_candidate_topics = create_candidate_topics,
+            prompt_candidate_topics = prompt_candidate_topics,
             reduce_topics = reduce_topics,
             prompt_category = prompt_category,
             prompt_multi_category = prompt_multi_category,
@@ -763,6 +764,7 @@ processing_server <- function(
             topics = topics(),
             send_prompt_with_retries = send_prompt_with_retries,
             create_candidate_topics = create_candidate_topics,
+            prompt_candidate_topics = prompt_candidate_topics,
             reduce_topics = reduce_topics,
             prompt_category = prompt_category,
             prompt_multi_category = prompt_multi_category,
