@@ -35,6 +35,15 @@ context_window_server <- function(
     unique_non_empty_count = reactiveVal(3)
   ),
   scoring_characteristic = reactiveVal("positive sentiment"),
+  codes = list(
+    texts = reactiveVal(c(
+      "positive",
+      "negative",
+      "neutral"
+    )),
+    editing = reactiveVal(FALSE),
+    unique_non_empty_count = reactiveVal(3)
+  ),
   research_background = reactiveVal(
     "We have collected consumer reviews of our product."
   ),
@@ -282,6 +291,18 @@ context_window_server <- function(
               scoring_characteristic = scoring_characteristic()
             )
           },
+          "Markeren" = {
+            req(codes$texts())
+            longest_code <- codes$texts()[
+              which.max(count_tokens(codes$texts()))
+            ]
+
+            mark_text_prompt(
+              text = "",
+              code = longest_code,
+              research_background = research_background()
+            )
+          },
           NULL
         )
 
@@ -294,7 +315,10 @@ context_window_server <- function(
 
       #### Check if longest text + base prompt fit ####
       observe({
-        req(mode() %in% c("Categorisatie", "Scoren", "Onderwerpextractie"))
+        req(
+          mode() %in%
+            c("Categorisatie", "Scoren", "Onderwerpextractie", "Markeren")
+        )
         req(texts$preprocessed)
         req(rv$base_prompt_text)
 
@@ -370,7 +394,7 @@ context_window_server <- function(
           }
         }
 
-        if (isTRUE(mode() %in% c("Categorisatie", "Scoren"))) {
+        if (isTRUE(mode() %in% c("Categorisatie", "Scoren", "Markeren"))) {
           if (isFALSE(rv$fit_context_window_assigning)) {
             rv$any_fit_problem <- TRUE
           } else {
@@ -381,7 +405,10 @@ context_window_server <- function(
 
       #### Show inputs (context window, chunking parameters), based on mode ####
       output$context_window_ui <- renderUI({
-        req(mode() %in% c("Categorisatie", "Scoren", "Onderwerpextractie"))
+        req(
+          mode() %in%
+            c("Categorisatie", "Scoren", "Onderwerpextractie", "Markeren")
+        )
         return(div(
           class = "d-flex flex-column align-items-center",
           numericInput(

@@ -181,6 +181,7 @@ main_server <- function(
             mode_ui("mode"),
             categories_ui("categories"),
             score_ui("scoring"),
+            marking_codes_ui("marking_codes"),
             llm_provider_ui("llm_provider"),
             model_ui("model"),
             context_window_ui("context_window"),
@@ -265,6 +266,7 @@ main_server <- function(
       models = models,
       categories = categories,
       scoring_characteristic = scoring_characteristic,
+      codes = marking_codes,
       research_background = research_background,
       assign_multiple_categories = assign_multiple_categories_toggle,
       texts = texts,
@@ -295,8 +297,9 @@ main_server <- function(
     # Obtain toggle for interrater reliability
     interrater_reliability_toggle <- interrater_toggle_server(
       "interrater_toggle",
-      processing,
-      lang
+      processing = processing,
+      mode = mode,
+      lang = lang
     )
 
     # Obtain toggle for human-in-the-loop
@@ -337,18 +340,26 @@ main_server <- function(
     )
     scoring_characteristic <- score_server("scoring", mode, processing, lang)
 
+    marking_codes <- marking_codes_server(
+      "marking_codes",
+      mode = mode,
+      processing = processing,
+      lang = lang
+    )
+
     #### 5 Processing ####
 
     processing <- processing_server(
-      "processing",
-      mode,
-      interrater_reliability_toggle,
-      texts,
+      id = "processing",
+      mode = mode,
+      interrater_reliability_toggle = interrater_reliability_toggle,
+      texts = texts,
       llm_provider_rv = llm_provider_rv,
-      models,
-      categories,
-      scoring_characteristic,
-      research_background,
+      models = models,
+      categories = categories,
+      scoring_characteristic = scoring_characteristic,
+      codes = marking_codes,
+      research_background = research_background,
       human_in_the_loop = human_in_the_loop_toggle,
       assign_multiple_categories = assign_multiple_categories_toggle,
       write_paragraphs = write_paragraphs_toggle,

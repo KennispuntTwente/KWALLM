@@ -34,6 +34,7 @@ processing_server <- function(
   models,
   categories,
   scoring_characteristic,
+  codes,
   research_background,
   human_in_the_loop = reactiveVal(TRUE),
   assign_multiple_categories = reactiveVal(TRUE),
@@ -796,6 +797,114 @@ processing_server <- function(
         print("Started async processing for topic modelling (step 3-4)")
       })
 
+      ###### Markeren #####
+
+      codes_are_valid <- function() {
+        # User must be done editing codes
+        if (codes$editing()) {
+          shiny::showNotification(
+            lang()$t(
+              "Je moet eerst de codes opslaan voordat je verder kunt gaan."
+            ),
+            type = "error"
+          )
+          return(FALSE)
+        }
+
+        # User must have at least 1 non-empty code
+        if (codes$unique_non_empty_count() < 1) {
+          shiny::showNotification(
+            lang()$t("Je moet minimaal 1 code opgeven."),
+            type = "error"
+          )
+          return(FALSE)
+        }
+
+        # Codes must not be duplicated
+        if (length(unique(codes$texts())) < length(codes$texts())) {
+          shiny::showNotification(
+            lang()$t("Codes moeten uniek zijn."),
+            type = "error"
+          )
+          return(FALSE)
+        }
+
+        return(TRUE)
+      }
+
+      # Listen for process button click when in marking mode
+      # Launch processing
+      observeEvent(input$process, {
+        if (processing()) return()
+        req(texts$preprocessed)
+        if (!mode() %in% c("Markeren")) return()
+        if (!number_of_texts_under_maximum()) return()
+        if (!codes_are_valid()) return()
+        req(isFALSE(context_window$any_fit_problem))
+
+        # Set processing state
+        processing(TRUE)
+        # Set initial progress
+        progress_primary$set_with_total(0, length(texts$preprocessed), "...")
+
+        # Set model
+        llm_provider <- llm_provider_rv$llm_provider$clone()
+        llm_provider$parameters$model <- models$main
+        # Disable button
+        shinyjs::disable("process")
+        shinyjs::addClass("process", "loading")
+
+        future_promise(
+          {
+            mark_texts(
+              texts = texts,
+              codes = codes,
+              research_background = "",
+              llm_provider = llm_provider,
+              progress_primary = progress_primary,
+              progress_secondary = progress_secondary,
+              interrupter = interrupter
+            )
+          },
+          globals = list(
+            llm_provider = llm_provider,
+            texts = texts$preprocessed,
+            research_background = research_background(),
+            codes = codes$texts(),
+            mark_texts = mark_texts,
+            mark_text_prompt = mark_text_prompt,
+            get_context_window_size_in_tokens = get_context_window_size_in_tokens,
+            lang = lang(),
+            semchunk_load_chunker = semchunk_load_chunker,
+            count_tokens = count_tokens,
+            send_prompt_with_retries = send_prompt_with_retries,
+            progress_primary = progress_primary$async,
+            progress_secondary = progress_secondary$async,
+            interrupter = interrupter
+          ),
+          packages = c(
+            "tidyprompt",
+            "glue",
+            "rlang",
+            "stringr",
+            "dplyr",
+            "purrr"
+          ),
+          seed = NULL
+        ) %...>%
+          results_df() %...!%
+          {
+            app_error(
+              .,
+              when = "main processing of marking",
+              fatal = TRUE,
+              lang = lang()
+            )
+          }
+
+        NULL # Avoid blocking the app with the promise
+      })
+
       #### Post-processing: interrater-reliability, download files ####
 
       # Listen for processing completion
@@ -923,37 +1032,80 @@ processing_server <- function(
             {
               # Generate files
               excel_file <- create_result_excel(result_list)
-              rmarkdown <- create_result_rmarkdown(result_list)
+
+              if (
+                mode %in%
+                  c(
+                    "Categorisatie",
+                    "Scoren",
+                    "Onderwerpextractie"
+                  )
+              ) {
+                rmarkdown <- create_result_rmarkdown(result_list)
+              }
 
               # Check if all files exist, if not,
               #   wait up to 10s
               #   and then throw an error
               for (i in 1:10) {
-                if (file.exists(excel_file) && file.exists(rmarkdown)) {
-                  break
+                if (
+                  mode %in%
+                    c(
+                      "Categorisatie",
+                      "Scoren",
+                      "Onderwerpextractie"
+                    )
+                ) {
+                  if (file.exists(excel_file) && file.exists(rmarkdown)) {
+                    break
+                  }
+                } else {
+                  if (file.exists(excel_file)) {
+                    break
+                  }
                 }
                 Sys.sleep(1)
               }
-              if (!file.exists(rmarkdown)) {
-                stop("Rmarkdown file not found, no error available")
-              }
+
               if (!file.exists(excel_file)) {
                 stop("Excel file not found, no error available")
-              }
-
-              # If rmarkdown or excel_file are .txt (i.e., error files),
-              #   throw an error with their contents
-              if (grepl("\\.txt$", rmarkdown)) {
-                stop(paste0(
-                  "Rmarkdown file generation error: ",
-                  readLines(rmarkdown)
-                ))
               }
               if (grepl("\\.txt$", excel_file)) {
                 stop(paste0(
                   "Excel file generation error: ",
                   readLines(excel_file)
                 ))
+              }
+
+              if (
+                mode %in%
+                  c(
+                    "Categorisatie",
+                    "Scoren",
+                    "Onderwerpextractie"
+                  )
+              ) {
+                if (!file.exists(rmarkdown)) {
+                  stop("Rmarkdown file not found, no error available")
+                }
+                if (grepl("\\.txt$", rmarkdown)) {
+                  stop(paste0(
+                    "Rmarkdown file generation error: ",
+                    readLines(rmarkdown)
+                  ))
+                }
+              }
+
+              files <- c(excel_file)
+              if (
+                mode %in%
+                  c(
+                    "Categorisatie",
+                    "Scoren",
+                    "Onderwerpextractie"
+                  )
+              ) {
+                files <- c(files, rmarkdown)
               }
 
               # Zip them
@@ -963,12 +1115,13 @@ processing_server <- function(
               )
               zip::zipr(
                 zipfile = zip_path,
-                files = c(excel_file, rmarkdown),
+                files = files,
                 root = dirname(excel_file)
               )
               zip_path
             },
             globals = list(
+              mode = mode(),
               create_result_excel = create_result_excel,
               create_result_rmarkdown = create_result_rmarkdown,
               result_list = result_list,
