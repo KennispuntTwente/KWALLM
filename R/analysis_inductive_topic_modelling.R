@@ -290,7 +290,8 @@ reduce_topics <- function(
     TRUE
   ),
   max_iterations = 4,
-  max_groups = 16
+  max_groups = 16,
+  interrupter = NULL
 ) {
   language <- match.arg(language)
   desired_number_type <- match.arg(desired_number_type)
@@ -479,6 +480,10 @@ reduce_topics <- function(
         max_iterations,
         " reductions. Consider increasing max_iterations or decreasing 'candidate_topics'."
       )
+    }
+
+    if (!is.null(interrupter)) {
+      interrupter$execInterrupts()
     }
 
     chunks <- split_into_chunks(current_topics)

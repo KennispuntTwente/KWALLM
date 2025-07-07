@@ -1156,6 +1156,30 @@
       {
         "nl": "Geef beknopte, duidelijke omschrijvingen (met optioneel voorbeelden van teksten die bij de code zouden moeten horen).",
         "en": "Provide concise, clear descriptions (optionally with examples of texts that should belong to the code)."
+      },
+      {
+        "nl": "Geen teksten beschikbaar om codes voor te genereren",
+        "en": "No texts available to generate codes for"
+      },
+      {
+        "nl": " Geef beknopte, duidelijke omschrijvingen (met optioneel voorbeelden van teksten die bij de code zouden moeten horen).",
+        "en": " Provide concise, clear descriptions (optionally with examples of texts that should belong to the code)."
+      },
+      {
+        "nl": "Genereer mogelijke codes door het taalmodel alle teksten te laten lezen.",
+        "en": "Generate possible codes by having the language model read all texts."
+      },
+      {
+        "nl": " (Let op, dit kan even duren, afhankelijk van het aantal teksten en de snelheid van het taalmodel dat je gebruikt.)",
+        "en": " (Note, this may take a while, depending on the number of texts and the speed of the language model you are using.)"
+      },
+      {
+        "nl": "Genereer codes",
+        "en": "Generate codes"
+      },
+      {
+        "nl": "Codes genereren...",
+        "en": "Generating codes..."
       }
     ]
 }

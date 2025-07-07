@@ -341,9 +341,14 @@ main_server <- function(
     scoring_characteristic <- score_server("scoring", mode, processing, lang)
 
     marking_codes <- marking_codes_server(
-      "marking_codes",
+      id = "marking_codes",
       mode = mode,
       processing = processing,
+      texts = texts,
+      research_background = research_background,
+      context_window = context_window,
+      llm_provider_rv = llm_provider_rv,
+      models = models,
       lang = lang
     )
 
