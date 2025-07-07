@@ -97,8 +97,7 @@ marking_codes_server <- function(
                 lang()$t(
                   " Geef beknopte, duidelijke omschrijvingen (met optioneel voorbeelden van teksten die bij de code zouden moeten horen)."
                 )
-              ),
-              class = "mb-2 text-center"
+              )
             ),
             div(
               class = "category-button-container",
