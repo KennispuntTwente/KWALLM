@@ -12,7 +12,12 @@ mark_texts <- function(
   llm_provider = tidyprompt::llm_provider_openai(),
   progress_primary = NULL,
   progress_secondary = NULL,
-  interrupter = NULL
+  interrupter = NULL,
+  lang = reactiveVal(
+    shiny.i18n::Translator$new(
+      translation_json_path = "language/language.json"
+    )
+  )
 ) {
   stopifnot(
     is.character(texts),
@@ -26,7 +31,7 @@ mark_texts <- function(
   try(progress_primary$set_with_total(
     1,
     3,
-    "Splitting texts..."
+    lang$t("Teksten splitsen...")
   ))
 
   # Load chunker
@@ -82,7 +87,9 @@ mark_texts <- function(
     progress_primary$set_with_total(
       2,
       3,
-      "Marking texts..."
+      lang$t(
+        "Teksten markeren..."
+      )
     )
     progress_secondary$show()
     progress_secondary$set_with_total(
@@ -100,7 +107,11 @@ mark_texts <- function(
           progress_secondary$set_with_total(
             current_count,
             total_combinations,
-            paste0("Marking text for code '", cd, "'...")
+            paste0(
+              lang$t("Tekst markeren voor code '"),
+              cd,
+              "'..."
+            )
           )
         })
 
@@ -125,7 +136,9 @@ mark_texts <- function(
     progress_primary$set_with_total(
       2.5,
       3,
-      "Formatting results..."
+      lang$t(
+        "Resultaten opschonen..."
+      )
     )
   })
 

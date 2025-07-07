@@ -863,7 +863,8 @@ processing_server <- function(
               llm_provider = llm_provider,
               progress_primary = progress_primary,
               progress_secondary = progress_secondary,
-              interrupter = interrupter
+              interrupter = interrupter,
+              lang = lang
             )
           },
           globals = list(

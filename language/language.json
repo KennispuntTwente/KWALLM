@@ -1180,6 +1180,22 @@
       {
         "nl": "Codes genereren...",
         "en": "Generating codes..."
+      },
+      {
+        "nl": "Teksten splitsen...",
+        "en": "Splitting texts..."
+      },
+      {
+        "nl": "Teksten markeren...",
+        "en": "Marking texts..."
+      },
+      {
+        "nl": "Tekst markeren voor code '",
+        "en": "Marking text for code '"
+      },
+      {
+        "nl": "Resultaten opschonen...",
+        "en": "Cleaning up results..."
       }
     ]
 }
