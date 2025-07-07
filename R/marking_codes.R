@@ -34,7 +34,8 @@ marking_codes_server <- function(
     shiny::exportTestValues(
       n_fields = n_fields(),
       txt_in_fields = txt_in_fields(),
-      isEditing = isEditing()
+      isEditing = isEditing(),
+      generated_codes = generated_codes()
     )
 
     ## UI ---------------------------------------------------------------
