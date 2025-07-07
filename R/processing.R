@@ -869,7 +869,8 @@ processing_server <- function(
               progress_primary = progress_primary,
               progress_secondary = progress_secondary,
               interrupter = interrupter,
-              lang = lang
+              lang = lang,
+              write_paragraphs = write_paragraphs,
             )
           },
           globals = list(
@@ -886,7 +887,9 @@ processing_server <- function(
             send_prompt_with_retries = send_prompt_with_retries,
             progress_primary = progress_primary$async,
             progress_secondary = progress_secondary$async,
-            interrupter = interrupter
+            interrupter = interrupter,
+            write_paragraph = write_paragraph,
+            write_paragraphs = write_paragraphs()
           ),
           packages = c(
             "tidyprompt",
@@ -1044,7 +1047,8 @@ processing_server <- function(
                   c(
                     "Categorisatie",
                     "Scoren",
-                    "Onderwerpextractie"
+                    "Onderwerpextractie",
+                    "Markeren"
                   )
               ) {
                 rmarkdown <- create_result_rmarkdown(result_list)
@@ -1059,7 +1063,8 @@ processing_server <- function(
                     c(
                       "Categorisatie",
                       "Scoren",
-                      "Onderwerpextractie"
+                      "Onderwerpextractie",
+                      "Markeren"
                     )
                 ) {
                   if (file.exists(excel_file) && file.exists(rmarkdown)) {
@@ -1088,7 +1093,8 @@ processing_server <- function(
                   c(
                     "Categorisatie",
                     "Scoren",
-                    "Onderwerpextractie"
+                    "Onderwerpextractie",
+                    "Markeren"
                   )
               ) {
                 if (!file.exists(rmarkdown)) {
@@ -1108,7 +1114,8 @@ processing_server <- function(
                   c(
                     "Categorisatie",
                     "Scoren",
-                    "Onderwerpextractie"
+                    "Onderwerpextractie",
+                    "Markeren"
                   )
               ) {
                 files <- c(files, rmarkdown)
@@ -1330,6 +1337,18 @@ processing_server <- function(
             )
           )
           result_list$chunking_parameters <- chunking_parameters
+        }
+
+        if (mode() == "Markeren") {
+          result_list$model <- models$main
+          result_list$codes <- codes$texts()
+          result_list$write_paragraphs <- write_paragraphs()
+          result_list$prompt <- mark_text_prompt(
+            text = lang()$t("<< TEKST >>"),
+            research_background = research_background(),
+            code = "<< CODE >>"
+          ) |>
+            tidyprompt::construct_prompt_text()
         }
 
         # Transfer paragraphs if present as attribute

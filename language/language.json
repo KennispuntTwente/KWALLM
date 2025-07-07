@@ -1198,12 +1198,12 @@
         "en": "Cleaning up results..."
       },
       {
-        "nl": " Deze modus is met name bedoeld voor langere teksten, zoals interviews. (Het is bij deze modus niet nodig om teksten gesplitst te hebben naar kleinere stukken; dat gebeurt automatisch.)",
-        "en": " This mode is particularly intended for longer texts, such as interviews. (It is not necessary to have split texts into smaller pieces in this mode; that happens automatically.)"
+        "nl": " Deze modus is met name bedoeld voor langere teksten, zoals interviews. Het is bij deze modus niet nodig om teksten gesplitst te hebben naar kleinere stukken; dat gebeurt automatisch tijdens de analyse.",
+        "en": " This mode is particularly intended for longer texts, such as interviews. It is not necessary to have split texts into smaller pieces in this mode; that happens automatically during the analysis."
       },
       {
-        "nl": " (Let op: deze modus is nog in ontwikkeling, en kan nog bugs bevatten. Je krijgt voorlopig alleen een databestand met de gemarkeerde teksten.)",
-        "en": " (Note: this mode is still under development and may contain bugs. For now, you will only receive a data file with the marked texts.)"
+        "nl": " (Let op: deze modus is nog in ontwikkeling, en kan nog bugs bevatten. De vorm van de rapportage wordt op termijn nog verbeterd.)",
+        "en": " (Note: this mode is still under development and may contain bugs. The format of the report will be improved in the future.)"
       }
     ]
 }

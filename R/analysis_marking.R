@@ -13,11 +13,10 @@ mark_texts <- function(
   progress_primary = NULL,
   progress_secondary = NULL,
   interrupter = NULL,
-  lang = reactiveVal(
-    shiny.i18n::Translator$new(
-      translation_json_path = "language/language.json"
-    )
-  )
+  lang = shiny.i18n::Translator$new(
+    translation_json_path = "language/language.json"
+  ),
+  write_paragraphs = TRUE
 ) {
   stopifnot(
     is.character(texts),
@@ -27,10 +26,15 @@ mark_texts <- function(
     is.vector(codes),
     length(codes) > 0
   )
+  total_steps <- 3
+  if (write_paragraphs) {
+    total_steps <- total_steps + 1
+  }
+
   # Set initial progress
   try(progress_primary$set_with_total(
     1,
-    3,
+    total_steps,
     lang$t("Teksten splitsen...")
   ))
 
@@ -52,19 +56,19 @@ mark_texts <- function(
   # Split texts into semantic chunks, creating additional rows where needed
   df <- df |>
     dplyr::mutate(
-      split_text = purrr::map(text, function(x) {
+      sub_text = purrr::map(text, function(x) {
         # Split text into semantic chunks
         semchunker(x, overlap = overlap_size_tokens)
       })
     ) |>
-    tidyr::unnest(split_text)
+    tidyr::unnest(sub_text)
 
   # Verify that longest text does not exceed token limit
   model <- llm_provider$parameters$model
   n_tokens_context_window <- get_context_window_size_in_tokens(model)
   if (is.null(n_tokens_context_window)) n_tokens_context_window <- 2048
   longest_prompt_tokens <- mark_text_prompt(
-    text = df$split_text[which.max(count_tokens(df$split_text))],
+    text = df$sub_text[which.max(count_tokens(df$sub_text))],
     code = codes[which.max(count_tokens(codes))]
   ) |>
     tidyprompt::construct_prompt_text() |>
@@ -79,14 +83,14 @@ mark_texts <- function(
     ))
   }
 
-  # For each code & split_text, ask LLM to mark relevant sections in the text
-  # Create own row for each text, split_text, code, and marked_text
+  # For each code & sub_text, ask LLM to mark relevant sections in the text
+  # Create own row for each text, sub_text, code, and marked_text
   total_combinations <- nrow(df) * length(codes)
   current_count <- 0
   try({
     progress_primary$set_with_total(
       2,
-      3,
+      total_steps,
       lang$t(
         "Teksten markeren..."
       )
@@ -101,7 +105,7 @@ mark_texts <- function(
   df_result <- df |>
     tidyr::crossing(code = codes) |>
     dplyr::mutate(
-      marked_text = purrr::map2(split_text, code, function(txt, cd) {
+      marked_text = purrr::map2(sub_text, code, function(txt, cd) {
         current_count <<- current_count + 1
         try({
           progress_secondary$set_with_total(
@@ -135,7 +139,7 @@ mark_texts <- function(
     progress_secondary$hide()
     progress_primary$set_with_total(
       2.5,
-      3,
+      total_steps,
       lang$t(
         "Resultaten opschonen..."
       )
@@ -146,20 +150,110 @@ mark_texts <- function(
   # (substring is when overlapped text parts are present in other marked sections;
   # i.e., same text, same code)
   df_result_clean <- df_result |>
-    filter(!is.na(marked_text)) |>
-    group_by(text, code) |>
-    mutate(
+    dplyr::filter(!is.na(marked_text)) |>
+    dplyr::group_by(text, code) |>
+    dplyr::mutate(
       # Normalize for comparison: lowercase, remove punctuation and spaces
-      norm_text = str_remove_all(str_to_lower(marked_text), "[[:punct:]\\s]+"),
-      is_substring = map_lgl(norm_text, function(txt) {
+      norm_text = stringr::str_remove_all(
+        stringr::str_to_lower(marked_text),
+        "[[:punct:]\\s]+"
+      ),
+      is_substring = purrr::map_lgl(norm_text, function(txt) {
         others <- setdiff(norm_text, txt)
-        any(str_detect(others, fixed(txt)))
+        any(stringr::str_detect(others, stringr::fixed(txt)))
       })
     ) |>
-    filter(!is_substring) |>
-    select(-norm_text, -is_substring, -split_text) |>
-    ungroup() |>
+    dplyr::filter(!is_substring) |>
+    dplyr::select(-norm_text, -is_substring) |>
+    dplyr::ungroup() |>
     dplyr::distinct()
+
+  # Write paragraphs if requested
+  if (write_paragraphs) {
+    try({
+      progress_primary$set_with_total(
+        3,
+        total_steps,
+        lang$t("Rapport schrijven...")
+      )
+    })
+
+    # Create list; keys as codes, values as vectors of all sub_texts for that code
+    # Highlight in sub_texts the marked sections (with '**' around them)
+    text_list <- df_result_clean |>
+      dplyr::group_by(code) |>
+      dplyr::summarise(
+        paragraphs = list(
+          purrr::map2_chr(
+            text,
+            marked_text,
+            ~ if (is.na(.y) || .y == "") {
+              .x # keep original text
+            } else {
+              stringr::str_replace_all(
+                .x,
+                stringr::fixed(.y),
+                paste0("**", .y, "**")
+              )
+            }
+          )
+        ),
+        .groups = "drop"
+      ) |>
+      tibble::deframe()
+
+    # Create paragraphs for each code
+    try({
+      progress_secondary$set_with_total(
+        0,
+        length(text_list),
+        "..."
+      )
+      progress_secondary$show()
+    })
+    paragraphs <- purrr::imap(
+      text_list,
+      function(texts, code) {
+        if (!is.null(interrupter)) {
+          interrupter$execInterrupts()
+        }
+
+        try({
+          progress_secondary$set_with_total(
+            progress_secondary$get_current() + 1,
+            length(text_list),
+            paste0(
+              lang$t("Schrijven over '"),
+              code,
+              "'..."
+            )
+          )
+        })
+
+        paragraph <- write_paragraph(
+          texts = texts,
+          topic = code,
+          research_background = research_background,
+          llm_provider = llm_provider,
+          language = lang$get_translation_language(),
+          focus_on_highlighted_text = TRUE
+        )
+
+        return(paragraph)
+      }
+    )
+    try({
+      progress_secondary$hide()
+      progress_primary$set_with_total(
+        3.5,
+        total_steps,
+        lang$t("Afronden...")
+      )
+    })
+
+    # Set paragraphs as an attribute of the result
+    attr(df_result_clean, "paragraphs") <- paragraphs
+  }
 
   return(df_result_clean)
 }
