@@ -157,8 +157,6 @@ mark_texts <- function(
       })
     ) |>
     filter(!is_substring) |>
-    # Clean final text_parts: remove punctuation, keep spaces
-    mutate(marked_text = str_remove_all(marked_text, "[[:punct:]]")) |>
     select(-norm_text, -is_substring, -split_text) |>
     ungroup() |>
     dplyr::distinct()
