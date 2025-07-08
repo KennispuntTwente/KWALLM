@@ -443,7 +443,6 @@ marking_codes_server <- function(
           shinyjs::disable(paste0("code", i))
         })
       } else {
-        shinyjs::enable("generateCodes")
         if (isTRUE(isEditing()) & !isTRUE(processing())) {
           shinyjs::enable("addCode")
           shinyjs::enable("removeCode")
@@ -451,6 +450,7 @@ marking_codes_server <- function(
           lapply(seq_len(n_fields()), function(i) {
             shinyjs::enable(paste0("code", i))
           })
+          shinyjs::enable("generateCodes")
         }
       }
     })
