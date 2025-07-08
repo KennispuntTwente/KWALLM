@@ -211,16 +211,19 @@ mark_texts <- function(
       )
       progress_secondary$show()
     })
+
+    i <- -1
     paragraphs <- purrr::imap(
       text_list,
       function(texts, code) {
+        i <<- i + 1
         if (!is.null(interrupter)) {
           interrupter$execInterrupts()
         }
 
         try({
           progress_secondary$set_with_total(
-            progress_secondary$get_current() + 1,
+            i,
             length(text_list),
             paste0(
               lang$t("Schrijven over '"),
