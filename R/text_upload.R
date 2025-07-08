@@ -68,14 +68,14 @@ text_upload_server <- function(
               class = "d-flex flex-wrap justify-content-center gap-3",
               style = "max-width: 800px;",
 
-              # ---------- File input -----------------------------------------
+              # ---------- File input + checkbox -----------------------------------------
               div(
-                class = "selector-container",
-                style = "max-width: 300px;", # fixed width
+                class = "selector-container d-flex flex-column align-items-center",
+                style = "max-width: 300px;",
                 fileInput(
                   inputId = ns("text_file"),
-                  label = lang()$t("Upload (.txt, .csv, .xlsx, of .sav)"),
-                  accept = c(".txt", ".csv", ".xlsx", ".sav")
+                  label   = lang()$t("Upload (.txt, .csv, .xlsx, of .sav)"),
+                  accept  = c(".txt", ".csv", ".xlsx", ".sav")
                 )
               ),
 
@@ -92,7 +92,9 @@ text_upload_server <- function(
                 class = "selector-container",
                 style = "max-width: 300px; min-height: 100px;", # reserved height
                 uiOutput(ns("column_selector"))
-              )
+              ),
+              # ---- Text mode selector (for .txt files) -------------------
+              uiOutput(ns("txt_mode_ui"))
             )
           )
         )
@@ -139,7 +141,7 @@ text_upload_server <- function(
     })
 
     # ---- File upload --------------------------------------------------------
-    observeEvent(input$text_file, {
+    observe({
       req(input$text_file)
 
       # Reset all state -------------------------------------------------------
@@ -155,14 +157,20 @@ text_upload_server <- function(
       if (file_ext == "txt") {
         tryCatch(
           {
-            txt <- discard_empty(readLines(file_path, encoding = "UTF-8"))
+            # read every line first
+            txt_lines <- readLines(file_path, encoding = "UTF-8")
 
-            # Treat plain-text as a one-column data-frame ----------------------
+            split_lines <- isTRUE(input$txt_split_lines == lang()$t("Ja"))
+
+            txt <- if (split_lines) {
+              discard_empty(txt_lines)
+            } else {
+              paste(txt_lines, collapse = "\n") # combine to single text
+            }
+
             df <- data.frame(text = txt, stringsAsFactors = FALSE)
             uploaded_data(df)
             raw_texts(df$text)
-
-            # No column selector shown → no need to updateSelectInput
           },
           error = function(e) {
             showNotification(
@@ -230,6 +238,27 @@ text_upload_server <- function(
       } else {
         shinyjs::show(ns("column_container"))
       }
+    })
+
+    # ---- Text mode selector (for .txt files) --------------------------------
+    output$txt_mode_ui <- renderUI({
+      req(file_type() == "txt")
+      div(
+        # Toggle for inter-rater reliability
+        p(
+          lang()$t("Splits tekst op nieuwe regels?"),
+          class = "mb-2 text-center"
+        ),
+        div(
+          class = "d-flex justify-content-center w-100",   # add w-100
+          shinyWidgets::radioGroupButtons(
+            ns("txt_split_lines"), NULL,
+            choices = c(lang()$t("Nee"), lang()$t("Ja")),
+            selected = lang()$t("Ja"),
+            size = "sm"
+          )
+        )
+      )
     })
 
     # ---- Sheet selector (Excel only) ---------------------------------------

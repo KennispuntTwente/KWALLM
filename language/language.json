@@ -1208,6 +1208,10 @@
       {
         "nl": "Er is nog geen LLM provider ingesteld",
         "en": "No LLM provider has been set up yet"
+      },
+      {
+        "nl": "Splits tekst op nieuwe regels?",
+        "en": "Split text on new lines?"
       }
     ]
 }
