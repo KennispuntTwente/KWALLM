@@ -264,14 +264,30 @@ for (i in seq_along(rl$paragraphs)) {
   ))
 
   if (!is.null(paragraph$texts)) {
+    # Convert **bold** syntax to <strong>bold</strong>
+    formatted_texts <- lapply(paragraph$texts, function(txt) {
+      # Replace **text** with <strong>text</strong>
+      htmltools::HTML(gsub(
+        "\\*\\*(.*?)\\*\\*",
+        "<span style='font-weight: 900; color: #b30000; background-color: #ffcccc; text-decoration: underline;'>\\1</span>",
+        txt
+      ))
+    })
+  
+    # Create list items
+    list_items <- lapply(formatted_texts, function(txt) {
+      paste0("<li><i>", txt, "</i></li>")
+    })
+  
     acc <- bslib::accordion(
       bslib::accordion_panel(
         title = "View texts",
-        htmltools::HTML(paste0("<ul>", paste0("<li><i>", paragraph$texts, "</i></li>", collapse = ""), "</ul>")),
+        htmltools::HTML(paste0("<ul>", paste0(list_items, collapse = ""), "</ul>"))
       ),
       id = paste0("acc-", i),
       open = FALSE
     )
+    
     output <- append(output, list(acc))
   }
 
