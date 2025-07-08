@@ -13,7 +13,6 @@ on:
 jobs:
   test-app:
     runs-on: ${{ matrix.config.os }}
-
     name: ${{ matrix.config.os }} (${{ matrix.config.r }})
 
     strategy:
@@ -22,28 +21,55 @@ jobs:
         config:
           - {os: ubuntu-latest, r: release}
 
+    # ── Environment ─────────────────────────────────────────────────────
     env:
-      GITHUB_PAT: ${{ secrets.GITHUB_TOKEN }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      GITHUB_PAT:        ${{ secrets.GITHUB_TOKEN }}
+      OPENAI_API_KEY:    ${{ secrets.OPENAI_API_KEY }}
       R_KEEP_PKG_SOURCE: yes
+      IS_DOCKER: "true" # tells Python-loading functions to look for venv in /opt/py-venv
 
     steps:
+      # 1 source code ---------------------------------------------------
       - uses: actions/checkout@v2
 
-      - uses: r-lib/actions/setup-pandoc@v2
+      # 2 Python + ready-made virtual-env -------------------------------
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
 
+      # cache py-venv
+      - name: Cache pre-built py-venv
+        id: cache-py-venv
+        uses: actions/cache@v4
+        with:
+          path: /opt/py-venv
+          key: ${{ runner.os }}-py-venv-v1
+
+      # only runs if the cache is cold
+      - name: Create / update /opt/py-venv
+        if: steps.cache-py-venv.outputs.cache-hit != 'true'
+        run: |
+          sudo python -m venv /opt/py-venv
+          source /opt/py-venv/bin/activate
+          pip install --upgrade pip
+          # install anything the R helper may try to pull in
+          pip install semchunk tiktoken transformers
+
+      # 3 R toolchain ---------------------------------------------------
+      - uses: r-lib/actions/setup-pandoc@v2
       - uses: r-lib/actions/setup-r@v2
         with:
           r-version: ${{ matrix.config.r }}
           use-public-rspm: true
-
       - uses: r-lib/actions/setup-renv@v2
 
+      # 4 system deps for shinytest2 -----------------------------------
       - name: Install Chromium
         run: |
           sudo apt-get update
           sudo apt-get install -y chromium-browser
 
+      # 5 run the tests -------------------------------------------------
       - uses: rstudio/shinytest2/actions/test-app@actions/v1
         with:
           app-dir: "."
