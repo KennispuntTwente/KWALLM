@@ -178,26 +178,36 @@ mark_texts <- function(
       )
     })
 
-    # Create list; keys as codes, values as vectors of all sub_texts for that code
-    # Highlight in sub_texts the marked sections (with '**' around them)
-    text_list <- df_result_clean |>
-      dplyr::group_by(code) |>
+    # Collect the marked snippets for each text-code combo;
+    #  this will be used to highlight the marked texts for each original text & code
+    df_highlight <- df_result_clean |>
+      dplyr::group_by(text, code) |>
       dplyr::summarise(
-        paragraphs = list(
-          purrr::map2_chr(
-            text,
-            marked_text,
-            ~ if (is.na(.y) || .y == "") {
-              .x # keep original text
-            } else {
-              stringr::str_replace_all(
-                .x,
-                stringr::fixed(.y),
-                paste0("**", .y, "**")
+        marked_texts = list(unique(na.omit(marked_text))),
+        .groups = "drop"
+      ) |>
+      dplyr::mutate(
+        highlighted_text = purrr::pmap_chr(
+          list(text, marked_texts),
+          function(orig, mlist) {
+            highlighted <- orig
+            for (m in mlist) {
+              highlighted <- stringr::str_replace_all(
+                highlighted,
+                stringr::fixed(m),
+                paste0("**", m, "**")
               )
             }
-          )
-        ),
+            highlighted
+          }
+        )
+      )
+
+    # Create list of code + all relevant original texts with highlighted marked texts
+    text_list <- df_highlight |>
+      dplyr::group_by(code) |>
+      dplyr::summarise(
+        paragraphs = list(highlighted_text),
         .groups = "drop"
       ) |>
       tibble::deframe()
