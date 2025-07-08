@@ -308,6 +308,18 @@ marking_codes_server <- function(
           return()
         }
 
+        # Verify a LLM provider is set
+        if (
+          is.null(llm_provider_rv$llm_provider)
+          | is.null(models$main)
+        ) {
+          shiny::showNotification(
+            lang()$t("Er is nog geen LLM provider ingesteld"),
+            type = "error"
+          )
+          return()
+        }
+
         # Start code generation
         code_generation_in_progress(TRUE)
 

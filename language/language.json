@@ -1204,6 +1204,10 @@
       {
         "nl": " (Let op: deze modus is nog in ontwikkeling, en kan nog bugs bevatten. De vorm van de rapportage wordt op termijn nog verbeterd.)",
         "en": " (Note: this mode is still under development and may contain bugs. The format of the report will be improved in the future.)"
+      },
+      {
+        "nl": "Er is nog geen LLM provider ingesteld",
+        "en": "No LLM provider has been set up yet"
       }
     ]
 }
