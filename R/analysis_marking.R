@@ -6,7 +6,7 @@ mark_texts <- function(
     "for sure! i like cake"
   ),
   codes = c("greeting", "weather"),
-  text_size_tokens = 256,
+  text_size_tokens = 128,
   overlap_size_tokens = 64,
   research_background = "",
   llm_provider = tidyprompt::llm_provider_openai(),
