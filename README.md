@@ -28,7 +28,7 @@ KWALLM is an app (developed with R, Shiny) for (automated) qualitative text anal
   - See [screenshot](example/screenshot_interface_en.png) (or scroll below)
 
 - **Report with results and explanation** of the applied method
-  - See [screenshot](example/usecase/report_with_results_screenshot_en.png) (or scroll below)
+  - See [screenshot](example/usecases/product_reviews/report_with_results_screenshot_en.png) (or scroll below)
 
 ### Additional analysis features
 
@@ -56,11 +56,13 @@ which may improve analysis quality and helps to avoid context window limits
 
 - App interface & results can be set to **English or Dutch**
 
-## Use case
+## Use case & example results
 
 This app can be used to analyze open-ended responses in surveys, categorize texts like tweets or news articles, et cetera.
 
 For example, Kennispunt Twente used the app to analyze open survey responses about improvements for sports venues in municipalities in Twente. With the app, researchers are able to analyze large volumes of text quickly and easily.
+
+Want to see example results? Check out [example/usecases/](example/usecases/) for an example of how the app was applied to product reviews and a focus group discussion.
 
 ## Installation
 
@@ -162,7 +164,7 @@ The name also includes 'kwal' (Dutch for: jellyfish), which is the logo of the a
 ### Report with results (topic modelling)
 
 <div align="center">
-  <img src="example/usecase/report_with_results_screenshot_en.png" alt="Screenshot of report" />
+  <img src="example/usecases/product_reviews/report_with_results_screenshot_en.png" alt="Screenshot of report" />
 </div>
 
 ---
@@ -222,7 +224,7 @@ naar kwalitatieve codes.
 -   Gebruikers krijgen een **rapport met de resultaten en uitleg** over
     de toegepaste methode
     
-    - Zie [screenshot](example/usecase/report_with_results_screenshot_nl.png) (of scroll naar beneden)
+    - Zie [screenshot](example/usecases/product_reviews/report_with_results_screenshot_nl.png) (of scroll naar beneden)
         
 ### Aanvullende mogelijkheden bij tekstanalyse
 
@@ -265,7 +267,7 @@ naar kwalitatieve codes.
 -   De app-interface en resultaten kunnen worden ingesteld op **Engels of
     Nederlands**
       
-## Use-case
+## Use-case & voorbeeldresultaten
         
 Deze app kan bijvoorbeeld gebruikt worden om open tekst-antwoorden uit vragenlijstonderzoek
 te analyseren, of om teksten zoals tweets of nieuwsartikelen te categoriseren. 
@@ -273,6 +275,8 @@ te analyseren, of om teksten zoals tweets of nieuwsartikelen te categoriseren.
 Kennispunt Twente heeft deze app o.a. ingezet om erachter te komen welke verschillende verbeterpunten
 mensen zien voor sportlocaties in Twentse gemeente, op basis van een open tekstveld in een enquête.
 Met de app kunnen onderzoekers snel en gemakkelijk grote hoeveelheden tekst analyseren.
+
+Wil je voorbeeldresultaten zien? Bekijk [example/usecases/](example/usecases/) voor een voorbeeld van hoe de app is toegepast op productreviews en een focusgroepgesprek.
 
 ## Installatie
 
@@ -383,5 +387,5 @@ Omdat 'kwal' in de naam voorkomt, is het logo van de app een kwal.
 ### Rapport met resultaten (topic modelling)
 
 <div align="center">
-  <img src="example/usecase/report_with_results_screenshot_nl.png" alt="Screenshot van een rapport met resultaten" />
+  <img src="example/usecases/product_reviews/report_with_results_screenshot_nl.png" alt="Screenshot van een rapport met resultaten" />
 </div>
