@@ -63,11 +63,20 @@ if (!is.null(rl$paragraphs)) {
 
 Below table shows for each text and code which part of the text was marked by the language model.
 
+Column 'Text' contains the original text, column 'Subtext' contains a portion of the original text that was viewed in one prompt by the language model,
+the column 'Code' contains the code for which the text was marked, and the column 'Marked text' contains the text that was marked as relevant by the language model.
+
 ```{r, echo=FALSE, results='asis', error=TRUE}
 
 rl$df |>
   # Filter out where marked_text is NA or empty
   dplyr::filter(!is.na(marked_text) & marked_text != "") |>
+  dplyr::rename(
+    `Text` = text,
+    `Subtext` = sub_text,
+    `Code` = code,
+    `Marked text` = marked_text
+  ) |>
   DT::datatable(
     rownames = FALSE,
     extensions = 'Buttons',

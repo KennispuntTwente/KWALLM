@@ -63,11 +63,21 @@ if (!is.null(rl$paragraphs)) {
 
 Onderstaande tabel toont per tekst en per code welk deel van de tekst is gemarkeerd door het taalmodel.
 
+Kolom 'Tekst' bevat de originele tekst, kolom 'Subtekst' bevat een gedeelte van de originele tekst die is bekeken in één prompt door het taalmodel,
+de kolom 'code' bevat de code waarvoor de tekst is gemarkeerd, en de kolom 'Gemarkeerde tekst' bevat de gemarkeerde tekst die volgens het taalmodel
+relevant is voor de code.
+
 ```{r, echo=FALSE, results='asis', error=TRUE}
 
 rl$df |>
   # Filter out where marked_text is NA or empty
   dplyr::filter(!is.na(marked_text) & marked_text != "") |>
+  dplyr::rename(
+    `Tekst` = text,
+    `Subtekst` = sub_text,
+    `Code` = code,
+    `Gemarkeerde tekst` = marked_text
+  ) |>
   DT::datatable(
     rownames = FALSE,
     extensions = 'Buttons',
