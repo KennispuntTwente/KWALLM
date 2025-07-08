@@ -664,7 +664,8 @@ generate_codes_by_reading_texts <- function(
     research_background = research_background,
     llm_provider = llm_provider,
     always_add_not_applicable = FALSE,
-    interrupter = interrupter
+    interrupter = interrupter,
+    language = language
   )
 
   print_message(paste0(
