@@ -328,19 +328,23 @@ llm_provider_server <- function(
       # Provider switching logic
       observeEvent(input$select_preconfigured, {
         req(!is.null(preconfigured_llm_provider))
+        req(!isTRUE(processing()))
         llm_provider_rv$provider_mode <- "preconfigured"
       })
       observeEvent(input$select_openai, {
         req(can_configure_oai)
+        req(!isTRUE(processing()))
         llm_provider_rv$provider_mode <- "openai"
       })
 
       observeEvent(input$select_ollama, {
         req(can_configure_ollama)
+        req(!isTRUE(processing()))
         llm_provider_rv$provider_mode <- "ollama"
       })
       observe({
         req(llm_provider_rv$provider_mode)
+        req(!isTRUE(processing()))
 
         if (llm_provider_rv$provider_mode == "preconfigured") {
           req(!is.null(preconfigured_llm_provider))
