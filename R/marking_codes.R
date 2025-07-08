@@ -236,6 +236,7 @@ marking_codes_server <- function(
         lapply(seq_len(n_fields()), function(i) {
           shinyjs::disable(paste0("code", i))
         })
+        shinyjs::disable("generateCodes")
       } else {
         shinyjs::enable("addCode")
         shinyjs::enable("removeCode")
@@ -243,6 +244,7 @@ marking_codes_server <- function(
         lapply(seq_len(n_fields()), function(i) {
           shinyjs::enable(paste0("code", i))
         })
+        shinyjs::enable("generateCodes")
       }
     })
 

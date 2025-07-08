@@ -475,10 +475,10 @@ text_upload_server <- function(
     # ---- Disable inputs while processing -----------------------------------
     observe({
       if (processing()) {
-        shinyjs::disable(ns("text_file"))
-        shinyjs::disable(ns("sheet"))
-        shinyjs::disable(ns("column"))
-        shinyjs::disable(ns("filter_btn"))
+        shinyjs::disable("text_file")
+        shinyjs::disable("sheet")
+        shinyjs::disable("column")
+        shinyjs::disable("filter_btn")
       }
     })
 
