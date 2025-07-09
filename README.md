@@ -20,7 +20,8 @@ KWALLM is an app (developed with R, Shiny) for (automated) qualitative text anal
 
 - **Topic modelling**: The model identifies topics in the texts without requiring predefined categories or features. Topics are then assigned to texts. Based on methods from [Wanrooij, Manhar & Yang (2024)](https://bnaic2024.sites.uu.nl/wp-content/uploads/sites/986/2024/10/Topic-Modeling-for-Small-Data-using-Generative-LLMs.pdf) and [Pham et al. (2023)](https://arxiv.org/abs/2311.01449). This approach is shown to outperform BERTopic and works well on small datasets
 
-- **Marking**: The model will mark relevant parts of the text for a qualitative code. For example, given the code 'colour', the model will highlight all parts of the text that mention a colour (e.g., 'yellow' in the sentence 'the sun is yellow')
+- **Marking**: The model will mark relevant parts of the text for a qualitative code. For example, given the code 'colour', the model will highlight all parts of the text that mention a colour (e.g., 'yellow' in the sentence 'the sun is yellow').
+Users can provide their own codes, or an LLM can automatically generate codes based on the texts. This mode is suitable for longer texts such as interviews or focus group discussions
 
 ### User-friendly interface
 
@@ -211,7 +212,9 @@ naar kwalitatieve codes.
 -   **Markeren**: het model markeert relevante delen van de tekst voor 
     een kwalitatieve code. Bijvoorbeeld, bij de code 'kleur' markeert
     het model alle delen van de tekst die een kleur noemen (bijv. 'geel'
-    in de zin 'de zon is geel')
+    in de zin 'de zon is geel'). De gebruiker kan zelf codes opgeven,
+    maar een taalmodel kan ook automatisch codes genereren op basis van de teksten.
+    Deze modus is geschikt voor langere teksten zoals interviews of focusgroepgesprekken
 
 ### Gebruiksvriendelijke interface
             
