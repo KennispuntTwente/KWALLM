@@ -10,7 +10,7 @@ renv::restore()
 # Setup Python with reticulate & uv
 try({
   reticulate:::uv_exec("sync")
-  reticulate::use_virtualenv(".venv")
+  reticulate::use_virtualenv("./.venv")
 })
 
 # Load core packages
