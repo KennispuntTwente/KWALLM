@@ -161,8 +161,7 @@ text_split_server <- function(
       tagList(
         div(
           class = "d-flex flex-column align-items-center",
-          uiOutput(ns("split_ui")),
-          uiOutput(ns("semchunk_message_ui"))
+          uiOutput(ns("split_ui"))
         )
       )
     })
@@ -205,12 +204,19 @@ text_split_server <- function(
           min = 0,
           step = 1
         ),
-        # Button to perform the splitting
-        actionButton(
-          ns("split_texts"),
-          icon = shiny::icon("scissors"),
-          label = lang()$t("Splits teksten"),
-          class = "btn btn-primary"
+        # Button to split texts
+        div(
+          class = "d-flex flex-column align-items-center",
+          div(
+            class = "text-center mb-3",
+            actionButton(
+              ns("split_texts"),
+              icon = shiny::icon("scissors"),
+              label = lang()$t("Splits teksten"),
+              class = "btn btn-primary"
+            )
+          ),
+          uiOutput(ns("semchunk_message_ui"))
         )
       )
     })
