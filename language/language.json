@@ -930,12 +930,12 @@
         "en": " If your texts are very long (e.g., interviews), a language model may have difficulty processing them."
       },
       {
-        "nl": " Het kan dan nuttig zijn om je teksten op te splitsen in kortere teksten.",
-        "en": " It may be useful to split your texts into shorter texts."
+        "nl": " Het kan dan nuttig zijn om je teksten op te splitsen in kortere teksten. (Let op: dit is niet nodig als je de 'markeren'-modus gebruikt.)",
+        "en": " It may be useful to split your texts into shorter texts. (Note: this is not necessary if you are using 'marking' mode.)"
       },
       {
-        "nl": " Dit kan gedaan worden met behulp van semantische chunking, waarbij teksten worden gesplitst op basis van hun inhoud.",
-        "en": " This can be done using semantic chunking, where texts are split based on their content."
+        "nl": " Splitsen kan gedaan worden met behulp van semantische chunking, waarbij teksten worden gesplitst op basis van hun inhoud.",
+        "en": " Splitting can be done using semantic chunking, where texts are split based on their content."
       },
       {
         "nl": " De teksten worden hier met Python package 'semchunk' gesplitst in stukken van een opgegeven maximale lengte (in tokens, naar OpenAI's gpt-4; een token is ongeveer 4 karakters).",
