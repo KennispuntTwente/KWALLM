@@ -17,5 +17,5 @@ runIfMissing('portable-r', 'node scripts/package-setup-portable-r.js');
 runIfMissing('portable-pandoc', 'node scripts/package-setup-portable-pandoc.js');
 
 // Always run `uv sync`
-console.log('Running "uv sync"...');
-execSync('uv sync', { stdio: 'inherit' });
+// console.log('Running "uv sync"...');
+// execSync('uv sync', { stdio: 'inherit' });
