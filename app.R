@@ -7,6 +7,12 @@ if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv")
 # Install packages with renv
 renv::restore()
 
+# Setup Python with reticulate & uv
+try({
+  reticulate:::uv_exec("sync")
+  reticulate::use_virtualenv(".venv")
+})
+
 # Load core packages
 library(tidyverse)
 library(tidyprompt)

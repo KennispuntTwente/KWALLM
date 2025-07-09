@@ -309,10 +309,7 @@ marking_codes_server <- function(
         }
 
         # Verify a LLM provider is set
-        if (
-          is.null(llm_provider_rv$llm_provider)
-          | is.null(models$main)
-        ) {
+        if (is.null(llm_provider_rv$llm_provider) | is.null(models$main)) {
           shiny::showNotification(
             lang()$t("Er is nog geen LLM provider ingesteld"),
             type = "error"
@@ -375,7 +372,9 @@ marking_codes_server <- function(
             prompt_candidate_topics = prompt_candidate_topics,
             reduce_topics = reduce_topics,
             semchunk_load_chunker = semchunk_load_chunker,
-            count_tokens = count_tokens
+            tiktoken_load_tokenizer = tiktoken_load_tokenizer,
+            count_tokens = count_tokens,
+            async_message_printer = async_message_printer
           ),
           packages = c(
             "tidyprompt",

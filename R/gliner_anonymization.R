@@ -376,7 +376,8 @@ gliner_server <- function(
               pii_texts = pii_texts(),
               labels = labels,
               progress = progress,
-              queue = queue
+              queue = queue,
+              async_message_printer = async_message_printer
             ),
             seed = NULL
           ) %...>%

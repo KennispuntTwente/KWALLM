@@ -32,28 +32,12 @@ jobs:
       # 1 source code ---------------------------------------------------
       - uses: actions/checkout@v2
 
-      # 2 Python + ready-made virtual-env -------------------------------
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
+      # 2 uv ------------------------------------------------------------
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
 
-      # cache py-venv
-      - name: Cache pre-built py-venv
-        id: cache-py-venv
-        uses: actions/cache@v4
-        with:
-          path: /opt/py-venv
-          key: ${{ runner.os }}-py-venv-v1
-
-      # only runs if the cache is cold
-      - name: Create / update /opt/py-venv
-        if: steps.cache-py-venv.outputs.cache-hit != 'true'
-        run: |
-          sudo python -m venv /opt/py-venv
-          source /opt/py-venv/bin/activate
-          pip install --upgrade pip
-          # install anything the R helper may try to pull in
-          pip install semchunk tiktoken transformers
+      - name: Install python modules with uv
+        run: uv sync
 
       # 3 R toolchain ---------------------------------------------------
       - uses: r-lib/actions/setup-pandoc@v2

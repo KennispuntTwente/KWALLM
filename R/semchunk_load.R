@@ -1,127 +1,38 @@
 #### 1 Load semantic chunker ####
 
-# Allows you to interrupt Python without an R crash
+# Allows to load Python & then interrupt R without fatal R crash:
 Sys.setenv(FOR_DISABLE_CONSOLE_CTRL_HANDLER = "1")
 
 semchunk_load_chunker <- function(
-  venv_name = "py-venv",
-  python_version = "3.12.10",
   tokenizer = "gpt-4", # name, HF repo, tiktoken encoding, or a custom Python object
   chunk_size = 64, # tokens per chunk (remember to subtract special tokens)
-  use_system_python = FALSE,
-  docker_env = NULL, # autodetected if NULL
   test_chunker = FALSE, # run a quick round-trip on sample text?
   queue = NULL # 'ipc' queue for reactive logs
 ) {
   #### ───────── Argument checks ──────────────────────────────────────────────
   stopifnot(
-    is.character(venv_name) && length(venv_name) == 1,
-    is.character(python_version) && length(python_version) == 1,
-    (is.character(tokenizer) || inherits(tokenizer, "python.builtin.object")),
+    is.character(tokenizer) || inherits(tokenizer, "python.builtin.object"),
     is.numeric(chunk_size) && length(chunk_size) == 1 && chunk_size > 0,
-    is.logical(use_system_python) && length(use_system_python) == 1,
-    is.null(docker_env) || (is.logical(docker_env) && length(docker_env) == 1),
-    is.logical(test_chunker) && length(test_chunker) == 1
+    is.logical(test_chunker) && length(test_chunker) == 1,
+    is.null(queue) || inherits(queue, "Queue")
   )
 
-  #### ───────── Helper: log to console (+ shiny queue) ───────────────────────
-  # Helper to print messages to the console + queue if needed
-  print_message <- function(
-    message,
-    type = c("info", "success")
-  ) {
-    type <- match.arg(type)
-    if (type == "success") {
-      cli::cli_alert_success(message)
-      message <- paste0(
-        cli::col_green("✔"),
-        " ",
-        message
-      )
-    } else {
-      message <- paste0(
-        cli::col_blue("ℹ"),
-        " ",
-        message
-      )
-      cli::cli_alert_info(message)
-    }
+  #### ───────── Helper: log to console (+ shiny queue) ─────────────
+  print_message <- async_message_printer(
+    queue = queue,
+    reactive_value_name = "semchunk_message"
+  )
 
-    if (!is.null(queue)) {
-      try(queue$producer$fireAssignReactive(
-        "semchunk_message",
-        message
-      ))
-    }
-  }
+  ## ── Load Python & tiktoken module ───────────────────────────────
+  print_message("Loading Python and semchunk module...")
 
-  #### ───────── Detect Docker & pick Python binary ───────────────────────────
-  if (is.null(docker_env)) {
-    docker_env <- identical(tolower(Sys.getenv("IS_DOCKER")), "true")
-    print_message(paste0("Docker environment auto-detected: ", docker_env))
-  }
-
-  #### ───────── Create / activate virtual-env ────────────────────────────────
-  print_message(paste0(
-    "Loading/creating virtual environment (",
-    venv_name,
-    ") …"
-  ))
-
-  if (docker_env) {
-    print_message("Inside Docker: assuming Python + semchunk already installed")
-    reticulate::use_virtualenv("/opt/py-venv", required = TRUE)
-  } else {
-    Sys.setenv(RETICULATE_VIRTUALENV_ROOT = getwd())
-
-    if (!reticulate::virtualenv_exists(venv_name)) {
-      py_exec <- if (use_system_python) {
-        print_message("Using system Python at /usr/bin/python3")
-        "/usr/bin/python3"
-      } else {
-        print_message("Installing Python via pyenv …")
-        reticulate::install_python(python_version)
-        python_version
-      }
-      reticulate::virtualenv_create(envname = venv_name, python = py_exec)
-    }
-
-    reticulate::use_virtualenv(venv_name, required = TRUE)
-
-    #### ───── Install semchunk (+ helpers) if missing ──────────────────
-    needed <- c()
-    pkgs <- reticulate::py_list_packages(envname = venv_name)$package
-    if (!"semchunk" %in% pkgs) needed <- c(needed, "semchunk")
-
-    # Rough heuristic: install helpers only if the user *might* need them
-    if (is.character(tokenizer)) {
-      if (
-        grepl("^cl\\d+k_|^gpt-", tokenizer, ignore.case = TRUE) &&
-          !"tiktoken" %in% pkgs
-      )
-        needed <- c(needed, "tiktoken")
-      if (
-        grepl("/", tokenizer) && # looks like HF repo name
-          !"transformers" %in% pkgs
-      )
-        needed <- c(needed, "transformers")
-    }
-
-    if (length(setdiff(needed, pkgs)) > 0) {
-      print_message(paste0(
-        "Installing Python packages: ",
-        paste(setdiff(needed, pkgs), collapse = ", "),
-        " ..."
-      ))
-      reticulate::py_install(
-        envname = venv_name,
-        packages = setdiff(needed, pkgs)
-      )
-    }
-  }
-
-  #### ───────── Import semchunk & friends ────────────────────────────────────
+  reticulate:::uv_exec("sync")
+  reticulate::use_virtualenv("./.venv")
   semchunk <- reticulate::import("semchunk")
+
+  #### ───────── Build the chunker ────────────────────────────────
+  print_message("Constructing chunker …")
+
   # AutoTokenizer or tiktoken only imported lazily if needed
   if (inherits(tokenizer, "python.builtin.object")) {
     tokenizer_obj <- tokenizer
@@ -129,11 +40,9 @@ semchunk_load_chunker <- function(
     tokenizer_obj <- tokenizer # let semchunk decide what to do with the string
   }
 
-  #### ───────── Build the chunker ────────────────────────────────────────────
-  print_message("Constructing chunker …")
   chunker <- semchunk$chunkerify(tokenizer_obj, as.integer(chunk_size))
 
-  #### ───────── (Optional) smoke-test ────────────────────────────────────────
+  #### ───────── Test ────────────────────────────────────────
   if (test_chunker) {
     print_message("Testing chunker on sample sentence …")
     sample_text <- "The quick brown fox jumps over the lazy dog."
