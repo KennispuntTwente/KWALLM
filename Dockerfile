@@ -66,7 +66,7 @@ RUN chown -R appuser:appuser /home/appuser/app && \
     chmod -R u+rwX /home/appuser/app
 
 # Switch to non-root user
-# USER appuser
+USER appuser
 
 # Cache model by running load script once
 # (This also installs the Python environment)
