@@ -471,7 +471,23 @@ text_management_server <- function(
         title = lang()$t("Teksten"),
         DT::dataTableOutput(ns("text_table")),
         easyClose = TRUE,
-        footer = modalButton(lang()$t("Sluiten")),
+        footer = tagList(
+          div(
+            class = "text-center w-100",
+            downloadButton(
+              ns("download_preprocessed"),
+              label = lang()$t("Download"),
+              class = "btn btn-sm"
+            ) |>
+              bslib::tooltip(
+                lang()$t(
+                  "Download de voorbewerkte teksten als .csv-bestand. Dit is niet nodig, maar kan soms handig zijn (als je bijv. alleen de anonimiserings- of tekst-splits-functies van de app wilde gebruiken)."
+                ),
+                placement = "top"
+              )
+          ),
+          modalButton(lang()$t("Sluiten"))
+        ),
         size = "l"
       ))
     })
@@ -481,6 +497,20 @@ text_management_server <- function(
         data.frame(Tekst = texts$preprocessed)
       },
       options = list(pageLength = 5, scrollX = TRUE)
+    )
+
+    output$download_preprocessed <- downloadHandler(
+      filename = function() {
+        paste0("preprocessed_texts", Sys.Date(), ".csv")
+      },
+      content = function(file) {
+        req(texts$df)
+        vroom::vroom_write(
+          x = texts$df,
+          file = file,
+          delim = ";"
+        )
+      }
     )
 
     # 8 Return -------------------------------------------------------

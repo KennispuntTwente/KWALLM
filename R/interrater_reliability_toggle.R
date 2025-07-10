@@ -16,6 +16,7 @@ interrater_toggle_ui <- function(id) {
 interrater_toggle_server <- function(
   id,
   processing,
+  mode,
   lang = reactiveVal(
     shiny.i18n::Translator$new(
       translation_json_path = "language/language.json"
@@ -29,6 +30,15 @@ interrater_toggle_server <- function(
       interrater_reliability_toggle <- reactiveVal(FALSE)
 
       output$card <- renderUI({
+        req(isTRUE(
+          mode() %in%
+            c(
+              "Categorisatie",
+              "Scoren",
+              "Onderwerpextractie"
+            )
+        ))
+
         bslib::card(
           class = "card",
           card_header(

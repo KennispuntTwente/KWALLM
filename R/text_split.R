@@ -13,7 +13,8 @@ text_split_server <- function(
   processing = reactiveVal(FALSE),
   lang = reactiveVal(
     shiny.i18n::Translator$new(translation_json_path = "language/language.json")
-  )
+  ),
+  enabled = getOption("text_split__enabled", TRUE)
 ) {
   moduleServer(id, function(input, output, session) {
     ns <- session$ns
@@ -42,8 +43,7 @@ text_split_server <- function(
 
     # If text splitting is activated
     splitting <- reactive({
-      req(input$toggle)
-      if (input$toggle == lang()$t("Ja")) {
+      if (isTRUE(input$toggle == lang()$t("Ja")) && isTRUE(enabled)) {
         TRUE
       } else {
         FALSE
@@ -60,7 +60,7 @@ text_split_server <- function(
     })
 
     # Reactive value which holds the split texts
-    split_texts <- reactiveVal("...")
+    split_texts <- reactiveVal(NULL)
 
     # Reactive value which holds text message about the splitting progress
     #   (set from async process via 'ipc' package, queue object)
@@ -84,10 +84,21 @@ text_split_server <- function(
     # Reactive value to hold the overlap value
     overlap_val <- reactiveVal(0)
 
+    # Export test values
+    shiny::exportTestValues(
+      splitting = splitting,
+      split_in_progress = split_in_progress,
+      split_texts = split_texts,
+      semchunk_message = semchunk_message,
+      max_tokens_val = max_tokens_val,
+      overlap_val = overlap_val
+    )
+
     # -- UI: main card -------------------------------------------
 
     output$card <- renderUI({
       req(lang())
+      req(isTRUE(enabled))
 
       tagList(
         bslib::card(
@@ -104,10 +115,10 @@ text_split_server <- function(
                   " Als je teksten erg lang zijn (bijv., interviews) kan een taalmodel hier mogelijk minder goed mee omgaan."
                 ),
                 lang()$t(
-                  " Het kan dan nuttig zijn om je teksten op te splitsen in kortere teksten."
+                  " Het kan dan nuttig zijn om je teksten op te splitsen in kortere teksten. (Let op: dit is niet nodig als je de 'markeren'-modus gebruikt.)"
                 ),
                 lang()$t(
-                  " Dit kan gedaan worden met behulp van semantische chunking, waarbij teksten worden gesplitst op basis van hun inhoud."
+                  " Splitsen kan gedaan worden met behulp van semantische chunking, waarbij teksten worden gesplitst op basis van hun inhoud."
                 ),
                 lang()$t(
                   " De teksten worden hier met Python package 'semchunk' gesplitst in stukken van een opgegeven maximale lengte (in tokens, naar OpenAI's gpt-4; een token is ongeveer 4 karakters)."
@@ -150,8 +161,7 @@ text_split_server <- function(
       tagList(
         div(
           class = "d-flex flex-column align-items-center",
-          uiOutput(ns("split_ui")),
-          uiOutput(ns("semchunk_message_ui"))
+          uiOutput(ns("split_ui"))
         )
       )
     })
@@ -194,12 +204,19 @@ text_split_server <- function(
           min = 0,
           step = 1
         ),
-        # Button to perform the splitting
-        actionButton(
-          ns("split_texts"),
-          icon = shiny::icon("scissors"),
-          label = lang()$t("Splits teksten"),
-          class = "btn btn-primary"
+        # Button to split texts
+        div(
+          class = "d-flex flex-column align-items-center",
+          div(
+            class = "text-center mb-3",
+            actionButton(
+              ns("split_texts"),
+              icon = shiny::icon("scissors"),
+              label = lang()$t("Splits teksten"),
+              class = "btn btn-primary"
+            )
+          ),
+          uiOutput(ns("semchunk_message_ui"))
         )
       )
     })
@@ -211,6 +228,7 @@ text_split_server <- function(
       req(isTRUE(splitting()))
       req(input$max_tokens)
       req(isFALSE(processing()))
+      req(isTRUE(enabled))
 
       # Set processing state
       split_in_progress(TRUE)
@@ -239,7 +257,8 @@ text_split_server <- function(
           overlap = overlap_val(),
           queue = queue,
           split_texts_with_semchunk = split_texts_with_semchunk,
-          semchunk_load_chunker = semchunk_load_chunker
+          semchunk_load_chunker = semchunk_load_chunker,
+          async_message_printer = async_message_printer
         ),
         seed = NULL
       ) %...>%
@@ -370,7 +389,7 @@ split_texts_with_semchunk <- function(
 
 #### 3 Example/development usage ####
 
-if (TRUE) {
+if (FALSE) {
   library(shiny)
   library(shinyjs)
   library(shinyWidgets)

@@ -60,14 +60,19 @@ preconfigured_llm_provider <- NULL
 preconfigured_models_main <- NULL
 preconfigured_models_large <- NULL
 if (FALSE) {
-  preconfigured_llm_provider <- tidyprompt::llm_provider_openai()
-  preconfigured_llm_provider$parameters$model <- "gpt-4o-mini-2024-07-18"
-  preconfigured_llm_provider$parameters$stream <- FALSE
+  preconfigured_llm_provider <-
+    tidyprompt::llm_provider_openai()
+  preconfigured_llm_provider$parameters$model <-
+    "gpt-4.1-mini-2025-04-14"
+  preconfigured_llm_provider$parameters$stream <-
+    FALSE
   preconfigured_models_main <- c(
+    # For most prompts:
     "gpt-4.1-mini-2025-04-14",
     "gpt-4.1-2025-04-14"
   )
   preconfigured_models_large <- c(
+    # For topic reduction during topic modelling:
     "gpt-4.1-mini-2025-04-14",
     "gpt-4.1-2025-04-14",
     "o3-2025-04-16",
@@ -80,6 +85,10 @@ options(
   # - How the Shiny app is served;
   # shiny.port = 8100,
   # shiny.host = "0.0.0.0",
+
+  # Set max file upload size
+  # - This is the maximum size of the file that can be uploaded to the app;
+  shiny.maxRequestSize = 100 * 1024^2, # 100 MB
 
   # - Retry behaviour upon LLM API errors;
   #   max tries defines the maximum number of retries
@@ -125,6 +134,11 @@ options(
   anonymization__gliner_model = TRUE, # If the "gliner" anonymization method is available
   anonymization__gliner_test = FALSE, # If gliner model should be tested before launching the app. If test fails, app won't launch
 
+  # - If text splitting via semantic chunking can be used
+  #   to split texts into smaller chunks for LLM processing;
+  #     see R/text_split.R
+  text_split__enabled = TRUE,
+
   # - If a topic 'unknown/not applicable' should always be added
   #   to to the list of candiate topics during topic modelling;
   #   this may be useful to avoid LLM failure in the topic assignment process;
@@ -141,6 +155,10 @@ options(
 
 if (getOption("anonymization__gliner_test", FALSE)) {
   invisible(gliner_load_model(test_model = TRUE))
+}
+
+if (!getOption("shiny.testmode", FALSE)) {
+  try(tiktoken_load_tokenizer())
 }
 
 

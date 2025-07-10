@@ -1,0 +1,20 @@
+[project]
+name = "tekstanalyse_met_llm"
+version = "0"
+description = ""
+readme = "README.md"
+requires-python = "==3.12.*"
+dependencies = [
+  "tiktoken>=0.1.1",
+  "semchunk>=3.2.2",
+  "gliner>=0.2.5",
+  "torch>=2.3.0"
+]
+[tool.uv.sources]
+torch = [
+  { index = "pytorch-cpu" },
+]
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

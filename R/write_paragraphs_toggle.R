@@ -31,7 +31,7 @@ write_paragraphs_toggle_server <- function(
 
       # Only show in Categorisatie/Onderwerpextractie
       output$ui_toggle <- renderUI({
-        req(mode() %in% c("Onderwerpextractie", "Categorisatie"))
+        req(mode() %in% c("Onderwerpextractie", "Categorisatie", "Markeren"))
         tagList(
           shinyjs::useShinyjs(),
           bslib::card(
@@ -87,7 +87,11 @@ write_paragraphs_toggle_server <- function(
       )
 
       return(reactive({
-        if (isTRUE(mode() %in% c("Onderwerpextractie", "Categorisatie"))) {
+        if (
+          isTRUE(
+            mode() %in% c("Onderwerpextractie", "Categorisatie", "Markeren")
+          )
+        ) {
           toggle()
         } else {
           FALSE

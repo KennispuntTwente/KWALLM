@@ -5,6 +5,53 @@ portable_lib <- file.path(dirname(R.home()), "library")
 .libPaths(portable_lib)
 print(paste("Using library path:", portable_lib))
 
+# Download portable WinPython
+try({
+  url <- "https://github.com/winpython/winpython/releases/download/16.6.20250620final/Winpython64-3.12.10.1dot.zip"
+  expected_sha256 <- "7a1f004aec39615977b2b245423a50115530d16af3418df77977186a555d0a40"
+  zip_file <- "WinPython.zip"
+  extract_dir <- "winpython"
+
+  if (!file.exists(extract_dir)) {
+    download.file(url, zip_file, mode = "wb")
+    actual_sha256 <- digest::digest(file = zip_file, algo = "sha256")
+
+    cat("WinPython: downloaded SHA-256:", actual_sha256, "\n")
+    if (tolower(actual_sha256) != tolower(expected_sha256)) {
+      stop("SHA-256 hash mismatch! File may be corrupted or tampered")
+    }
+
+    dir.create(extract_dir, showWarnings = FALSE)
+    unzip(zip_file, exdir = extract_dir)
+  }
+
+  python_paths <- list.files(
+    extract_dir,
+    pattern = "python.exe$",
+    recursive = TRUE,
+    full.names = TRUE
+  )
+
+  # Filter out venv-related paths
+  valid_python_paths <- python_paths[
+    !grepl("venv|scripts|nt", tolower(python_paths))
+  ]
+
+  # Pick the first valid path (or throw an error if none found)
+  if (length(valid_python_paths) == 0) {
+    stop("No valid base python.exe found")
+  }
+
+  python_path <- valid_python_paths[1]
+
+  if (is.na(python_path) || !file.exists(python_path)) {
+    stop("WinPython: executable not found")
+  }
+
+  cat("WinPython: using Python at", python_path, "\n")
+  Sys.setenv(UV_PYTHON = normalizePath(python_path))
+})
+
 # Load core packages
 library(tidyverse)
 library(tidyprompt)
@@ -65,14 +112,19 @@ preconfigured_llm_provider <- NULL
 preconfigured_models_main <- NULL
 preconfigured_models_large <- NULL
 if (FALSE) {
-  preconfigured_llm_provider <- tidyprompt::llm_provider_openai()
-  preconfigured_llm_provider$parameters$model <- "gpt-4.1-mini-2025-04-14"
-  preconfigured_llm_provider$parameters$stream <- FALSE
+  preconfigured_llm_provider <-
+    tidyprompt::llm_provider_openai()
+  preconfigured_llm_provider$parameters$model <-
+    "gpt-4.1-mini-2025-04-14"
+  preconfigured_llm_provider$parameters$stream <-
+    FALSE
   preconfigured_models_main <- c(
+    # For most prompts:
     "gpt-4.1-mini-2025-04-14",
     "gpt-4.1-2025-04-14"
   )
   preconfigured_models_large <- c(
+    # For topic reduction during topic modelling:
     "gpt-4.1-mini-2025-04-14",
     "gpt-4.1-2025-04-14",
     "o3-2025-04-16",
@@ -85,6 +137,10 @@ options(
   # - How the Shiny app is served;
   # shiny.port = 8100,
   # shiny.host = "0.0.0.0",
+
+  # Set max file upload size
+  # - This is the maximum size of the file that can be uploaded to the app;
+  shiny.maxRequestSize = 100 * 1024^2, # 100 MB
 
   # - Retry behaviour upon LLM API errors;
   #   max tries defines the maximum number of retries
@@ -130,6 +186,11 @@ options(
   anonymization__gliner_model = TRUE, # If the "gliner" anonymization method is available
   anonymization__gliner_test = FALSE, # If gliner model should be tested before launching the app. If test fails, app won't launch
 
+  # - If text splitting via semantic chunking can be used
+  #   to split texts into smaller chunks for LLM processing;
+  #     see R/text_split.R
+  text_split__enabled = TRUE,
+
   # - If a topic 'unknown/not applicable' should always be added
   #   to to the list of candiate topics during topic modelling;
   #   this may be useful to avoid LLM failure in the topic assignment process;
@@ -146,6 +207,10 @@ options(
 
 if (getOption("anonymization__gliner_test", FALSE)) {
   invisible(gliner_load_model(test_model = TRUE))
+}
+
+if (!getOption("shiny.testmode", FALSE)) {
+  try(tiktoken_load_tokenizer())
 }
 
 

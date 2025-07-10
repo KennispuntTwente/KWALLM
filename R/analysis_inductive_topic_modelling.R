@@ -143,63 +143,11 @@ create_candidate_topics <- function(
     # (A chunk is a vector of texts)
     # Create a prompt for the chunk; present texts to LLM,
     # ask to return a list of potential topics
-
-    chunk_formatted <- purrr::map_chr(seq_along(chunk), function(i) {
-      paste0("<text ", i, ">\n", chunk[[i]], "\n</text ", i, ">")
-    })
-
-    base <- "Your task is to distill a list of topics from the following texts: "
-    if (research_background != "") {
-      base <- paste0(
-        "We have obtained texts during a research.\n\nBackground information about the research:\n",
-        research_background,
-        "\n\n",
-        base
-      )
-    }
-
-    prompt <- base |>
-      tidyprompt::add_text(paste(chunk_formatted, collapse = "\n\n")) |>
-      tidyprompt::add_text(
-        "Topics should not be too specific, but also not too general."
-      ) |>
-      tidyprompt::add_text(
-        "For example, 'food' is too general, but 'lemon cake' might be too specific.",
-        sep = "\n"
-      ) |>
-      tidyprompt::add_text(
-        "A topic does not need to be present in multiple documents.",
-        sep = "\n"
-      ) |>
-      tidyprompt::add_text(
-        "Create separate topics when the same topic is mentioned but with a different sentiment.",
-        sep = "\n"
-      )
-
-    if (language == "nl") {
-      prompt <- prompt |>
-        tidyprompt::add_text(
-          "Please list the topics in Dutch.",
-          sep = "\n"
-        )
-    }
-
-    prompt <- prompt |>
-      tidyprompt::answer_as_json(
-        schema = list(
-          type = "object",
-          properties = list(
-            topics = list(
-              type = "array",
-              items = list(
-                type = "string"
-              )
-            )
-          ),
-          required = list("topics")
-        ),
-        type = "auto"
-      )
+    prompt <- prompt_candidate_topics(
+      text_chunk = chunk,
+      research_background = research_background,
+      language = language
+    )
 
     result <- send_prompt_with_retries(prompt, llm_provider)
 
@@ -211,112 +159,44 @@ create_candidate_topics <- function(
   return(candidate_topics)
 }
 
-
-##### 1.2 Topic reduction ####
-
-#' Reduce the number of topics
-#'
-#' Asking a (large/reasoning) LLM to reduce the number of candidate topics.
-#'
-#' @param candidate_topics A character vector of candidate topics
-#' @param research_background Background information about the research (optional)
-#' @param llm_provider A tidyprompt LLM provider object. Typically a large/reasoning model,
-#' as only one request is made to the LLM and this step is crucial
-#' @param desired_number_of_topics Desired number of topics (optional)
-#'
-#' @return A character vector of reduced topics
-#' @export
-reduce_topics <- function(
-  candidate_topics,
+prompt_candidate_topics <- function(
+  text_chunk,
   research_background = "",
-  llm_provider = tidyprompt::llm_provider_openai(
-    parameters = list(model = "gpt-4o")
-  ),
-  desired_number = NULL,
-  desired_number_type = c("max", "goal"),
-  language = c("nl", "en"),
-  always_add_not_applicable = getOption(
-    "topic_modelling__always_add_not_applicable",
-    TRUE
-  )
+  language = c("nl", "en")
 ) {
   language <- match.arg(language)
-  stopifnot(
-    is.character(candidate_topics),
-    length(candidate_topics) > 0,
-    is.character(research_background),
-    length(research_background) == 1
-  )
 
-  if (!is.null(desired_number)) {
-    stopifnot(is.numeric(desired_number), desired_number > 0)
-    desired_number_type <- match.arg(desired_number_type)
-  }
+  chunk_formatted <- purrr::map_chr(seq_along(text_chunk), function(i) {
+    paste0("<text ", i, ">\n", text_chunk[[i]], "\n</text ", i, ">")
+  })
 
-  # Create a prompt for the LLM to reduce the number of topics
-  base <- "Your task will be to distill a list of core topics from the following topics: "
+  base <- "Your task is to distill a list of topics from the following texts: "
   if (research_background != "") {
     base <- paste0(
-      "We have distilled topics from texts obtained during a research.\n\nBackground information about the research:\n",
+      "We have obtained texts during a research.\n\nBackground information about the research:\n",
       research_background,
       "\n\n",
       base
     )
   }
 
-  candidate_topics_formatted <- purrr::map_chr(
-    seq_along(candidate_topics),
-    function(i) {
-      paste0(i - 1, ": ", candidate_topics[[i]])
-    }
-  )
-
   prompt <- base |>
-    tidyprompt::add_text(paste(
-      candidate_topics_formatted,
-      collapse = "\n",
-      sep = "\n"
-    )) |>
-    tidyprompt::add_text("Merge duplicate topics.") |>
+    tidyprompt::add_text(paste(chunk_formatted, collapse = "\n\n")) |>
     tidyprompt::add_text(
-      "Also merge topics that are too specific.",
+      "Topics should not be too specific, but also not too general."
+    ) |>
+    tidyprompt::add_text(
+      "For example, 'food' is too general, but 'lemon cake' might be too specific.",
       sep = "\n"
     ) |>
     tidyprompt::add_text(
-      "Do not merge topics which are about the same but have a different sentiment."
+      "A topic does not need to be present in multiple documents.",
+      sep = "\n"
+    ) |>
+    tidyprompt::add_text(
+      "Create separate topics when the same topic is mentioned but with a different sentiment.",
+      sep = "\n"
     )
-
-  if (!is.null(desired_number)) {
-    desired_number_type <- match.arg(desired_number_type)
-
-    if (desired_number_type == "max") {
-      prompt <- prompt |>
-        tidyprompt::add_text(
-          paste0(
-            "Please reduce the number of topics to a maximum of ",
-            desired_number,
-            "."
-          ),
-          sep = "\n"
-        )
-    } else if (desired_number_type == "goal") {
-      prompt <- prompt |>
-        tidyprompt::add_text(
-          paste0(
-            "Please reduce the number of topics to about ",
-            desired_number,
-            "."
-          ),
-          sep = "\n"
-        )
-    }
-  } else {
-    prompt <- prompt |>
-      tidyprompt::add_text(
-        "Please reduce the number of topics to a reasonable number.",
-        sep = "\n"
-      )
-  }
 
   if (language == "nl") {
     prompt <- prompt |>
@@ -341,91 +221,322 @@ reduce_topics <- function(
         required = list("topics")
       ),
       type = "auto"
-    ) |>
-    tidyprompt::prompt_wrap(
-      extraction_fn = function(result) {
-        if (length(result$topics) < 2) {
-          return(tidyprompt::llm_feedback(
-            "Provide an array of at least two valid topics."
-          ))
-        }
-
-        # Ensure topics is a character vector
-        if (!is.character(result$topics)) {
-          result$topics <- as.character(result$topics)
-        }
-
-        # Remove NA values
-        result$topics <- result$topics[!is.na(result$topics)]
-
-        # Remove topics that are empty or contain only whitespace
-        result$topics <- trimws(result$topics)
-        result$topics <- result$topics[nchar(result$topics) > 0]
-
-        # Deduplicate topics
-        result$topics <- unique(result$topics)
-
-        # Check once more if the result sufficient
-        if (length(result$topics) < 2) {
-          return(tidyprompt::llm_feedback(
-            "Provide an array of at least two valid topics."
-          ))
-        }
-
-        return(result)
-      }
     )
 
-  # Check if prompt fit in context window; if not, stop with error
-  model <- llm_provider$parameters$model
-  n_tokens_context_window <- get_context_window_size_in_tokens(model)
-  n_tokens_context_window <- ifelse(
-    is.null(n_tokens_context_window),
-    2048,
-    n_tokens_context_window
-  )
-  n_char_prompt <- prompt$construct_prompt_text() |> nchar()
-  if (isTRUE(n_char_prompt > (n_tokens_context_window * 4))) {
-    stop(paste0(
-      "The prompt (n_char: ",
-      n_char_prompt,
-      ") exceeds the context window (n_tokens: ",
-      n_tokens_context_window,
-      ").\n",
-      "Please reduce the number of candidate topics (currently: ",
-      length(candidate_topics),
-      "),",
-      " or increase the context window size of the model."
-    ))
-  }
+  return(prompt)
+}
 
-  result <- send_prompt_with_retries(prompt, llm_provider)
 
+##### 1.2 Topic reduction ####
+
+#' Reduce the number of topics
+#'
+#' This helper repeatedly sends smaller, context‑window‑friendly prompts to the
+#' LLM until the full list of topics can be distilled in a single pass. It
+#' avoids throwing an error when the candidate topic list is too large; instead
+#' it chunks, reduces, combines, and, if needed, repeats the process up to
+#' `max_iterations` times.  If the prompt still does not fit afterwards, an
+#' informative error is raised.
+#'
+#' @param candidate_topics A character vector with the candidate topics.
+#' @param research_background (Optional) Background information about the research.
+#' @param llm_provider A `tidyprompt` LLM provider. Defaults to GPT‑4o.
+#' @param desired_number Desired number of topics (optional).
+#' @param desired_number_type Either "max" or "goal" (see docs).
+#' @param language Either "nl" or "en" — affects the returned topic language.
+#' @param always_add_not_applicable Logical; automatically append the generic
+#'   “Unknown/not applicable” topic when missing.
+#' @param max_iterations Maximum number of chunk‑reduce cycles (default = 4).
+#' @return A character vector of reduced topics.
+#' @export
+#' Reduce the number of topics
+#'
+#' `reduce_topics()` repeatedly sends context-window-friendly prompts to an LLM,
+#' chunking the input topics, reducing each chunk, combining the results, and
+#' repeating until everything fits in a single prompt. Two safety caps are in
+#' place so you stay in control of token cost:
+#'
+#' 1. **`max_iterations`** – limits how many reduce-and-combine cycles are tried.
+#' 2. **`max_groups`** – puts a hard ceiling on how many prompt chunks may ever
+#'    exist *at any stage* of the algorithm.  If a split produces more than
+#'    `max_groups` chunks, the function aborts immediately with an informative
+#'    error.
+#'
+#' @param candidate_topics Character vector of candidate topics.
+#' @param research_background (Optional) Background information to feed the LLM.
+#' @param llm_provider A `tidyprompt` LLM provider (defaults to GPT-4o).
+#' @param desired_number Desired number of topics (optional).
+#' @param desired_number_type "max" or "goal".
+#' @param language "nl" or "en" – controls the language of the returned topics.
+#' @param always_add_not_applicable Append a generic "Unknown/not applicable"
+#'   topic when missing (default honours global option).
+#' @param max_iterations Maximum number of chunk-reduce cycles (default = 4).
+#' @param max_groups Maximum number of chunks allowed at *any* iteration
+#'   (default = 16).
+#'
+#' @return Character vector of reduced topics.
+#' @export
+reduce_topics <- function(
+  candidate_topics,
+  research_background = "",
+  llm_provider = tidyprompt::llm_provider_openai(
+    parameters = list(model = "gpt-4o")
+  ),
+  desired_number = NULL,
+  desired_number_type = c("max", "goal"),
+  language = c("nl", "en"),
+  always_add_not_applicable = getOption(
+    "topic_modelling__always_add_not_applicable",
+    TRUE
+  ),
+  max_iterations = 4,
+  max_groups = 16,
+  interrupter = NULL
+) {
+  language <- match.arg(language)
+  desired_number_type <- match.arg(desired_number_type)
+
+  # ---- argument checks -------------------------------------------------------
   stopifnot(
-    is.list(result),
-    "topics" %in% names(result),
-    is.character(result$topics),
-    is.vector(result$topics),
-    length(result$topics) > 1,
-    all(nchar(result$topics) > 0),
-    all(!is.na(result$topics)),
-    all(!is.null(result$topics))
+    is.character(candidate_topics),
+    length(candidate_topics) > 0,
+    is.character(research_background),
+    length(research_background) == 1,
+    is.numeric(max_iterations),
+    max_iterations >= 1,
+    is.numeric(max_groups),
+    max_groups >= 1
   )
 
-  if (always_add_not_applicable) {
-    # Check if the 'not applicable' topic is already present, by asking LLM
-    if (language == "nl") {
-      not_applicable_topic <- "Onbekend/niet van toepassing"
-    } else if (language == "en") {
-      not_applicable_topic <- "Unknown/not applicable"
+  # ---- helper: create a reduce prompt with tidyprompt ------------------------
+  create_prompt <- function(
+    topics_vec
+  ) {
+    base <- "Your task will be to distill a list of core topics from the following topics: "
+    if (nzchar(research_background)) {
+      base <- paste0(
+        "We have distilled topics from texts obtained during a research.\n\n",
+        "Background information about the research:\n",
+        research_background,
+        "\n\n",
+        base
+      )
     }
 
+    candidate_topics_formatted <- purrr::map_chr(
+      seq_along(topics_vec),
+      ~ paste0(.x - 1, ": ", topics_vec[[.x]])
+    )
+
+    prompt <- base |>
+      tidyprompt::add_text(paste(
+        candidate_topics_formatted,
+        collapse = "\n"
+      )) |>
+      tidyprompt::add_text("Merge duplicate topics.", sep = "\n\n") |>
+      tidyprompt::add_text(
+        "Also merge topics that are too specific.",
+        sep = "\n"
+      ) |>
+      tidyprompt::add_text(
+        "Do not merge topics which are about the same but have a different sentiment.",
+        sep = "\n"
+      )
+
+    if (!is.null(desired_number)) {
+      if (desired_number_type == "max") {
+        prompt <- tidyprompt::add_text(
+          prompt,
+          paste0(
+            "Please reduce the number of topics to a maximum of ",
+            desired_number,
+            "."
+          ),
+          sep = "\n"
+        )
+      } else {
+        prompt <- tidyprompt::add_text(
+          prompt,
+          paste0(
+            "Please reduce the number of topics to about ",
+            desired_number,
+            "."
+          ),
+          sep = "\n"
+        )
+      }
+    } else {
+      prompt <- tidyprompt::add_text(
+        prompt,
+        "Please reduce the number of topics to a reasonable number.",
+        sep = "\n"
+      )
+    }
+
+    if (language == "nl") {
+      prompt <- tidyprompt::add_text(
+        prompt,
+        "Please list the topics in Dutch.",
+        sep = "\n"
+      )
+    }
+
+    prompt <- tidyprompt::answer_as_json(
+      prompt,
+      schema = list(
+        type = "object",
+        properties = list(
+          topics = list(type = "array", items = list(type = "string"))
+        ),
+        required = list("topics")
+      ),
+      type = "auto"
+    ) |>
+      tidyprompt::prompt_wrap(
+        extraction_fn = function(result) {
+          if (!is.character(result$topics))
+            result$topics <- as.character(result$topics)
+          result$topics <- unique(trimws(result$topics[!is.na(result$topics)]))
+          if (length(result$topics) < 2) {
+            return(tidyprompt::llm_feedback(
+              "Provide an array of at least two valid topics."
+            ))
+          }
+          result
+        }
+      )
+
+    return(prompt)
+  }
+
+  base_token_cost <- create_prompt(c("")) |>
+    tidyprompt::construct_prompt_text() |>
+    count_tokens()
+
+  # ---- helper: run a single reduce prompt ------------------------------------
+  reduce_once <- function(topics_vec) {
+    prompt <- create_prompt(topics_vec)
+    result <- send_prompt_with_retries(prompt, llm_provider)
+
+    stopifnot(
+      is.list(result),
+      "topics" %in% names(result),
+      is.character(result$topics),
+      length(result$topics) > 0
+    )
+
+    # Return the reduced topics
+    return(result$topics)
+  }
+
+  # ---- context window bookkeeping -------------------------------------------
+  model <- llm_provider$parameters$model
+  n_tokens_context_window <- get_context_window_size_in_tokens(model)
+  if (is.null(n_tokens_context_window)) n_tokens_context_window <- 2048
+
+  split_into_chunks <- function(topics_vec) {
+    chunks <- list()
+    current <- character()
+    cur_tokens <- 0
+    for (i in seq_along(topics_vec)) {
+      t <- topics_vec[[i]]
+      add_tokens <- count_tokens(t) + 3 # index prefix + colon + space
+      if (
+        (cur_tokens + add_tokens + base_token_cost) > n_tokens_context_window &&
+          length(current) > 0
+      ) {
+        chunks[[length(chunks) + 1]] <- current
+        current <- character()
+        cur_tokens <- 0
+      }
+      current <- c(current, t)
+      cur_tokens <- cur_tokens + add_tokens
+    }
+    if (length(current) > 0) chunks[[length(chunks) + 1]] <- current
+    chunks
+  }
+
+  # ---- first split guard -----------------------------------------------------
+  chunks <- split_into_chunks(candidate_topics)
+  if (length(chunks) > max_groups) {
+    stop(
+      "reduce_topics(): Initial split produced ",
+      length(chunks),
+      " groups, which exceeds 'max_groups' (",
+      max_groups,
+      "). Either reduce 'candidate_topics', increase the model context window, or raise 'max_groups'."
+    )
+  }
+
+  # ---- iterative reduction loop ---------------------------------------------
+  current_topics <- unique(trimws(candidate_topics))
+  iteration <- 0
+
+  repeat {
+    iteration <- iteration + 1
+    if (iteration > max_iterations) {
+      stop(
+        "reduce_topics(): Prompt still too large after ",
+        max_iterations,
+        " reductions. Consider increasing max_iterations or decreasing 'candidate_topics'."
+      )
+    }
+
+    if (!is.null(interrupter)) {
+      interrupter$execInterrupts()
+    }
+
+    chunks <- split_into_chunks(current_topics)
+
+    # guard at *each* iteration ----------------------------------------------
+    if (length(chunks) > max_groups) {
+      stop(
+        "reduce_topics(): Reduction step ",
+        iteration,
+        " produced ",
+        length(chunks),
+        " groups, exceeding 'max_groups' (",
+        max_groups,
+        "). Reduce topic count or raise the cap."
+      )
+    }
+
+    reduced_chunks <- purrr::map(chunks, reduce_once)
+    combined <- unique(unlist(reduced_chunks))
+
+    if (length(chunks) == 1) {
+      # everything fits now, we're done
+      current_topics <- combined
+      break
+    }
+
+    current_topics <- combined # otherwise iterate again
+  }
+
+  # ---- post-processing -------------------------------------------------------
+
+  # Set to sentence case
+  current_topics <- stringr::str_to_sentence(current_topics)
+
+  if (always_add_not_applicable) {
+    not_applicable_topic <- ifelse(
+      language == "nl",
+      "Onbekend/niet van toepassing",
+      "Unknown/not applicable"
+    )
+
+    # Check if we have literal match already in one of the topics
+    if (not_applicable_topic %in% current_topics) {
+      return(current_topics) # return early
+    }
+
+    # Check if the not-applicable topic is already present via a prompt to LLM
     is_present <- paste0(
       "Is a topic like '",
       not_applicable_topic,
       "' present in the following topics?\n\n",
       "<topics>\n",
-      paste(result$topics, collapse = "\n"),
+      paste(current_topics, collapse = "\n"),
       "\n</topics>"
     ) |>
       tidyprompt::answer_as_boolean(
@@ -442,16 +553,12 @@ reduce_topics <- function(
       ) |>
       send_prompt_with_retries(llm_provider)
 
-    if (!isTRUE(is_present)) {
-      # If not present, add it
-      result$topics <- c(result$topics, not_applicable_topic)
+    if (!is_present) {
+      current_topics <- c(current_topics, not_applicable_topic)
     }
   }
 
-  # Set to sentence case
-  result$topics <- stringr::str_to_sentence(result$topics)
-
-  return(result$topics)
+  return(current_topics)
 }
 
 

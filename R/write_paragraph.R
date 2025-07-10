@@ -13,7 +13,8 @@ write_paragraph <- function(
   llm_provider = tidyprompt::llm_provider_openai(
     parameters = list(model = "gpt-4o-mini")
   ),
-  language = c("nl", "en")
+  language = c("nl", "en"),
+  focus_on_highlighted_text = FALSE
 ) {
   language <- match.arg(language)
   stopifnot(
@@ -30,7 +31,7 @@ write_paragraph <- function(
     "We have identified some texts to be about a topic:\n",
     topic,
     "\n\n",
-    "See the below texts:\n\n",
+    "See the below texts:\n",
     paste(texts, collapse = "\n\n"),
     "\n\n",
     "Write a short, summarizing paragraph describing the different perspectives presented in the texts.\n",
@@ -44,6 +45,14 @@ write_paragraph <- function(
     "Quotes must be literal: do not paraphrase; do not alter texts.\n",
     "The tone must be objective and scientific, but not overly formal."
   )
+
+  if (focus_on_highlighted_text) {
+    prompt <- paste0(
+      prompt,
+      "\n",
+      "Focus on the higlighted parts of the text (indicated with '**' and '**' around it)."
+    )
+  }
 
   if (research_background != "") {
     prompt <- paste0(
@@ -116,9 +125,9 @@ write_paragraph <- function(
     2048,
     n_tokens_context_window
   )
-  n_char_prompt <- prompt$construct_prompt_text() |> nchar()
+  n_tokens_prompt <- prompt$construct_prompt_text() |> count_tokens()
   prompt_fits <- TRUE
-  if (isTRUE(n_char_prompt > (n_tokens_context_window * 4))) {
+  if (isTRUE(n_tokens_prompt > n_tokens_context_window)) {
     prompt_fits <- FALSE
   }
 

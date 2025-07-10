@@ -50,7 +50,8 @@ mode_server <- function(
                 choices = c(
                   lang()$t("Categorisatie"),
                   lang()$t("Scoren"),
-                  lang()$t("Onderwerpextractie")
+                  lang()$t("Onderwerpextractie"),
+                  lang()$t("Markeren")
                 ),
                 selected = lang()$t("Categorisatie"),
                 size = "sm"
@@ -76,6 +77,17 @@ mode_server <- function(
           ),
           "Onderwerpextractie" = lang()$t(
             "Het model zal verschillende perspectieven extraheren uit de teksten, en de teksten hiernaar categoriseren. Per categorie kan het model een samenvatting met quotes schrijven."
+          ),
+          "Markeren" = paste0(
+            lang()$t(
+              "Het model zal per opgegeven code de relevante delen bij in teksten markeren. Bijvoorbeeld, bij code 'kleur' zou het model 'geel' markeren in de tekst 'de zon is geel'."
+            ),
+            lang()$t(
+              " Deze modus is met name bedoeld voor langere teksten, zoals interviews. Het is bij deze modus niet nodig om teksten gesplitst te hebben naar kleinere stukken; dat gebeurt automatisch tijdens de analyse."
+            ),
+            lang()$t(
+              " (Let op: deze modus is nog in ontwikkeling, en kan nog bugs bevatten. De vorm van de rapportage wordt op termijn nog verbeterd.)"
+            )
           )
         )
 
@@ -107,6 +119,8 @@ mode_server <- function(
           new_mode <- "Scoren"
         } else if (input$mode == lang()$t("Onderwerpextractie")) {
           new_mode <- "Onderwerpextractie"
+        } else if (input$mode == lang()$t("Markeren")) {
+          new_mode <- "Markeren"
         }
 
         mode(new_mode)

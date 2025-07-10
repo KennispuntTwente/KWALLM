@@ -930,12 +930,12 @@
         "en": " If your texts are very long (e.g., interviews), a language model may have difficulty processing them."
       },
       {
-        "nl": " Het kan dan nuttig zijn om je teksten op te splitsen in kortere teksten.",
-        "en": " It may be useful to split your texts into shorter texts."
+        "nl": " Het kan dan nuttig zijn om je teksten op te splitsen in kortere teksten. (Let op: dit is niet nodig als je de 'markeren'-modus gebruikt.)",
+        "en": " It may be useful to split your texts into shorter texts. (Note: this is not necessary if you are using 'marking' mode.)"
       },
       {
-        "nl": " Dit kan gedaan worden met behulp van semantische chunking, waarbij teksten worden gesplitst op basis van hun inhoud.",
-        "en": " This can be done using semantic chunking, where texts are split based on their content."
+        "nl": " Splitsen kan gedaan worden met behulp van semantische chunking, waarbij teksten worden gesplitst op basis van hun inhoud.",
+        "en": " Splitting can be done using semantic chunking, where texts are split based on their content."
       },
       {
         "nl": " De teksten worden hier met Python package 'semchunk' gesplitst in stukken van een opgegeven maximale lengte (in tokens, naar OpenAI's gpt-4; een token is ongeveer 4 karakters).",
@@ -1104,6 +1104,114 @@
       {
         "nl": " Omdat deze stap slechts één keer gebeurt maar wel grote invloed heeft op de resultaten, wordt aangeraden om een groter model te kiezen (mogelijk een 'thinking'-model zoals OpenAI's o3 of Deepseek's R1).",
         "en": " Because this step only happens once but has a significant impact on the results, it is recommended to choose a larger model (possibly a 'thinking' model like OpenAI's o3 or Deepseek's R1)."
+      },
+      {
+        "nl": "Download de voorbewerkte teksten als .csv-bestand. Dit is niet nodig, maar kan soms handig zijn (als je bijv. alleen de anonimiserings- of tekst-splits-functies van de app wilde gebruiken).",
+        "en": "Download the pre-processed texts as a .csv file. This is not necessary, but can sometimes be useful (for example, if you only wanted to use the anonymization or text-splitting features of the app)."
+      },
+      {
+        "nl": "Download",
+        "en": "Download"
+      },
+      {
+        "nl": "Markeren",
+        "en": "Mark"
+      },
+      {
+        "nl": "Code",
+        "en": "Code"
+      },
+      {
+        "nl": "Codes",
+        "en": "Codes"
+      },
+      {
+        "nl": "Bewerk hier de codes waarnaar het taalmodel relevante delen van de teksten zal markeren.",
+        "en": "Edit the codes here that the language model will use to mark relevant parts of the texts."
+      },
+      {
+        "nl": " Gebruik de '+'- en '-'-knoppen om codes toe te voegen of te verwijderen.",
+        "en": " Use the '+' and '-' buttons to add or remove codes."
+      },
+      {
+        "nl": " Gebruik tenslotte de save/edit-knop om de codes op te slaan (of weer te kunnen bewerken).",
+        "en": " Use the save/edit button to save (or edit) the codes."
+      },
+      {
+        "nl": "Verwerk",
+        "en": "Process"
+      },
+      {
+        "nl": "Het model zal per opgegeven code de relevante delen bij in teksten markeren. Bijvoorbeeld, bij code 'kleur' zou het model 'geel' markeren in de tekst 'de zon is geel'.",
+        "en": "The model will mark relevant parts in the texts for each specified code. For example, with the code 'color', the model would mark 'yellow' in the text 'the sun is yellow'."
+      },
+      {
+        "nl": " (Let op: deze modus is nog in ontwikkeling. Je krijgt voorlopig alleen een databestand met de gemarkeerde teksten terug. De modus kan nog bugs bevatten.)",
+        "en": " (Note: this mode is still under development. For now, you will only receive a data file with the marked texts back. The mode may still contain bugs.)"
+      },
+      {
+        "nl": "Voer de codes in waarvoor het taalmodel relevante delen van de teksten zal markeren.",
+        "en": "Enter the codes for which the language model will mark relevant parts of the texts."
+      },
+      {
+        "nl": "Geef beknopte, duidelijke omschrijvingen (met optioneel voorbeelden van teksten die bij de code zouden moeten horen).",
+        "en": "Provide concise, clear descriptions (optionally with examples of texts that should belong to the code)."
+      },
+      {
+        "nl": "Geen teksten beschikbaar om codes voor te genereren",
+        "en": "No texts available to generate codes for"
+      },
+      {
+        "nl": " Geef beknopte, duidelijke omschrijvingen (met optioneel voorbeelden van teksten die bij de code zouden moeten horen).",
+        "en": " Provide concise, clear descriptions (optionally with examples of texts that should belong to the code)."
+      },
+      {
+        "nl": "Genereer mogelijke codes door het taalmodel alle teksten te laten lezen.",
+        "en": "Generate possible codes by having the language model read all texts."
+      },
+      {
+        "nl": " (Let op, dit kan even duren, afhankelijk van het aantal teksten en de snelheid van het taalmodel dat je gebruikt.)",
+        "en": " (Note, this may take a while, depending on the number of texts and the speed of the language model you are using.)"
+      },
+      {
+        "nl": "Genereer codes",
+        "en": "Generate codes"
+      },
+      {
+        "nl": "Codes genereren...",
+        "en": "Generating codes..."
+      },
+      {
+        "nl": "Teksten splitsen...",
+        "en": "Splitting texts..."
+      },
+      {
+        "nl": "Teksten markeren...",
+        "en": "Marking texts..."
+      },
+      {
+        "nl": "Tekst markeren voor code '",
+        "en": "Marking text for code '"
+      },
+      {
+        "nl": "Resultaten opschonen...",
+        "en": "Cleaning up results..."
+      },
+      {
+        "nl": " Deze modus is met name bedoeld voor langere teksten, zoals interviews. Het is bij deze modus niet nodig om teksten gesplitst te hebben naar kleinere stukken; dat gebeurt automatisch tijdens de analyse.",
+        "en": " This mode is particularly intended for longer texts, such as interviews. It is not necessary to have split texts into smaller pieces in this mode; that happens automatically during the analysis."
+      },
+      {
+        "nl": " (Let op: deze modus is nog in ontwikkeling, en kan nog bugs bevatten. De vorm van de rapportage wordt op termijn nog verbeterd.)",
+        "en": " (Note: this mode is still under development and may contain bugs. The format of the report will be improved in the future.)"
+      },
+      {
+        "nl": "Er is nog geen LLM provider ingesteld",
+        "en": "No LLM provider has been set up yet"
+      },
+      {
+        "nl": "Splits tekst op nieuwe regels?",
+        "en": "Split text on new lines?"
       }
     ]
 }
