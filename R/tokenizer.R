@@ -28,7 +28,6 @@ tiktoken_load_tokenizer <- function(
     !reload_if_exists &&
       exists("tiktoken_tokenizer", envir = .GlobalEnv, inherits = FALSE)
   ) {
-    print_message("tiktoken tokenizer already loaded", type = "success")
     return(invisible(get("tiktoken_tokenizer", envir = .GlobalEnv)))
   }
 
