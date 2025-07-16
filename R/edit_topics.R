@@ -270,7 +270,8 @@ edit_topics_server <- function(
             tiktoken_load_tokenizer = tiktoken_load_tokenizer,
             count_tokens = count_tokens,
             async_message_printer = async_message_printer
-          )
+          ),
+          seed = NULL
         ) %...>%
           (function(reduced_topics) {
             if (length(reduced_topics) < 2 || anyDuplicated(reduced_topics)) {
