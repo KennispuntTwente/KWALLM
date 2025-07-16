@@ -265,7 +265,11 @@ edit_topics_server <- function(
             updated_topics = updated_topics,
             research_background = research_background(),
             llm_provider = llm_provider,
-            lang = lang()
+            lang = lang(),
+            get_context_window_size_in_tokens = get_context_window_size_in_tokens,
+            tiktoken_load_tokenizer = tiktoken_load_tokenizer,
+            count_tokens = count_tokens,
+            async_message_printer = async_message_printer
           )
         ) %...>%
           (function(reduced_topics) {
