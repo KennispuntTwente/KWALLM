@@ -1592,19 +1592,14 @@ processing_server <- function(
       interrupter <- ipc::AsyncInterruptor$new()
 
       shiny::onStop(function() {
-        tryCatch(
+        try(
           {
             interrupter$interrupt(
               "Shiny session was stopped (`shiny::onStop()`)"
             )
             interrupter$destroy()
           },
-          error = function(e) {
-            print(paste0(
-              "Error while interrupting (`onStop()`): ",
-              conditionMessage(e)
-            ))
-          }
+          silent = TRUE
         )
       })
 
