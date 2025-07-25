@@ -19,7 +19,9 @@ Er zijn `r length(unique(rl$df$text))` teksten geanalyseerd met een LLM (model: 
 waarbij het LLM gevraagd werd om teksten te markeren die hoorden bij één van de volgende codes:
 
 ```{r echo=FALSE, results='asis', error=TRUE}
+cat("<blockquote>")
 cat(paste0("* *", rl$codes, "*"), sep = "\n")
+cat("</blockquote>")
 ```
 
 ```{r echo=FALSE, results='asis', error=TRUE}
@@ -28,6 +30,23 @@ if (!is.null(rl$paragraphs)) {
     "Met de teksten die gemarkeerd zijn heeft een taalmodel ",
     "(", rl$model, ") tenslotte een rapport geschreven.", "\n",
     "Per code is met quotes samengevat wat er is gezegd."
+  ))
+}
+```
+
+```{r echo=FALSE, results='asis', error=TRUE}
+research_background <- rl$research_background
+if (
+  !is.null(rl$research_background)
+  && research_background != ""
+) {
+  cat(paste0(
+    "### Onderzoeksachtergrond\n",
+    "De gebruiker heeft de volgende achtergrondinformatie over het onderzoek opgegeven:\n\n",
+    "<blockquote><i>",
+    research_background,
+    "</i></blockquote>", "\n\n",
+    "Deze informatie is toegevoegd aan elke prompt die naar het taalmodel is gestuurd, zodat het beter de context van het onderzoek kon begrijpen."
   ))
 }
 ```

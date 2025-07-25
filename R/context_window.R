@@ -413,7 +413,23 @@ context_window_server <- function(
           class = "d-flex flex-column align-items-center",
           numericInput(
             ns("context_window"),
-            lang()$t("Context-window grootte (tokens)"),
+            label = span(
+              HTML(paste0(lang()$t("Context-window grootte (tokens)"))),
+              tooltip(
+                bs_icon("info-circle"),
+                paste0(
+                  lang()$t(
+                    "Dit is de context-window grootte waarmee gerekend wordt om te bepalen of de verschillende prompts & teksten in het context-window passen."
+                  ),
+                  lang()$t(
+                    " Je kan de waarde zelf aanpassen indien de app niet geconfigureerd is om hier de juiste grootte voor jouw model & LLM-provider te tonen."
+                  ),
+                  lang()$t(
+                    " Het aanpassen van deze waarde enkel effect op de berekening (niet op de daadwerkelijke context-window grootte die het model hanteert)."
+                  )
+                )
+              )
+            ),
             value = rv$n_tokens_context_window,
             min = 0
           ),

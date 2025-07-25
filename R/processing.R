@@ -326,7 +326,8 @@ processing_server <- function(
             progress_secondary = progress_secondary$async,
             interrupter = interrupter
           ),
-          packages = c("tidyprompt", "tidyverse", "glue", "fs", "uuid")
+          packages = c("tidyprompt", "tidyverse", "glue", "fs", "uuid"),
+          seed = NULL
         ) %...>%
           results_df() %...!%
           {
@@ -1591,19 +1592,14 @@ processing_server <- function(
       interrupter <- ipc::AsyncInterruptor$new()
 
       shiny::onStop(function() {
-        tryCatch(
+        try(
           {
             interrupter$interrupt(
               "Shiny session was stopped (`shiny::onStop()`)"
             )
             interrupter$destroy()
           },
-          error = function(e) {
-            print(paste0(
-              "Error while interrupting (`onStop()`): ",
-              conditionMessage(e)
-            ))
-          }
+          silent = TRUE
         )
       })
 

@@ -1212,6 +1212,18 @@
       {
         "nl": "Splits tekst op nieuwe regels?",
         "en": "Split text on new lines?"
+      },
+      {
+        "nl": "Dit is de context-window grootte waarmee gerekend wordt om te bepalen of de verschillende prompts & teksten in het context-window passen.",
+        "en": "This is the context window size used to determine whether the various prompts & texts fit within the context window."
+      },
+      {
+        "nl": " Je kan de waarde zelf aanpassen indien de app niet geconfigureerd is om hier de juiste grootte voor jouw model & LLM-provider te tonen.",
+        "en": " You can adjust the value yourself if the app is not configured to show the correct size for your model & LLM provider."
+      },
+      {
+        "nl": " Het aanpassen van deze waarde enkel effect op de berekening (niet op de daadwerkelijke context-window grootte die het model hanteert).",
+        "en": " Adjusting this value only affects the calculation (not the actual context window size used by the model)."
       }
     ]
 }

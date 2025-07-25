@@ -481,19 +481,14 @@ marking_codes_server <- function(
 
     # On exit, fire interrupter
     shiny::onStop(function() {
-      tryCatch(
+      try(
         {
           interrupter$interrupt(
             "Shiny session was stopped (`shiny::onStop()`)"
           )
           interrupter$destroy()
         },
-        error = function(e) {
-          print(paste0(
-            "Error while interrupting (`onStop()`): ",
-            conditionMessage(e)
-          ))
-        }
+        silent = TRUE
       )
     })
 
