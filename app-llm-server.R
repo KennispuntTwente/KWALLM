@@ -7,6 +7,12 @@ if (!requireNamespace("renv", quietly = TRUE)) install.packages("renv")
 # Install packages with renv
 renv::restore()
 
+# Setup Python with reticulate & uv
+try({
+  reticulate:::uv_exec("sync")
+  reticulate::use_virtualenv("./.venv")
+})
+
 # Load core packages
 library(tidyverse)
 library(tidyprompt)
@@ -167,6 +173,14 @@ options(
   topic_modelling__draws_default = 1,
   topic_modelling__draws_limit = 5
 )
+
+if (getOption("anonymization__gliner_test", FALSE)) {
+  invisible(gliner_load_model(test_model = TRUE))
+}
+
+if (!getOption("shiny.testmode", FALSE)) {
+  try(tiktoken_load_tokenizer())
+}
 
 
 #### 3 Run app ####
