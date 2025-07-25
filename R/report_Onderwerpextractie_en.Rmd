@@ -57,6 +57,23 @@ if (!is.null(rl$paragraphs)) {
 ```
 
 ```{r echo=FALSE, results='asis', error=TRUE}
+research_background <- rl$research_background
+if (
+  !is.null(rl$research_background)
+  && research_background != ""
+) {
+  cat(paste0(
+    "### Research background\n",
+    "The user provided the following background information about the research:\n\n",
+    "<blockquote><i>",
+    research_background,
+    "</i></blockquote>", "\n\n",
+    "This information was added to each prompt sent to the language model, so that it could better understand the context of the research."
+  ))
+}
+```
+
+```{r echo=FALSE, results='asis', error=TRUE}
 if (!is.null(rl$irr)) {
   cat(paste0(
     "### Reliability\n",

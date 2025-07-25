@@ -19,7 +19,9 @@ There were `r length(unique(rl$df$text))` texts analyzed with a large language m
 where the LLM was asked to mark texts that belonged to one of the following codes:
 
 ```{r echo=FALSE, results='asis', error=TRUE}
+cat("<blockquote>")
 cat(paste0("* *", rl$codes, "*"), sep = "\n")
+cat("</blockquote>")
 ```
 
 ```{r echo=FALSE, results='asis', error=TRUE}
@@ -28,6 +30,23 @@ if (!is.null(rl$paragraphs)) {
     "With the texts that were marked, a language model (",
     rl$model, ") has finally written a report.", "\n",
     "For each code, a summary of what was said is provided in the report."
+  ))
+}
+```
+
+```{r echo=FALSE, results='asis', error=TRUE}
+research_background <- rl$research_background
+if (
+  !is.null(rl$research_background)
+  && research_background != ""
+) {
+  cat(paste0(
+    "### Research background\n",
+    "The user provided the following background information about the research:\n\n",
+    "<blockquote><i>",
+    research_background,
+    "</i></blockquote>", "\n\n",
+    "This information was added to each prompt sent to the language model, so that it could better understand the context of the research."
   ))
 }
 ```
