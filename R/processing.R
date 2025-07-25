@@ -326,7 +326,8 @@ processing_server <- function(
             progress_secondary = progress_secondary$async,
             interrupter = interrupter
           ),
-          packages = c("tidyprompt", "tidyverse", "glue", "fs", "uuid")
+          packages = c("tidyprompt", "tidyverse", "glue", "fs", "uuid"),
+          seed = NULL
         ) %...>%
           results_df() %...!%
           {
