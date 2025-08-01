@@ -178,7 +178,6 @@ main_server <- function(
             text_split_ui("text_split"),
             text_management_ui("text_management"),
             research_background_ui("research_background"),
-            style_prompt_ui("style_prompt"),
             mode_ui("mode"),
             categories_ui("categories"),
             score_ui("scoring"),
@@ -288,21 +287,16 @@ main_server <- function(
       lang
     )
 
-    write_paragraphs_toggle <- write_paragraphs_toggle_server(
+    write_paragraphs_result <- write_paragraphs_toggle_server(
       "write_paragraphs_toggle",
       processing,
       mode,
       lang
     )
-
-    # Obtain style prompt for summaries
-    style_prompt <- style_prompt_server(
-      "style_prompt",
-      processing = processing,
-      mode = mode,
-      write_paragraphs = write_paragraphs_toggle,
-      lang = lang
-    )
+    
+    # Extract both values from the result
+    write_paragraphs_toggle <- write_paragraphs_result$write_paragraphs
+    style_prompt <- write_paragraphs_result$style_prompt
 
     # Obtain toggle for interrater reliability
     interrater_reliability_toggle <- interrater_toggle_server(
