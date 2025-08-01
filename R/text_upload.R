@@ -153,12 +153,101 @@ text_upload_server <- function(
       file_ext <- tools::file_ext(input$text_file$name)
       file_type(file_ext) # ◄ track for UI logic
       file_path <- input$text_file$datapath
+      file_name <- input$text_file$name
+      file_size <- file.size(file_path)
+
+      # Show loading notification
+      notification_id <- showNotification(
+        paste(lang()$t("Bestand wordt geladen:"), file_name),
+        type = "message",
+        duration = NULL
+      )
+
+      # Validate file before processing
+      validation_result <- tryCatch({
+        # Check if file exists and is readable
+        if (!file.exists(file_path)) {
+          return(list(valid = FALSE, message = lang()$t("Bestand niet gevonden")))
+        }
+        
+        # Check file size (warn if very large)
+        if (file_size > 50 * 1024^2) { # 50 MB
+          showNotification(
+            paste(lang()$t("Groot bestand wordt geladen ("), 
+                  round(file_size / 1024^2, 1), "MB). Dit kan even duren..."),
+            type = "warning",
+            duration = 5
+          )
+        }
+        
+        # Check if file is empty
+        if (file_size == 0) {
+          return(list(valid = FALSE, message = lang()$t("Bestand is leeg")))
+        }
+        
+        # Additional validation for Excel files
+        if (file_ext == "xlsx") {
+          # Try to open the file to check if it's a valid Excel file
+          test_conn <- tryCatch({
+            conn <- file(file_path, "rb")
+            # Read first few bytes to check Excel signature
+            header <- readBin(conn, "raw", 8)
+            close(conn)
+            # Excel files should start with PK (ZIP signature) 
+            if (length(header) >= 2 && header[1] == as.raw(0x50) && header[2] == as.raw(0x4B)) {
+              return(TRUE)
+            } else {
+              return(FALSE)
+            }
+          }, error = function(e) FALSE)
+          
+          if (!test_conn) {
+            return(list(valid = FALSE, message = lang()$t("Bestand lijkt geen geldig Excel-bestand te zijn")))
+          }
+        }
+        
+        return(list(valid = TRUE))
+      }, error = function(e) {
+        return(list(valid = FALSE, message = paste(lang()$t("Fout bij validatie van bestand:"), e$message)))
+      })
+
+      # Remove loading notification
+      removeNotification(notification_id)
+
+      # Stop if validation failed
+      if (!validation_result$valid) {
+        showNotification(
+          validation_result$message,
+          type = "error",
+          duration = 10
+        )
+        return()
+      }
+
+      # Show processing notification
+      notification_id <- showNotification(
+        paste(lang()$t("Bestand wordt verwerkt:"), file_name),
+        type = "message",
+        duration = NULL
+      )
 
       if (file_ext == "txt") {
         tryCatch(
           {
-            # read every line first
-            txt_lines <- readLines(file_path, encoding = "UTF-8")
+            # Try different encodings if UTF-8 fails
+            txt_lines <- tryCatch({
+              readLines(file_path, encoding = "UTF-8", warn = FALSE)
+            }, error = function(e) {
+              # Try other common encodings
+              for (enc in c("latin1", "windows-1252", "UTF-8-BOM")) {
+                result <- tryCatch({
+                  readLines(file_path, encoding = enc, warn = FALSE)
+                }, error = function(e2) NULL)
+                if (!is.null(result)) return(result)
+              }
+              # If all encodings fail, throw the original error
+              stop(e)
+            })
 
             split_lines <- isTRUE(input$txt_split_lines == lang()$t("Ja"))
 
@@ -168,44 +257,99 @@ text_upload_server <- function(
               paste(txt_lines, collapse = "\n") # combine to single text
             }
 
+            if (length(txt) == 0) {
+              stop(lang()$t("Geen tekst gevonden in bestand"))
+            }
+
             df <- data.frame(text = txt, stringsAsFactors = FALSE)
             uploaded_data(df)
             raw_texts(df$text)
+            
+            removeNotification(notification_id)
+            showNotification(
+              paste(lang()$t("Tekstbestand succesvol geladen:"), length(txt), lang()$t("teksten")),
+              type = "success",
+              duration = 3
+            )
           },
           error = function(e) {
-            showNotification(
-              paste(lang()$t("Error bij lezen van tekstbestand:"), e$message),
-              type = "error"
-            )
+            removeNotification(notification_id)
+            error_msg <- if (grepl("cannot open.*connection", e$message, ignore.case = TRUE)) {
+              lang()$t("Kan bestand niet openen. Controleer of het bestand niet in gebruik is door een ander programma.")
+            } else if (grepl("invalid.*UTF-8", e$message, ignore.case = TRUE)) {
+              lang()$t("Tekstcodering van het bestand wordt niet ondersteund. Probeer het bestand op te slaan als UTF-8.")
+            } else {
+              paste(lang()$t("Fout bij lezen van tekstbestand:"), e$message)
+            }
+            showNotification(error_msg, type = "error", duration = 10)
           }
         )
       } else if (file_ext %in% c("csv", "tsv")) {
         tryCatch(
           {
-            df <- vroom::vroom(file_path)
+            df <- vroom::vroom(file_path, show_col_types = FALSE)
+            
+            if (nrow(df) == 0) {
+              stop(lang()$t("Geen data gevonden in bestand"))
+            }
+            
             uploaded_data(df)
+            
+            removeNotification(notification_id)
+            showNotification(
+              paste(lang()$t("CSV/TSV bestand succesvol geladen:"), nrow(df), lang()$t("rijen")),
+              type = "success",
+              duration = 3
+            )
           },
           error = function(e) {
-            showNotification(
-              paste(
-                lang()$t("Error bij lezen van CSV/TSV bestand:"),
-                e$message
-              ),
-              type = "error"
-            )
+            removeNotification(notification_id)
+            error_msg <- if (grepl("could not find function", e$message)) {
+              lang()$t("Ontbrekende afhankelijkheid voor CSV-bestanden. Neem contact op met de beheerder.")
+            } else if (grepl("lexical error", e$message) || grepl("parse", e$message)) {
+              lang()$t("CSV-bestand heeft een ongeldig formaat. Controleer komma's, aanhalingstekens en rij-eindes.")
+            } else {
+              paste(lang()$t("Fout bij lezen van CSV/TSV bestand:"), e$message)
+            }
+            showNotification(error_msg, type = "error", duration = 10)
           }
         )
       } else if (file_ext == "xlsx") {
         tryCatch(
           {
-            sheets <- readxl::excel_sheets(file_path)
+            # First try to get sheet names
+            sheets <- tryCatch({
+              readxl::excel_sheets(file_path)
+            }, error = function(e) {
+              if (grepl("zip file.*corrupt", e$message, ignore.case = TRUE) || 
+                  grepl("not in zip format", e$message, ignore.case = TRUE)) {
+                stop(lang()$t("Excel-bestand is beschadigd of heeft een ongeldig formaat"))
+              } else if (grepl("cannot open", e$message, ignore.case = TRUE)) {
+                stop(lang()$t("Kan Excel-bestand niet openen. Controleer of het bestand niet in gebruik is."))
+              } else {
+                stop(e)
+              }
+            })
+            
+            if (length(sheets) == 0) {
+              stop(lang()$t("Geen werkbladen gevonden in Excel-bestand"))
+            }
+            
             sheet_names(sheets)
-            # Wait for user to choose sheet before loading data
+            
+            removeNotification(notification_id)
+            showNotification(
+              paste(lang()$t("Excel-bestand geladen met"), length(sheets), lang()$t("werkblad(en). Selecteer een werkblad.")),
+              type = "success",
+              duration = 5
+            )
           },
           error = function(e) {
+            removeNotification(notification_id)
             showNotification(
-              paste(lang()$t("Error bij lezen van Excel-bestand:"), e$message),
-              type = "error"
+              paste(lang()$t("Fout bij lezen van Excel-bestand:"), e$message),
+              type = "error",
+              duration = 10
             )
           }
         )
@@ -213,19 +357,37 @@ text_upload_server <- function(
         tryCatch(
           {
             df <- haven::read_sav(file_path)
+            
+            if (nrow(df) == 0) {
+              stop(lang()$t("Geen data gevonden in bestand"))
+            }
+            
             uploaded_data(df)
+            
+            removeNotification(notification_id)
+            showNotification(
+              paste(lang()$t("SPSS-bestand succesvol geladen:"), nrow(df), lang()$t("rijen")),
+              type = "success",
+              duration = 3
+            )
           },
           error = function(e) {
-            showNotification(
-              paste(lang()$t("Error bij lezen van SAV-bestand:"), e$message),
-              type = "error"
-            )
+            removeNotification(notification_id)
+            error_msg <- if (grepl("could not find function", e$message)) {
+              lang()$t("Ontbrekende afhankelijkheid voor SPSS-bestanden. Neem contact op met de beheerder.")
+            } else {
+              paste(lang()$t("Fout bij lezen van SPSS-bestand:"), e$message)
+            }
+            showNotification(error_msg, type = "error", duration = 10)
           }
         )
       } else {
+        removeNotification(notification_id)
         showNotification(
-          lang()$t("Niet ondersteund bestandstype"),
-          type = "error"
+          paste(lang()$t("Niet ondersteund bestandstype:"), file_ext, ". ", 
+                lang()$t("Ondersteunde formaten: .txt, .csv, .xlsx, .sav")),
+          type = "error",
+          duration = 10
         )
       }
     })
@@ -275,15 +437,67 @@ text_upload_server <- function(
     observeEvent(input$sheet, {
       req(input$text_file, input$sheet)
       file_path <- input$text_file$datapath
+      sheet_name <- input$sheet
+      
+      # Show loading notification
+      notification_id <- showNotification(
+        paste(lang()$t("Werkblad wordt geladen:"), sheet_name),
+        type = "message",
+        duration = NULL
+      )
+      
       tryCatch(
         {
-          df <- readxl::read_excel(file_path, sheet = input$sheet)
+          df <- readxl::read_excel(file_path, sheet = sheet_name)
+          
+          # Validate the loaded data
+          if (nrow(df) == 0) {
+            warning(lang()$t("Werkblad is leeg"))
+          } else if (ncol(df) == 0) {
+            stop(lang()$t("Werkblad heeft geen kolommen"))
+          }
+          
+          # Check for completely empty columns (all NA or empty strings)
+          non_empty_cols <- sapply(df, function(col) {
+            if (is.character(col)) {
+              any(!is.na(col) & nzchar(stringr::str_trim(col)))
+            } else {
+              any(!is.na(col))
+            }
+          })
+          
+          if (!any(non_empty_cols)) {
+            warning(lang()$t("Werkblad bevat geen data"))
+          }
+          
           uploaded_data(df)
+          
+          removeNotification(notification_id)
+          showNotification(
+            paste(lang()$t("Werkblad succesvol geladen:"), nrow(df), lang()$t("rijen,"), ncol(df), lang()$t("kolommen")),
+            type = "success",
+            duration = 3
+          )
         },
         error = function(e) {
+          removeNotification(notification_id)
+          error_msg <- if (grepl("Evaluation error.*subscript", e$message)) {
+            lang()$t("Werkblad niet gevonden. Mogelijk is de naam gewijzigd.")
+          } else if (grepl("zip file.*corrupt", e$message, ignore.case = TRUE)) {
+            lang()$t("Excel-bestand is beschadigd")
+          } else if (grepl("cannot open", e$message, ignore.case = TRUE)) {
+            lang()$t("Kan werkblad niet openen. Controleer of het Excel-bestand niet in gebruik is.")
+          } else {
+            paste(lang()$t("Fout bij lezen van werkblad:"), e$message)
+          }
+          showNotification(error_msg, type = "error", duration = 10)
+        },
+        warning = function(w) {
+          removeNotification(notification_id)
           showNotification(
-            paste(lang()$t("Error bij lezen sheet:"), e$message),
-            type = "error"
+            paste(lang()$t("Waarschuwing:"), w$message),
+            type = "warning",
+            duration = 8
           )
         }
       )
@@ -307,8 +521,36 @@ text_upload_server <- function(
       req(filtered_data())
       col <- input$column
       if (!is.null(col) && nzchar(col)) {
-        txt <- filtered_data()[[col]]
-        raw_texts(discard_empty(txt))
+        tryCatch({
+          if (!col %in% names(filtered_data())) {
+            stop(paste(lang()$t("Kolom niet gevonden:"), col))
+          }
+          
+          txt <- filtered_data()[[col]]
+          clean_txt <- discard_empty(txt)
+          
+          if (length(clean_txt) == 0) {
+            showNotification(
+              paste(lang()$t("Geen tekst gevonden in kolom:"), col),
+              type = "warning",
+              duration = 5
+            )
+            raw_texts(character(0))
+          } else {
+            raw_texts(clean_txt)
+            showNotification(
+              paste(lang()$t("Kolom geselecteerd:"), length(clean_txt), lang()$t("teksten uit"), col),
+              type = "success",
+              duration = 3
+            )
+          }
+        }, error = function(e) {
+          showNotification(
+            paste(lang()$t("Fout bij selecteren van kolom:"), e$message),
+            type = "error",
+            duration = 8
+          )
+        })
       }
     })
 

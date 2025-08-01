@@ -1224,6 +1224,194 @@
       {
         "nl": " Het aanpassen van deze waarde enkel effect op de berekening (niet op de daadwerkelijke context-window grootte die het model hanteert).",
         "en": " Adjusting this value only affects the calculation (not the actual context window size used by the model)."
+      },
+      {
+        "nl": "Bestand wordt geladen:",
+        "en": "Loading file:"
+      },
+      {
+        "nl": "Bestand niet gevonden",
+        "en": "File not found"
+      },
+      {
+        "nl": "Groot bestand wordt geladen (",
+        "en": "Loading large file ("
+      },
+      {
+        "nl": "MB). Dit kan even duren...",
+        "en": "MB). This may take a while..."
+      },
+      {
+        "nl": "Bestand is leeg",
+        "en": "File is empty"
+      },
+      {
+        "nl": "Bestand lijkt geen geldig Excel-bestand te zijn",
+        "en": "File does not appear to be a valid Excel file"
+      },
+      {
+        "nl": "Fout bij validatie van bestand:",
+        "en": "Error validating file:"
+      },
+      {
+        "nl": "Bestand wordt verwerkt:",
+        "en": "Processing file:"
+      },
+      {
+        "nl": "Geen tekst gevonden in bestand",
+        "en": "No text found in file"
+      },
+      {
+        "nl": "teksten",
+        "en": "texts"
+      },
+      {
+        "nl": "Tekstbestand succesvol geladen:",
+        "en": "Text file loaded successfully:"
+      },
+      {
+        "nl": "Kan bestand niet openen. Controleer of het bestand niet in gebruik is door een ander programma.",
+        "en": "Cannot open file. Check if the file is not in use by another program."
+      },
+      {
+        "nl": "Tekstcodering van het bestand wordt niet ondersteund. Probeer het bestand op te slaan als UTF-8.",
+        "en": "Text encoding of the file is not supported. Try saving the file as UTF-8."
+      },
+      {
+        "nl": "Fout bij lezen van tekstbestand:",
+        "en": "Error reading text file:"
+      },
+      {
+        "nl": "Geen data gevonden in bestand",
+        "en": "No data found in file"
+      },
+      {
+        "nl": "rijen",
+        "en": "rows"
+      },
+      {
+        "nl": "CSV/TSV bestand succesvol geladen:",
+        "en": "CSV/TSV file loaded successfully:"
+      },
+      {
+        "nl": "Ontbrekende afhankelijkheid voor CSV-bestanden. Neem contact op met de beheerder.",
+        "en": "Missing dependency for CSV files. Contact the administrator."
+      },
+      {
+        "nl": "CSV-bestand heeft een ongeldig formaat. Controleer komma's, aanhalingstekens en rij-eindes.",
+        "en": "CSV file has invalid format. Check commas, quotes and line endings."
+      },
+      {
+        "nl": "Fout bij lezen van CSV/TSV bestand:",
+        "en": "Error reading CSV/TSV file:"
+      },
+      {
+        "nl": "Excel-bestand is beschadigd of heeft een ongeldig formaat",
+        "en": "Excel file is corrupted or has invalid format"
+      },
+      {
+        "nl": "Kan Excel-bestand niet openen. Controleer of het bestand niet in gebruik is.",
+        "en": "Cannot open Excel file. Check if the file is not in use."
+      },
+      {
+        "nl": "Geen werkbladen gevonden in Excel-bestand",
+        "en": "No worksheets found in Excel file"
+      },
+      {
+        "nl": "Excel-bestand geladen met",
+        "en": "Excel file loaded with"
+      },
+      {
+        "nl": "werkblad(en). Selecteer een werkblad.",
+        "en": "worksheet(s). Select a worksheet."
+      },
+      {
+        "nl": "Fout bij lezen van Excel-bestand:",
+        "en": "Error reading Excel file:"
+      },
+      {
+        "nl": "SPSS-bestand succesvol geladen:",
+        "en": "SPSS file loaded successfully:"
+      },
+      {
+        "nl": "Ontbrekende afhankelijkheid voor SPSS-bestanden. Neem contact op met de beheerder.",
+        "en": "Missing dependency for SPSS files. Contact the administrator."
+      },
+      {
+        "nl": "Fout bij lezen van SPSS-bestand:",
+        "en": "Error reading SPSS file:"
+      },
+      {
+        "nl": "Niet ondersteund bestandstype:",
+        "en": "Unsupported file type:"
+      },
+      {
+        "nl": "Ondersteunde formaten: .txt, .csv, .xlsx, .sav",
+        "en": "Supported formats: .txt, .csv, .xlsx, .sav"
+      },
+      {
+        "nl": "Werkblad wordt geladen:",
+        "en": "Loading worksheet:"
+      },
+      {
+        "nl": "Werkblad is leeg",
+        "en": "Worksheet is empty"
+      },
+      {
+        "nl": "Werkblad heeft geen kolommen",
+        "en": "Worksheet has no columns"
+      },
+      {
+        "nl": "Werkblad bevat geen data",
+        "en": "Worksheet contains no data"
+      },
+      {
+        "nl": "kolommen",
+        "en": "columns"
+      },
+      {
+        "nl": "Werkblad succesvol geladen:",
+        "en": "Worksheet loaded successfully:"
+      },
+      {
+        "nl": "Werkblad niet gevonden. Mogelijk is de naam gewijzigd.",
+        "en": "Worksheet not found. Name may have changed."
+      },
+      {
+        "nl": "Excel-bestand is beschadigd",
+        "en": "Excel file is corrupted"
+      },
+      {
+        "nl": "Kan werkblad niet openen. Controleer of het Excel-bestand niet in gebruik is.",
+        "en": "Cannot open worksheet. Check if Excel file is not in use."
+      },
+      {
+        "nl": "Fout bij lezen van werkblad:",
+        "en": "Error reading worksheet:"
+      },
+      {
+        "nl": "Waarschuwing:",
+        "en": "Warning:"
+      },
+      {
+        "nl": "Kolom niet gevonden:",
+        "en": "Column not found:"
+      },
+      {
+        "nl": "Geen tekst gevonden in kolom:",
+        "en": "No text found in column:"
+      },
+      {
+        "nl": "Kolom geselecteerd:",
+        "en": "Column selected:"
+      },
+      {
+        "nl": "teksten uit",
+        "en": "texts from"
+      },
+      {
+        "nl": "Fout bij selecteren van kolom:",
+        "en": "Error selecting column:"
       }
     ]
 }
