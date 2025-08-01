@@ -9,6 +9,7 @@ mark_texts <- function(
   text_size_tokens = 128,
   overlap_size_tokens = 64,
   research_background = "",
+  style_prompt = "",
   llm_provider = tidyprompt::llm_provider_openai(),
   progress_primary = NULL,
   progress_secondary = NULL,
@@ -247,6 +248,7 @@ mark_texts <- function(
           texts = texts,
           topic = code,
           research_background = research_background,
+          style_prompt = style_prompt,
           llm_provider = llm_provider,
           language = lang$get_translation_language(),
           focus_on_highlighted_text = TRUE

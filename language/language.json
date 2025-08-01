@@ -182,6 +182,34 @@
         "en": "Research background"
       },
       {
+        "nl": "Stijlprompt voor samenvattingen",
+        "en": "Style prompt for summaries"
+      },
+      {
+        "nl": "Hier kan je aangeven hoe het LLM de samenvattingen moet schrijven.",
+        "en": "Here you can specify how the LLM should write the summaries."
+      },
+      {
+        "nl": " Deze instructies worden meegegeven wanneer het LLM samenvattingen schrijft over categorieën of onderwerpen.",
+        "en": " These instructions are provided when the LLM writes summaries about categories or topics."
+      },
+      {
+        "nl": " Je kan bijvoorbeeld aangeven welke toon, stijl of focus je wilt (bijv. 'schrijf in academische stijl' of 'focus op emotionele aspecten').",
+        "en": " You can for example specify which tone, style or focus you want (e.g. 'write in academic style' or 'focus on emotional aspects')."
+      },
+      {
+        "nl": "Geef aan hoe de samenvattingen geschreven moeten worden.",
+        "en": "Specify how the summaries should be written."
+      },
+      {
+        "nl": " Welke stijl of focus wil je?",
+        "en": " What style or focus do you want?"
+      },
+      {
+        "nl": "Bijvoorbeeld: 'Schrijf in een formele, academische stijl' of 'Focus op emotionele aspecten van de teksten'",
+        "en": "For example: 'Write in a formal, academic style' or 'Focus on emotional aspects of the texts'"
+      },
+      {
         "nl": "Beschrijf kort je onderzoek zodat het LLM wat context heeft.",
         "en": "Briefly describe your research so that the LLM has some context."
       },

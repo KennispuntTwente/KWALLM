@@ -36,6 +36,7 @@ processing_server <- function(
   scoring_characteristic,
   codes,
   research_background,
+  style_prompt,
   human_in_the_loop = reactiveVal(TRUE),
   assign_multiple_categories = reactiveVal(TRUE),
   write_paragraphs = reactiveVal(TRUE),
@@ -289,6 +290,7 @@ processing_server <- function(
                     texts = cat_texts,
                     topic = cat_name,
                     research_background = research_background,
+                    style_prompt = style_prompt(),
                     llm_provider = llm_provider,
                     language = lang$get_translation_language()
                   )
@@ -746,6 +748,7 @@ processing_server <- function(
                         texts = topic_texts,
                         topic = topic_name,
                         research_background = research_background,
+                        style_prompt = style_prompt(),
                         llm_provider = llm_provider,
                         language = lang$get_translation_language()
                       )
@@ -871,7 +874,8 @@ processing_server <- function(
             mark_texts(
               texts = texts,
               codes = codes,
-              research_background = "",
+              research_background = research_background(),
+              style_prompt = style_prompt(),
               llm_provider = llm_provider,
               progress_primary = progress_primary,
               progress_secondary = progress_secondary,

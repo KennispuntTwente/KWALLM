@@ -178,6 +178,7 @@ main_server <- function(
             text_split_ui("text_split"),
             text_management_ui("text_management"),
             research_background_ui("research_background"),
+            style_prompt_ui("style_prompt"),
             mode_ui("mode"),
             categories_ui("categories"),
             score_ui("scoring"),
@@ -255,6 +256,13 @@ main_server <- function(
     # Obtain research background
     research_background <- research_background_server(
       "research_background",
+      processing = processing,
+      lang = lang
+    )
+
+    # Obtain style prompt for summaries
+    style_prompt <- style_prompt_server(
+      "style_prompt",
       processing = processing,
       lang = lang
     )
@@ -365,6 +373,7 @@ main_server <- function(
       scoring_characteristic = scoring_characteristic,
       codes = marking_codes,
       research_background = research_background,
+      style_prompt = style_prompt,
       human_in_the_loop = human_in_the_loop_toggle,
       assign_multiple_categories = assign_multiple_categories_toggle,
       write_paragraphs = write_paragraphs_toggle,
