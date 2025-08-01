@@ -18,6 +18,8 @@ style_prompt_ui <- function(id) {
 style_prompt_server <- function(
   id,
   processing,
+  mode = reactiveVal("Categorisatie"),
+  write_paragraphs = reactiveVal(TRUE),
   lang = reactiveVal(
     shiny.i18n::Translator$new(
       translation_json_path = "language/language.json"
@@ -35,6 +37,10 @@ style_prompt_server <- function(
       )
 
       output$card <- renderUI({
+        # Only show when mode supports paragraph writing and write_paragraphs is enabled
+        req(mode() %in% c("Onderwerpextractie", "Categorisatie", "Markeren"))
+        req(write_paragraphs())
+        
         bslib::card(
           class = "card",
           card_header(
@@ -111,14 +117,18 @@ if (FALSE) {
 
   server <- function(input, output, session) {
     processing <- reactiveVal(FALSE)
+    mode <- reactiveVal("Categorisatie")
+    write_paragraphs <- reactiveVal(TRUE)
 
     style_prompt <- style_prompt_server(
       "style_prompt_module",
-      processing
+      processing,
+      mode,
+      write_paragraphs
     )
 
     observe({
-      print(style_prompt())
+      print(paste("Style prompt:", style_prompt()))
     })
   }
 

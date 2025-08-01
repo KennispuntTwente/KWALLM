@@ -260,13 +260,6 @@ main_server <- function(
       lang = lang
     )
 
-    # Obtain style prompt for summaries
-    style_prompt <- style_prompt_server(
-      "style_prompt",
-      processing = processing,
-      lang = lang
-    )
-
     # Manage context window, chunking
     context_window <- context_window_server(
       "context_window",
@@ -300,6 +293,15 @@ main_server <- function(
       processing,
       mode,
       lang
+    )
+
+    # Obtain style prompt for summaries
+    style_prompt <- style_prompt_server(
+      "style_prompt",
+      processing = processing,
+      mode = mode,
+      write_paragraphs = write_paragraphs_toggle,
+      lang = lang
     )
 
     # Obtain toggle for interrater reliability
