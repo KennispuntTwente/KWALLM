@@ -1256,6 +1256,10 @@
       {
         "nl": " Het aanpassen van deze waarde enkel effect op de berekening (niet op de daadwerkelijke context-window grootte die het model hanteert).",
         "en": " Adjusting this value only affects the calculation (not the actual context window size used by the model)."
+      },
+      {
+        "nl": "Geef aan hoe de samenvattingen geschreven moeten worden. Welke stijl of focus wil je?",
+        "en": "Specify how the summaries should be written. What style or focus do you want?"
       }
     ]
 }

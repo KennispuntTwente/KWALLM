@@ -290,7 +290,7 @@ processing_server <- function(
                     texts = cat_texts,
                     topic = cat_name,
                     research_background = research_background,
-                    style_prompt = style_prompt(),
+                    style_prompt = style_prompt,
                     llm_provider = llm_provider,
                     language = lang$get_translation_language()
                   )
@@ -308,6 +308,7 @@ processing_server <- function(
             llm_provider = llm_provider,
             texts = texts$preprocessed,
             research_background = research_background(),
+            style_prompt = style_prompt(),
             mode = mode(),
             categories = categories$texts(),
             exclusive_categories = categories$exclusive_texts(),
@@ -748,7 +749,7 @@ processing_server <- function(
                         texts = topic_texts,
                         topic = topic_name,
                         research_background = research_background,
-                        style_prompt = style_prompt(),
+                        style_prompt = style_prompt,
                         llm_provider = llm_provider,
                         language = lang$get_translation_language()
                       )
@@ -783,6 +784,7 @@ processing_server <- function(
             llm_provider = llm_provider,
             texts = texts$preprocessed,
             research_background = research_background(),
+            style_prompt = style_prompt(),
             mode = mode(),
             assign_multiple_categories = assign_multiple_categories(),
             write_paragraphs = write_paragraphs(),
@@ -874,8 +876,8 @@ processing_server <- function(
             mark_texts(
               texts = texts,
               codes = codes,
-              research_background = research_background(),
-              style_prompt = style_prompt(),
+              research_background = research_background,
+              style_prompt = style_prompt,
               llm_provider = llm_provider,
               progress_primary = progress_primary,
               progress_secondary = progress_secondary,
@@ -888,6 +890,7 @@ processing_server <- function(
             llm_provider = llm_provider,
             texts = texts$preprocessed,
             research_background = research_background(),
+            style_prompt = style_prompt(),
             codes = codes$texts(),
             mark_texts = mark_texts,
             mark_text_prompt = mark_text_prompt,
@@ -1295,6 +1298,7 @@ processing_server <- function(
           uuid = uuid,
           mode = mode(),
           research_background = research_background(),
+          style_prompt = style_prompt(),
           url = llm_provider_rv$llm_provider$url,
           irr = irr_result(),
           language = lang()$get_translation_language()

@@ -25,8 +25,8 @@ write_paragraph <- function(
     length(topic) == 1,
     is.character(research_background),
     length(research_background) == 1,
-    is.character(style_prompt),
-    length(style_prompt) == 1
+    (is.character(style_prompt) & length(style_prompt) == 1) |
+      is.null(style_prompt)
   )
 
   prompt <- paste0(
@@ -66,11 +66,11 @@ write_paragraph <- function(
     )
   }
 
-  if (style_prompt != "") {
+  if (!is.null(style_prompt) && style_prompt != "") {
     prompt <- paste0(
       prompt,
       "\n\n",
-      "Additional style instructions for writing the paragraph:\n",
+      "Additional style instructions from user for writing the paragraph:\n",
       style_prompt
     )
   }
