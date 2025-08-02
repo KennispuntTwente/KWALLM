@@ -287,12 +287,16 @@ main_server <- function(
       lang
     )
 
-    write_paragraphs_toggle <- write_paragraphs_toggle_server(
+    write_paragraphs_result <- write_paragraphs_toggle_server(
       "write_paragraphs_toggle",
       processing,
       mode,
       lang
     )
+    
+    # Extract both values from the result
+    write_paragraphs_toggle <- write_paragraphs_result$write_paragraphs
+    style_prompt <- write_paragraphs_result$style_prompt
 
     # Obtain toggle for interrater reliability
     interrater_reliability_toggle <- interrater_toggle_server(
@@ -365,6 +369,7 @@ main_server <- function(
       scoring_characteristic = scoring_characteristic,
       codes = marking_codes,
       research_background = research_background,
+      style_prompt = style_prompt,
       human_in_the_loop = human_in_the_loop_toggle,
       assign_multiple_categories = assign_multiple_categories_toggle,
       write_paragraphs = write_paragraphs_toggle,
