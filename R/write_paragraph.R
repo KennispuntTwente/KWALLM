@@ -10,6 +10,7 @@ write_paragraph <- function(
   ),
   topic = "product review",
   research_background = "",
+  style_prompt = "",
   llm_provider = tidyprompt::llm_provider_openai(
     parameters = list(model = "gpt-4o-mini")
   ),
@@ -23,7 +24,9 @@ write_paragraph <- function(
     is.character(topic),
     length(topic) == 1,
     is.character(research_background),
-    length(research_background) == 1
+    length(research_background) == 1,
+    (is.character(style_prompt) & length(style_prompt) == 1) |
+      is.null(style_prompt)
   )
 
   prompt <- paste0(
@@ -60,6 +63,15 @@ write_paragraph <- function(
       research_background,
       "\n\n",
       prompt
+    )
+  }
+
+  if (!is.null(style_prompt) && style_prompt != "") {
+    prompt <- paste0(
+      prompt,
+      "\n\n",
+      "Additional style instructions from user for writing the paragraph:\n",
+      style_prompt
     )
   }
 
