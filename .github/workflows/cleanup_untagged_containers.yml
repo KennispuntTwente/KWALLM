@@ -1,0 +1,34 @@
+name: (3) Cleanup untagged container versions
+
+# Removes all untagged images in the GitHub Container Registry after a **successful release build**
+# (or whenever you trigger it manually).
+
+on:
+  # Manual trigger from the UI/API
+  workflow_dispatch:
+  # Automatically after the build‑and‑publish workflow completes
+  workflow_run:
+    # Refer to the *file name* of the build workflow created earlier
+    workflows: ["build_push_container.yml"]
+    types: [completed]
+
+permissions:
+  packages: write
+  contents: read
+
+jobs:
+  cleanup:
+    # Run if triggered manually **or** the upstream build succeeded **and** it was a release build
+    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'release')
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Delete all untagged image versions
+        uses: actions/delete-package-versions@v5
+        with:
+          package-name: tekstanalyse_met_llm
+          package-type: container
+          owner: kennispunttwente
+          delete-only-untagged-versions: true
+          min-versions-to-keep: 0
+          token: ${{ secrets.GHCR_PAT }}

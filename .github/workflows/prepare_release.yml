@@ -4,14 +4,9 @@ name: (1) Prepare release
 # It checks if the version in package.json is newer than the latest GitHub release
 #   (note that you can bump the version with, e.g., 'npm version patch --no-git-tag-version')
 # If so, it builds the Windows desktop app, zips the output, and drafts a GitHub release
-# It also triggers a container build via repository_dispatch for the 'preview' image
-#   (see build_preview_container.yml)
-# If the built desktop app & container image are suitable to be released,
+# If the built desktop app & preview container image are suitable to be released,
 #   and a bullet point of changes has been added in the release text,
 #   the drafted release may be published
-# When publishing the drafted release, the 'preview' image will be automatically
-#   promoted to 'latest' & will get a version-tag
-#   (see release_preview_container.yml)
 
 on:
   push:
@@ -71,12 +66,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Trigger container build workflow
-        uses: peter-evans/repository-dispatch@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          event-type: trigger-container-build
 
       - uses: actions/setup-node@v4
         with:
