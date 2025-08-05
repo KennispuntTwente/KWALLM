@@ -101,7 +101,7 @@ if (!isTRUE(rl$assign_multiple_categories)) {
       Percentage = round(Aantal / nrow(rl$df) * 100, 2)
     ) |>
     dplyr::rename(Categorie = result) |>
-    dplyr::arrange(dplyr::desc(Aantal)) |>
+    dplyr::arrange(Categorie) |>
     DT::datatable(
       rownames = FALSE,
       extensions = 'Buttons',
@@ -225,38 +225,6 @@ sub_fixed <- function(pattern, replacement, text) {
     replacement,
     substr(text, loc + attr(loc, "match.length"), nchar(text))
   )
-}
-
-# Sort paragraphs by category frequency (most frequent first)
-if (!is.null(rl$paragraphs) && length(rl$paragraphs) > 0) {
-  # Calculate frequency for each category/topic
-  if (!isTRUE(rl$assign_multiple_categories)) {
-    # Single category case
-    category_freq <- rl$df |>
-      dplyr::count(result, name = "freq") |>
-      tidyr::complete(result = rl$categories, fill = list(freq = 0))
-  } else {
-    # Multiple categories case  
-    category_freq <- rl$df |>
-      dplyr::select(-text) |>
-      dplyr::summarise(dplyr::across(dplyr::everything(), ~ sum(.x, na.rm = TRUE))) |>
-      tidyr::pivot_longer(
-        cols = dplyr::everything(),
-        names_to = "result",
-        values_to = "freq"
-      )
-  }
-  
-  # Extract topics from paragraphs and match with frequencies
-  paragraph_topics <- sapply(rl$paragraphs, function(p) p$topic)
-  
-  # Create order based on frequency (descending)
-  topic_order <- match(paragraph_topics, category_freq$result)
-  freq_order <- category_freq$freq[topic_order]
-  sorted_indices <- order(freq_order, decreasing = TRUE)
-  
-  # Reorder paragraphs
-  rl$paragraphs <- rl$paragraphs[sorted_indices]
 }
 
 for (i in seq_along(rl$paragraphs)) {

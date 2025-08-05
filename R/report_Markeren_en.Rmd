@@ -153,27 +153,6 @@ sub_fixed <- function(pattern, replacement, text) {
   )
 }
 
-# Sort paragraphs by code frequency (most frequent first)
-if (!is.null(rl$paragraphs) && length(rl$paragraphs) > 0) {
-  # Calculate frequency for each code based on marked texts
-  code_freq <- rl$df |>
-    dplyr::filter(!is.na(marked_text) & marked_text != "") |>
-    dplyr::count(code, name = "freq")
-  
-  # Extract topics from paragraphs and match with frequencies
-  paragraph_topics <- sapply(rl$paragraphs, function(p) p$topic)
-  
-  # Create order based on frequency (descending)
-  topic_order <- match(paragraph_topics, code_freq$code)
-  freq_order <- code_freq$freq[topic_order]
-  # Handle NAs (codes with no marked text) by giving them frequency 0
-  freq_order[is.na(freq_order)] <- 0
-  sorted_indices <- order(freq_order, decreasing = TRUE)
-  
-  # Reorder paragraphs
-  rl$paragraphs <- rl$paragraphs[sorted_indices]
-}
-
 for (i in seq_along(rl$paragraphs)) {
   paragraph <- rl$paragraphs[[i]]
   topic <- paragraph$topic
