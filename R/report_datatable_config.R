@@ -4,7 +4,7 @@
 #' with enhanced page size options for better user experience.
 #'
 #' @param default_page_length Integer. Default number of rows per page (default: 25)
-#' @param page_size_options Vector of integers. Available page size options 
+#' @param page_size_options Vector of integers. Available page size options
 #'   (default: c(5, 10, 25, 50, 100, 200, "All"))
 #' @param include_buttons Logical. Whether to include export buttons (default: TRUE)
 #' @param scrollX Logical. Whether to enable horizontal scrolling (default: TRUE)
@@ -16,10 +16,10 @@
 #' @examples
 #' # Basic usage
 #' df %>% DT::datatable(options = get_datatable_options())
-#' 
+#'
 #' # Custom page size
 #' df %>% DT::datatable(options = get_datatable_options(default_page_length = 50))
-#' 
+#'
 #' # Custom page size options
 #' df %>% DT::datatable(options = get_datatable_options(
 #'   page_size_options = c(10, 25, 50, 100)
@@ -32,11 +32,10 @@ get_datatable_options <- function(
   scrollY = "400px",
   additional_options = list()
 ) {
-  
   # Convert -1 to "All" for lengthMenu display
   page_size_labels <- page_size_options
   page_size_labels[page_size_labels == -1] <- "Alle"
-  
+
   # Create base options
   base_options <- list(
     pageLength = default_page_length,
@@ -52,14 +51,14 @@ get_datatable_options <- function(
       search = "Zoeken:",
       paginate = list(
         first = "Eerste",
-        last = "Laatste", 
-        next = "Volgende",
+        last = "Laatste",
+        `next` = "Volgende",
         previous = "Vorige"
       ),
       emptyTable = "Geen data beschikbaar in tabel"
     )
   )
-  
+
   # Add buttons if requested
   if (include_buttons) {
     base_options$dom <- 'Blfrtip'
@@ -67,12 +66,12 @@ get_datatable_options <- function(
   } else {
     base_options$dom <- 'lfrtip'
   }
-  
+
   # Merge with additional options
   if (length(additional_options) > 0) {
     base_options <- modifyList(base_options, additional_options)
   }
-  
+
   return(base_options)
 }
 
@@ -90,11 +89,10 @@ get_datatable_options_en <- function(
   scrollY = "400px",
   additional_options = list()
 ) {
-  
   # Convert -1 to "All" for lengthMenu display
   page_size_labels <- page_size_options
   page_size_labels[page_size_labels == -1] <- "All"
-  
+
   # Create base options
   base_options <- list(
     pageLength = default_page_length,
@@ -110,14 +108,14 @@ get_datatable_options_en <- function(
       search = "Search:",
       paginate = list(
         first = "First",
-        last = "Last", 
-        next = "Next",
+        last = "Last",
+        `next` = "Next",
         previous = "Previous"
       ),
       emptyTable = "No data available in table"
     )
   )
-  
+
   # Add buttons if requested
   if (include_buttons) {
     base_options$dom <- 'Blfrtip'
@@ -125,11 +123,11 @@ get_datatable_options_en <- function(
   } else {
     base_options$dom <- 'lfrtip'
   }
-  
+
   # Merge with additional options
   if (length(additional_options) > 0) {
     base_options <- modifyList(base_options, additional_options)
   }
-  
+
   return(base_options)
 }

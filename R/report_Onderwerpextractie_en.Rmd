@@ -12,6 +12,7 @@ params:
 ```{r include=FALSE, error=TRUE}
 library(stringr)
 rl <- params$result_list
+source(here::here("R", "report_datatable_config.R"), local = TRUE)
 ```
 
 ## Method
