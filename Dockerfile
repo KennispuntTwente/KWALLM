@@ -1,6 +1,19 @@
 # ─────────────────────── R builder stage (from rocker) ────────────────────────
 FROM rocker/r-ver:4.4.2 AS r-builder
 
+# Install required system dependencies for building R packages
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+    libcurl4-openssl-dev \
+    libfontconfig1-dev \
+    libfreetype6-dev \
+    libicu-dev \
+    libssl-dev \
+    libx11-dev \
+    libxml2-dev \
+    zlib1g-dev \
+    pandoc \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Amsterdam
 

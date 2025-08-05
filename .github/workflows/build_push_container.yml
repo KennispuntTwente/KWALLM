@@ -77,6 +77,9 @@ jobs:
           file: ./Dockerfile
           push: true
           tags: ${{ steps.vars.outputs.tags }}
+          platforms: linux/amd64
+          cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
 
       # Show resulting image config (inspect the primary tag)
       - name: Check image config
