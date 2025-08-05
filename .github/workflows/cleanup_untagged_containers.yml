@@ -1,15 +1,17 @@
 name: (3) Cleanup untagged container versions
 
-# Removes all untagged images in the GitHub Container Registry after a **successful release build**
-# (or whenever you trigger it manually).
-
 on:
-  # Manual trigger from the UI/API
+  # manual run from the UI / API
   workflow_dispatch:
-  # Automatically after the build‑and‑publish workflow completes
+    inputs:
+      dry-run:
+        description: 'Dry run (true = no actual deletions)'
+        required: false
+        default: 'false'  # GitHub Actions inputs are always strings
+
+  # fire when the build-and-publish workflow *named* “Build & Push Container” finishes
   workflow_run:
-    # Refer to the *file name* of the build workflow created earlier
-    workflows: ["build_push_container.yml"]
+    workflows: ["(2) Build & push container"]
     types: [completed]
 
 permissions:
@@ -18,17 +20,28 @@ permissions:
 
 jobs:
   cleanup:
-    # Run if triggered manually **or** the upstream build succeeded **and** it was a release build
-    if: github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'release')
+    # run if triggered manually **or** the upstream run succeeded *and* was a release
+    if: github.event_name == 'workflow_dispatch' || (
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'release'
+        )
     runs-on: ubuntu-latest
+    concurrency:
+      group: cleanup-images
 
     steps:
-      - name: Delete all untagged image versions
-        uses: actions/delete-package-versions@v5
+      - name: Delete orphan / untagged images safely
+        uses: dataaxiom/ghcr-cleanup-action@v1
         with:
-          package-name: tekstanalyse_met_llm
-          package-type: container
+          # ---- what to clean ---------------------------------------------
           owner: kennispunttwente
-          delete-only-untagged-versions: true
-          min-versions-to-keep: 0
+          packages: tekstanalyse_met_llm
+          delete-untagged: true
+          delete-partial-images: true
+          delete-ghost-images: true
+          # ---- housekeeping ----------------------------------------------
+          validate: true
+          log-level: info
+          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run == 'true' }}
+          # ---- auth -------------------------------------------------------
           token: ${{ secrets.GHCR_PAT }}
