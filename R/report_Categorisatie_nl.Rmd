@@ -105,15 +105,7 @@ if (!isTRUE(rl$assign_multiple_categories)) {
     DT::datatable(
       rownames = FALSE,
       extensions = 'Buttons',
-      options = list(
-        pageLength = 10,
-        lengthMenu = c(10, 25, 50, 100),
-        scrollX = TRUE,
-        scrollY = "400px",
-        scrollCollapse = TRUE,
-        dom = 'Bfrtip',
-        buttons = list('excel', 'csv', 'pdf', 'print')
-      )
+      options = get_datatable_options()
     )
 } else {
   rl$df |>
@@ -132,15 +124,7 @@ if (!isTRUE(rl$assign_multiple_categories)) {
     DT::datatable(
       rownames = FALSE,
       extensions = 'Buttons',
-      options = list(
-        pageLength = 10,
-        lengthMenu = c(10, 25, 50, 100),
-        scrollX = TRUE,
-        scrollY = "400px",
-        scrollCollapse = TRUE,
-        dom = 'Bfrtip',
-        buttons = list('excel', 'csv', 'pdf', 'print')
-      )
+      options = get_datatable_options()
     )
 }
 
@@ -158,30 +142,14 @@ if (!isTRUE(rl$assign_multiple_categories)) {
   dplyr::rename(Tekst = text, Categorie = result) |>
   dplyr::arrange(Categorie) |>
   DT::datatable(
-    options = list(
-      pageLength = 10,
-      lengthMenu = c(10, 25, 50, 100),
-      scrollX = TRUE,
-      scrollY = "400px",
-      scrollCollapse = TRUE,
-      dom = 'Bfrtip',
-      buttons = list('excel', 'csv', 'pdf', 'print')
-    )
+    options = get_datatable_options()
   )
 } else {
   rl$df |>
     dplyr::rename(Tekst = text) |>
     dplyr::arrange(dplyr::desc(Tekst)) |>
     DT::datatable(
-      options = list(
-        pageLength = 10,
-        lengthMenu = c(10, 25, 50, 100),
-        scrollX = TRUE,
-        scrollY = "400px",
-        scrollCollapse = TRUE,
-        dom = 'Bfrtip',
-        buttons = list('excel', 'csv', 'pdf', 'print')
-      )
+      options = get_datatable_options()
     )
 }
 ```
