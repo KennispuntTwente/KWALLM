@@ -270,7 +270,7 @@ if (!is.null(rl$paragraphs) && length(rl$paragraphs) > 0) {
   # Create order based on frequency (descending) then alphabetically (ascending)
   topic_order <- match(paragraph_topics, category_freq$result)
   freq_order <- category_freq$freq[topic_order]
-  sorted_indices <- order(freq_order, paragraph_topics, decreasing = c(TRUE, FALSE))
+  sorted_indices <- order(freq_order, paragraph_topics, decreasing = c(TRUE, FALSE), method = "radix")
   
   # Reorder paragraphs
   rl$paragraphs <- rl$paragraphs[sorted_indices]
