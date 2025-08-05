@@ -114,7 +114,7 @@ if (!isTRUE(rl$assign_multiple_categories)) {
     Number = dplyr::n(),
     Percentage = round(dplyr::n() / nrow(rl$df) * 100, 2)
   ) |>
-  dplyr::arrange(dplyr::desc(Number)) |>
+  dplyr::arrange(dplyr::desc(Number), result) |>
   dplyr::rename(Topic = result) |>
   DT::datatable(
     rownames = FALSE,
@@ -143,7 +143,7 @@ if (!isTRUE(rl$assign_multiple_categories)) {
     dplyr::mutate(
       Percentage = round(Number / nrow(rl$df) * 100, 2)
     ) |>
-    dplyr::arrange(dplyr::desc(Number)) |>
+    dplyr::arrange(dplyr::desc(Number), Topic) |>
     DT::datatable(
       rownames = FALSE,
       extensions = 'Buttons',
@@ -267,10 +267,10 @@ if (!is.null(rl$paragraphs) && length(rl$paragraphs) > 0) {
   # Extract topics from paragraphs and match with frequencies
   paragraph_topics <- sapply(rl$paragraphs, function(p) p$topic)
   
-  # Create order based on frequency (descending)
+  # Create order based on frequency (descending) then alphabetically (ascending)
   topic_order <- match(paragraph_topics, category_freq$result)
   freq_order <- category_freq$freq[topic_order]
-  sorted_indices <- order(freq_order, decreasing = TRUE)
+  sorted_indices <- order(freq_order, paragraph_topics, decreasing = c(TRUE, FALSE))
   
   # Reorder paragraphs
   rl$paragraphs <- rl$paragraphs[sorted_indices]
