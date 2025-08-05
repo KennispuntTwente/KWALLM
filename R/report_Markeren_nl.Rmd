@@ -11,6 +11,7 @@ params:
 
 ```{r include=FALSE, error=TRUE}
 rl <- params$result_list
+source(here::here("R", "report_datatable_config.R"), local = TRUE)
 ```
 
 ## Methode
@@ -100,15 +101,7 @@ rl$df |>
   DT::datatable(
     rownames = FALSE,
     extensions = 'Buttons',
-    options = list(
-      pageLength = 10,
-      lengthMenu = c(10, 25, 50, 100),
-      scrollX = TRUE,
-      scrollY = "400px",
-      scrollCollapse = TRUE,
-      dom = 'Bfrtip',
-      buttons = list('excel', 'csv', 'pdf', 'print')
-    )
+    options = get_datatable_options()
   )
 
 ```
