@@ -21,9 +21,6 @@ ENV TZ=Europe/Amsterdam
 COPY renv.lock renv.lock
 RUN R -q -e "install.packages('renv', repos='https://cloud.r-project.org'); renv::restore()"
 
-# ─────────────── Base stage to extract Python with --enable-shared ─────────────
-FROM python:3.12-slim AS python-shared
-
 # ─────────────────────────── Runtime stage ────────────────────────────────────
 FROM ubuntu:noble
 
@@ -47,13 +44,12 @@ RUN apt-get update -qq && \
       libcurl4 libssl3 libxml2 pandoc cmake unzip tzdata \
       libblas3 liblapack3 libopenblas0-pthread libgfortran5 libpcre2-8-0 \
       libdeflate0 libgomp1 libpng16-16 libcairo2 libcairo2-dev \
-      libxt-dev libpng-dev libtiff-dev libpangocairo-* && \
+      libxt-dev libpng-dev libtiff-dev libpangocairo-* \
+      python3 python3-venv python3-pip python3-dev \
+      libffi8 libbz2-1.0 liblzma5 libsqlite3-0 && \
     ln -fs /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime && \
     dpkg-reconfigure --frontend noninteractive tzdata && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
-
-# Copy Python from the official image (shared lib included)
-COPY --from=python-shared /usr/local /usr/local
 
 # Create non-root user
 RUN useradd -ms /bin/bash appuser
