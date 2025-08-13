@@ -4383,7 +4383,7 @@
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteUsername": "tjarkvandemerwe",
+      "RemoteUsername": "kennispunttwente",
       "RemoteRepo": "tidyprompt",
       "RemoteRef": "a8f56e47ef473de440bcbb711f6f8a8a72c9c9e8",
       "RemoteSha": "a8f56e47ef473de440bcbb711f6f8a8a72c9c9e8"
