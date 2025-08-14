@@ -28,13 +28,13 @@ en [Pham et al. (2023)](https://arxiv.org/abs/2311.01449). Deze procedure bestaa
 * Bij stap 1 worden de teksten aan het LLM gepresenteerd in willekeurig getrokken groepen
 van maximaal 5 teksten, met de vraag om te reageren met mogelijke onderwerpen 
 die niet te specifiek en niet te algemeen zijn. Dit vorm de lijst van mogelijke onderwerpen.
-Voor deze stap is het model `r rl$model` gebruikt.
+Voor deze stap is het model `r htmltools::htmlEscape(rl$model)` gebruikt.
 
 * Bij stap 2 wordt de lijst van mogelijke onderwerpen
 gepresenteerd aan het LLM, waarbij gevraagd wordt de lijst onderwerpen terug te brengen
 naar een lijst onderwerpen zonder dubbelingen en ook weer zonder te specifieke
 of te algemene onderwerpen. Dit vormt de lijst van definitieve onderwerpen.
-Voor deze stap is het model `r rl$model_reductie` gebruikt. 
+Voor deze stap is het model `r htmltools::htmlEscape(rl$model_reductie)` gebruikt. 
 
 ```{r echo=FALSE, results='asis', error=TRUE}  
 multiple_categories_text <- "Het LLM moest één onderwerp toewijzen per tekst"
@@ -45,13 +45,13 @@ if (isTRUE(rl$assign_multiple_categories)) {
 
 * Bij stap 3 wordt elke tekst individueel gepresenteerd aan het LLM, samen
 met de lijst van definitieve onderwerpen, met de vraag om deze toe te wijzen aan 
-de tekst. `r multiple_categories_text`. Voor deze stap is het model `r rl$model` gebruikt. 
+de tekst. `r multiple_categories_text`. Voor deze stap is het model `r htmltools::htmlEscape(rl$model)` gebruikt. 
 
 ```{r echo=FALSE, results='asis', error=TRUE}
 if (!is.null(rl$paragraphs)) {
   cat(paste0(
     "Met de teksten waaraan onderwerpen zijn toegevoegd, heeft een taalmodel ",
-    "(", rl$model, ") tenslotte een rapport geschreven.", "\n",
+  "(", htmltools::htmlEscape(rl$model), ") tenslotte een rapport geschreven.", "\n",
     "Per onderwerp is met quotes samengevat wat er is gezegd."
   ))
 }
@@ -59,6 +59,7 @@ if (!is.null(rl$paragraphs)) {
 
 ```{r echo=FALSE, results='asis', error=TRUE}
 research_background <- rl$research_background
+research_background <- htmltools::htmlEscape(research_background)
 if (
   !is.null(rl$research_background)
   && research_background != ""
@@ -67,7 +68,7 @@ if (
     "### Onderzoeksachtergrond\n",
     "De gebruiker heeft de volgende achtergrondinformatie over het onderzoek opgegeven:\n\n",
     "<blockquote><i>",
-    research_background,
+  research_background,
     "</i></blockquote>", "\n\n",
     "Deze informatie is toegevoegd aan elke prompt die naar het taalmodel is gestuurd, zodat het beter de context van het onderzoek kon begrijpen."
   ))
@@ -213,7 +214,7 @@ sub_fixed <- function(pattern, replacement, text) {
 
 for (i in seq_along(rl$paragraphs)) {
   paragraph <- rl$paragraphs[[i]]
-  topic <- paragraph$topic
+  topic <- htmltools::htmlEscape(paragraph$topic)
   paragraph_text <- paragraph$paragraph
   
   supporting_texts <- paste(paragraph$texts, collapse = " ")
@@ -344,16 +345,16 @@ for (i in seq_along(rl$paragraphs)) {
   
   # Append processed output
   output <- append(output, list(
-    htmltools::HTML(paste0("<h4>", topic, "</h4>")),
+  htmltools::HTML(paste0("<h4>", topic, "</h4>")),
     warning_context_window,
-    htmltools::HTML(paste0("<p>", paragraph_text, "</p>"))
+  htmltools::HTML(paste0("<p>", htmltools::htmlEscape(paragraph_text), "</p>"))
   ))
 
   if (!is.null(paragraph$texts)) {
-    acc <- bslib::accordion(
+  acc <- bslib::accordion(
       bslib::accordion_panel(
         title = "Bekijk teksten",
-        htmltools::HTML(paste0("<ul>", paste0("<li><i>", paragraph$texts, "</i></li>", collapse = ""), "</ul>")),
+    htmltools::HTML(paste0("<ul>", paste0("<li><i>", htmltools::htmlEscape(paragraph$texts), "</i></li>", collapse = ""), "</ul>")),
       ),
       id = paste0("acc-", i),
       open = FALSE

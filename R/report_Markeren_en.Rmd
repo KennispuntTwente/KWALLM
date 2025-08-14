@@ -16,12 +16,12 @@ source(here::here("R", "report_datatable_config.R"), local = TRUE)
 
 ## Method
 
-There were `r length(unique(rl$df$text))` texts analyzed with a large language model (LLM) (model: `r rl$model`),
+There were `r length(unique(rl$df$text))` texts analyzed with a large language model (LLM) (model: `r htmltools::htmlEscape(rl$model)`),
 where the LLM was asked to mark texts that belonged to one of the following codes:
 
 ```{r echo=FALSE, results='asis', error=TRUE}
 cat("<blockquote>")
-cat(paste0("* *", rl$codes, "*"), sep = "\n")
+cat(paste0("* *", htmltools::htmlEscape(rl$codes), "*"), sep = "\n")
 cat("</blockquote>")
 ```
 
@@ -29,7 +29,7 @@ cat("</blockquote>")
 if (!is.null(rl$paragraphs)) {
   cat(paste0(
     "With the texts that were marked, a language model (",
-    rl$model, ") has finally written a report.", "\n",
+    htmltools::htmlEscape(rl$model), ") has finally written a report.", "\n",
     "For each code, a summary of what was said is provided in the report."
   ))
 }
@@ -37,6 +37,7 @@ if (!is.null(rl$paragraphs)) {
 
 ```{r echo=FALSE, results='asis', error=TRUE}
 research_background <- rl$research_background
+research_background <- htmltools::htmlEscape(research_background)
 if (
   !is.null(rl$research_background)
   && research_background != ""
@@ -45,7 +46,7 @@ if (
     "### Research background\n",
     "The user provided the following background information about the research:\n\n",
     "<blockquote><i>",
-    research_background,
+  research_background,
     "</i></blockquote>", "\n\n",
     "This information was added to each prompt sent to the language model, so that it could better understand the context of the research."
   ))
@@ -151,7 +152,7 @@ for (i in seq_along(rl$paragraphs)) {
   topic <- paragraph$topic
   paragraph_text <- paragraph$paragraph
   
-  supporting_texts <- paste(paragraph$texts, collapse = " ")
+  supporting_texts <- paste(htmltools::htmlEscape(paragraph$texts), collapse = " ")
   if (length(supporting_texts) == 0) {
     next
   }
@@ -279,9 +280,9 @@ for (i in seq_along(rl$paragraphs)) {
   
   # Append processed output
   output <- append(output, list(
-    htmltools::HTML(paste0("<h4>", topic, "</h4>")),
+  htmltools::HTML(paste0("<h4>", htmltools::htmlEscape(topic), "</h4>")),
     warning_context_window,
-    htmltools::HTML(paste0("<p>", paragraph_text, "</p>"))
+  htmltools::HTML(paste0("<p>", htmltools::htmlEscape(paragraph_text), "</p>"))
   ))
 
   if (!is.null(paragraph$texts)) {
@@ -291,7 +292,7 @@ for (i in seq_along(rl$paragraphs)) {
       htmltools::HTML(gsub(
         "\\*\\*(.*?)\\*\\*",
         "<span style='font-weight: 900; color: #b30000; background-color: #ffcccc; text-decoration: underline;'>\\1</span>",
-        txt
+        htmltools::htmlEscape(txt)
       ))
     })
   

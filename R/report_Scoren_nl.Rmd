@@ -17,14 +17,15 @@ source(here::here("R", "report_datatable_config.R"), local = TRUE)
 
 ## Methode
 
-Er zijn `r nrow(rl$df)` teksten geanalyseerd met een LLM (model: `r rl$model`),
+Er zijn `r nrow(rl$df)` teksten geanalyseerd met een LLM (model: `r htmltools::htmlEscape(rl$model)`),
 waarbij het LLM gevraagd werd om een score (1-100) te geven voor
-in hoeverre een tekst bij het kenmerk '*`r rl$scoring_characteristic`*' past.
+in hoeverre een tekst bij het kenmerk '*`r htmltools::htmlEscape(rl$scoring_characteristic)`*' past.
 
 Elke tekst is afzonderlijk gepresenteerd aan het LLM. 
 
 ```{r echo=FALSE, results='asis', error=TRUE}
 research_background <- rl$research_background
+research_background <- htmltools::htmlEscape(research_background)
 if (
   !is.null(rl$research_background)
   && research_background != ""
@@ -33,7 +34,7 @@ if (
     "### Onderzoeksachtergrond\n",
     "De gebruiker heeft de volgende achtergrondinformatie over het onderzoek opgegeven:\n\n",
     "<blockquote><i>",
-    research_background,
+  research_background,
     "</i></blockquote>", "\n\n",
     "Deze informatie is toegevoegd aan elke prompt die naar het taalmodel is gestuurd, zodat het beter de context van het onderzoek kon begrijpen."
   ))
@@ -42,6 +43,7 @@ if (
 
 ```{r echo=FALSE, results='asis', error=TRUE}
 if (!is.null(rl$irr)) {
+  sensitivity_sentence <- htmltools::htmlEscape(rl$irr$sensitivity_sentence)
   cat(paste0(
     "### Betrouwbaarheid\n",
     "De interbeoordelaarsbetrouwbaarheid tussen het taalmodel en een menselijke beoordelaar berekend.",
@@ -69,7 +71,7 @@ if (!is.null(rl$irr)) {
       rl$irr$llm_mean > rl$irr$user_mean ~ "een overschatting van de scores door het taalmodel",
       rl$irr$llm_mean < rl$irr$user_mean ~ "een onderschatting van de scores door het taalmodel",
       TRUE ~ "?"
-    ), ".\n\n", rl$irr$sensitivity_sentence
+  ), ".\n\n", sensitivity_sentence
   ))
 }
 ```

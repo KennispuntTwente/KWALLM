@@ -16,12 +16,12 @@ source(here::here("R", "report_datatable_config.R"), local = TRUE)
 
 ## Methode
 
-Er zijn `r length(unique(rl$df$text))` teksten geanalyseerd met een LLM (model: `r rl$model`),
+Er zijn `r length(unique(rl$df$text))` teksten geanalyseerd met een LLM (model: `r htmltools::htmlEscape(rl$model)`),
 waarbij het LLM gevraagd werd om teksten te markeren die hoorden bij één van de volgende codes:
 
 ```{r echo=FALSE, results='asis', error=TRUE}
 cat("<blockquote>")
-cat(paste0("* *", rl$codes, "*"), sep = "\n")
+cat(paste0("* *", htmltools::htmlEscape(rl$codes), "*"), sep = "\n")
 cat("</blockquote>")
 ```
 
@@ -29,7 +29,7 @@ cat("</blockquote>")
 if (!is.null(rl$paragraphs)) {
   cat(paste0(
     "Met de teksten die gemarkeerd zijn heeft een taalmodel ",
-    "(", rl$model, ") tenslotte een rapport geschreven.", "\n",
+    "(", htmltools::htmlEscape(rl$model), ") tenslotte een rapport geschreven.", "\n",
     "Per code is met quotes samengevat wat er is gezegd."
   ))
 }
@@ -37,6 +37,7 @@ if (!is.null(rl$paragraphs)) {
 
 ```{r echo=FALSE, results='asis', error=TRUE}
 research_background <- rl$research_background
+research_background <- htmltools::htmlEscape(research_background)
 if (
   !is.null(rl$research_background)
   && research_background != ""
@@ -45,7 +46,7 @@ if (
     "### Onderzoeksachtergrond\n",
     "De gebruiker heeft de volgende achtergrondinformatie over het onderzoek opgegeven:\n\n",
     "<blockquote><i>",
-    research_background,
+  research_background,
     "</i></blockquote>", "\n\n",
     "Deze informatie is toegevoegd aan elke prompt die naar het taalmodel is gestuurd, zodat het beter de context van het onderzoek kon begrijpen."
   ))
@@ -149,10 +150,10 @@ sub_fixed <- function(pattern, replacement, text) {
 
 for (i in seq_along(rl$paragraphs)) {
   paragraph <- rl$paragraphs[[i]]
-  topic <- paragraph$topic
+  topic <- htmltools::htmlEscape(paragraph$topic)
   paragraph_text <- paragraph$paragraph
   
-  supporting_texts <- paste(paragraph$texts, collapse = " ")
+  supporting_texts <- paste(htmltools::htmlEscape(paragraph$texts), collapse = " ")
   if (length(supporting_texts) == 0) {
     next
   }
@@ -282,7 +283,7 @@ for (i in seq_along(rl$paragraphs)) {
   output <- append(output, list(
     htmltools::HTML(paste0("<h4>", topic, "</h4>")),
     warning_context_window,
-    htmltools::HTML(paste0("<p>", paragraph_text, "</p>"))
+    htmltools::HTML(paste0("<p>", htmltools::htmlEscape(paragraph_text), "</p>"))
   ))
 
   if (!is.null(paragraph$texts)) {
@@ -292,7 +293,7 @@ for (i in seq_along(rl$paragraphs)) {
       htmltools::HTML(gsub(
         "\\*\\*(.*?)\\*\\*",
         "<span style='font-weight: 900; color: #b30000; background-color: #ffcccc; text-decoration: underline;'>\\1</span>",
-        txt
+        htmltools::htmlEscape(txt)
       ))
     })
   

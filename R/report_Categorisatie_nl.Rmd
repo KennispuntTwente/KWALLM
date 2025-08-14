@@ -16,12 +16,13 @@ source(here::here("R", "report_datatable_config.R"), local = TRUE)
 
 ## Methode
 
-Er zijn `r nrow(rl$df)` teksten geanalyseerd met een LLM (model: `r rl$model`),
+Er zijn `r nrow(rl$df)` teksten geanalyseerd met een LLM (model: `r htmltools::htmlEscape(rl$model)`),
 waarbij het LLM gevraagd werd om het in te delen in één van de volgende `r length(rl$categories)` categorieën:
 
 ```{r echo=FALSE, results='asis', error=TRUE}
 cat("<blockquote>")
-cat(paste0("* *", rl$categories, "*"), sep = "\n")
+safe_categories <- vapply(rl$categories, htmltools::htmlEscape, character(1))
+cat(paste0("* *", safe_categories, "*"), sep = "\n")
 cat("</blockquote>")
 ```
 
@@ -38,7 +39,7 @@ if (isTRUE(rl$assign_multiple_categories)) {
 if (!is.null(rl$paragraphs)) {
   cat(paste0(
     "Met de teksten waaraan onderwerpen zijn toegevoegd, heeft een taalmodel ",
-    "(", rl$model, ") tenslotte een rapport geschreven.", "\n",
+  "(", htmltools::htmlEscape(rl$model), ") tenslotte een rapport geschreven.", "\n",
     "Per onderwerp is met quotes samengevat wat er is gezegd."
   ))
 }
@@ -53,9 +54,9 @@ if (
   cat(paste0(
     "### Onderzoeksachtergrond\n",
     "De gebruiker heeft de volgende achtergrondinformatie over het onderzoek opgegeven:\n\n",
-    "<blockquote><i>",
-    research_background,
-    "</i></blockquote>", "\n\n",
+  "<blockquote><i>",
+  htmltools::htmlEscape(research_background),
+  "</i></blockquote>", "\n\n",
     "Deze informatie is toegevoegd aan elke prompt die naar het taalmodel is gestuurd, zodat het beter de context van het onderzoek kon begrijpen."
   ))
 }
@@ -292,7 +293,8 @@ for (i in seq_along(rl$paragraphs)) {
     }
   }
   
-  # Replace placeholders with their final replacements
+  # Escape remainder of paragraph text, then replace placeholders with HTML icons
+  paragraph_text <- htmltools::htmlEscape(paragraph_text)
   for (ph in names(placeholder_map)) {
     paragraph_text <- stringr::str_replace_all(paragraph_text, stringr::fixed(ph), placeholder_map[[ph]])
   }
@@ -329,7 +331,7 @@ for (i in seq_along(rl$paragraphs)) {
   
   # Append processed output
   output <- append(output, list(
-    htmltools::HTML(paste0("<h4>", topic, "</h4>")),
+    htmltools::HTML(paste0("<h4>", htmltools::htmlEscape(topic), "</h4>")),
     warning_context_window,
     htmltools::HTML(paste0("<p>", paragraph_text, "</p>"))
   ))
@@ -338,7 +340,16 @@ for (i in seq_along(rl$paragraphs)) {
     acc <- bslib::accordion(
       bslib::accordion_panel(
         title = "Bekijk teksten",
-        htmltools::HTML(paste0("<ul>", paste0("<li><i>", paragraph$texts, "</i></li>", collapse = ""), "</ul>")),
+        htmltools::HTML(paste0(
+          "<ul>",
+          paste0(
+            "<li><i>",
+            vapply(paragraph$texts, htmltools::htmlEscape, character(1)),
+            "</i></li>",
+            collapse = ""
+          ),
+          "</ul>"
+        )),
       ),
       id = paste0("acc-", i),
       open = FALSE
