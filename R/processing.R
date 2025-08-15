@@ -1372,6 +1372,8 @@ processing_server <- function(
             code = "<< CODE >>"
           ) |>
             tidyprompt::construct_prompt_text()
+          result_list$text_size_tokens <- context_window$max_tokens
+          result_list$overlap_size_tokens <- context_window$overlap
         }
 
         # Transfer paragraphs if present as attribute
