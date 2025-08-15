@@ -629,6 +629,14 @@ context_window_server <- function(
             "draws",
             condition = !processing()
           )
+          shinyjs::toggleState(
+            "max_tokens",
+            condition = !processing()
+          )
+          shinyjs::toggleState(
+            "overlap",
+            condition = !processing()
+          )
         },
         ignoreInit = TRUE
       )
