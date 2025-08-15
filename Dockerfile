@@ -45,8 +45,7 @@ RUN apt-get update -qq && \
       libblas3 liblapack3 libopenblas0-pthread libgfortran5 libpcre2-8-0 \
       libdeflate0 libgomp1 libpng16-16 libcairo2 libcairo2-dev \
       libxt-dev libpng-dev libtiff-dev libpangocairo-* \
-      python3 python3-venv python3-pip python3-dev \
-      libffi8 libbz2-1.0 liblzma5 libsqlite3-0 && \
+      python3.12-dev && \
     ln -fs /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime && \
     dpkg-reconfigure --frontend noninteractive tzdata && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
