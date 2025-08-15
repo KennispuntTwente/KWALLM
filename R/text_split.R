@@ -181,7 +181,7 @@ text_split_server <- function(
           step = 1
         ),
         # Overlap
-        # '`overlap` argument to overlap chunks by a ratio (if < 1) or
+        # `overlap` argument to overlap chunks by a ratio (if < 1) or
         #   an absolute number of tokens (if >= 1)'
         numericInput(
           ns("overlap"),

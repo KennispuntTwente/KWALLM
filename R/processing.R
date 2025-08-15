@@ -858,6 +858,8 @@ processing_server <- function(
         if (!number_of_texts_under_maximum()) return()
         if (!codes_are_valid()) return()
         req(isFALSE(context_window$any_fit_problem))
+        req(context_window$max_tokens)
+        req(context_window$overlap)
 
         # Set processing state
         processing(TRUE)
@@ -884,6 +886,8 @@ processing_server <- function(
               interrupter = interrupter,
               lang = lang,
               write_paragraphs = write_paragraphs,
+              text_size_tokens = text_size_tokens,
+              overlap_size_tokens = overlap_size_tokens
             )
           },
           globals = list(
@@ -905,7 +909,9 @@ processing_server <- function(
             progress_secondary = progress_secondary$async,
             interrupter = interrupter,
             write_paragraph = write_paragraph,
-            write_paragraphs = write_paragraphs()
+            write_paragraphs = write_paragraphs(),
+            text_size_tokens = context_window$max_tokens,
+            overlap_size_tokens = context_window$overlap
           ),
           packages = c(
             "tidyprompt",

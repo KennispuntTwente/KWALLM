@@ -1260,6 +1260,14 @@
       {
         "nl": "Geef aan hoe de samenvattingen geschreven moeten worden. Welke stijl of focus wil je?",
         "en": "Specify how the summaries should be written. What style or focus do you want?"
+      },
+      {
+        "nl": "Onderstaande parameters bepalen hoe de teksten worden verdeeld in chunks voor het genereren van onderwerpen in de 'onderwerpextractie'-modus.",
+        "en": "Below parameters determine how the texts are divided into chunks for generating topics in the 'topic extraction' mode."
+      },
+      {
+        "nl": "Onderstaande parameters bepalen of en hoe de teksten worden gesplitst naar kleinere stukken in de 'markeren'-modus.",
+        "en": "Below parameters determine if and how the texts are split into smaller pieces in the 'mark' mode."
       }
     ]
 }

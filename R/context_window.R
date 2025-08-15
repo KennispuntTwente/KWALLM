@@ -144,7 +144,11 @@ context_window_server <- function(
         chunk_size = chunk_size_default,
         draws = draws_default,
         n_tokens_context_window = 2048,
-        base_prompt_text = NULL
+        base_prompt_text = NULL,
+
+        # Parameters for splitting texts in 'markeren' mode:
+        max_tokens = 256,
+        overlap = 64
       )
 
       #### Sync user input to internal state ####
@@ -185,6 +189,14 @@ context_window_server <- function(
 
         if (is_valid_number(input$context_window)) {
           rv$n_tokens_context_window <- input$context_window
+        }
+
+        if (is_valid_number(input$max_tokens)) {
+          rv$max_tokens <- input$max_tokens
+        }
+
+        if (is_valid_number(input$overlap)) {
+          rv$overlap <- input$overlap
         }
       })
 
@@ -328,10 +340,17 @@ context_window_server <- function(
         # Check if the longest text + base prompt fits in the context window
         # Ensure only one longest text is selected
         longest_text <- texts[which.max(count_tokens(texts))]
-        total_length <- count_tokens(longest_text) +
-          count_tokens(base_prompt_text)
+        longest_text_tokens <- count_tokens(longest_text)
+        if (mode() %in% c("Markeren")) {
+          req(rv$max_tokens)
+          # If longest text is longer than max_tokens, use max_tokens
+          if (longest_text_tokens > rv$max_tokens) {
+            longest_text_tokens <- rv$max_tokens
+          }
+        }
 
-        mode <- mode()
+        total_length <- longest_text_tokens +
+          count_tokens(base_prompt_text)
 
         if (total_length > (rv$n_tokens_context_window)) {
           rv$fit_context_window_assigning <- FALSE
@@ -435,6 +454,25 @@ context_window_server <- function(
           ),
           if (mode() == "Onderwerpextractie") {
             list(
+              # Add subtle text to explain chunking parameters
+              div(
+                class = "llm-narrow-container",
+                style = "
+                  margin: 10px auto 15px auto;
+                  padding: 15px 20px;
+                  background-color: #f8f9fa;
+                  border: 1px solid #dee2e6;
+                  border-radius: 5px;
+                  font-size: 0.9em;
+                  color: #495057;
+                  text-align: center;
+                  word-break: normal;
+                  overflow-wrap: normal;
+                ",
+                lang()$t(
+                  "Onderstaande parameters bepalen hoe de teksten worden verdeeld in chunks voor het genereren van onderwerpen in de 'onderwerpextractie'-modus."
+                )
+              ),
               numericInput(
                 ns("chunk_size"),
                 lang()$t("Maximaal aantal teksten per chunk"),
@@ -448,6 +486,61 @@ context_window_server <- function(
                 value = rv$draws,
                 min = 1,
                 max = 5
+              )
+            )
+          },
+          if (mode() == "Markeren") {
+            list(
+              # Add subtle text to explain chunking parameters
+              div(
+                class = "llm-narrow-container",
+                style = "
+                  margin: 10px auto 15px auto;
+                  padding: 15px 20px;
+                  background-color: #f8f9fa;
+                  border: 1px solid #dee2e6;
+                  border-radius: 5px;
+                  font-size: 0.9em;
+                  color: #495057;
+                  text-align: center;
+                  word-break: normal;
+                  overflow-wrap: normal;
+                ",
+                lang()$t(
+                  "Onderstaande parameters bepalen of en hoe de teksten worden gesplitst naar kleinere stukken in de 'markeren'-modus."
+                )
+              ),
+              # Ask text split size & allowed overlap size (in tokens)
+              numericInput(
+                ns("max_tokens"),
+                label = lang()$t("Maximale lengte per tekst (tokens)"),
+                value = isolate(rv$max_tokens),
+                min = 1,
+                step = 1
+              ),
+              # Overlap
+              # `overlap` argument to overlap chunks by a ratio (if < 1) or
+              #   an absolute number of tokens (if >= 1)'
+              numericInput(
+                ns("overlap"),
+                label = span(
+                  lang()$t("Overlap tussen teksten (tokens)"),
+                  tooltip(
+                    bs_icon("info-circle"),
+                    paste0(
+                      lang()$t(
+                        "Waarde die de toegestane overlap tussen de teksten bepaalt."
+                      ),
+                      lang()$t(
+                        " Een waarde tussen 0 en 1 wordt geïnterpreteerd als een ratio van de tekstlengte; een waarde groter dan 1 wordt geïnterpreteerd als een absoluut aantal tokens."
+                      )
+                    ),
+                    placement = "bottom"
+                  )
+                ),
+                value = isolate(rv$overlap),
+                min = 0,
+                step = 1
               )
             )
           }
