@@ -1527,7 +1527,7 @@ processing_server <- function(
       #### Processing button ####
 
       output$process_button <- renderUI({
-        req(mode(), lang())
+        req(mode(), lang(), is.null(results_df()))
 
         # Count how many preprocessed texts we have
         preproc <- texts$preprocessed
