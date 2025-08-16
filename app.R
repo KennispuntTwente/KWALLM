@@ -9,6 +9,7 @@ renv::restore()
 
 # Setup Python with reticulate & uv
 try({
+  Sys.unsetenv("RETICULATE_PYTHON")
   reticulate:::uv_exec("sync")
   reticulate::use_virtualenv("./.venv")
 })

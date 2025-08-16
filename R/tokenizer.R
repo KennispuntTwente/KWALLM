@@ -34,6 +34,7 @@ tiktoken_load_tokenizer <- function(
   ## ── Load Python & tiktoken module ───────────────────────────────
   print_message("Loading Python and tiktoken module...")
 
+  Sys.unsetenv("RETICULATE_PYTHON")
   reticulate:::uv_exec("sync")
   reticulate::use_virtualenv("./.venv")
   tk <- reticulate::import("tiktoken")
