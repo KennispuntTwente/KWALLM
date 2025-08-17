@@ -231,7 +231,7 @@ context_window_server <- function(
       #### Obtain context window size based on model ####
       observe({
         req(models$main)
-        size <- get_context_window_size_in_tokens(models$main)
+        size <- get_context_window_size_in_tokens(models$main$parameters$model)
         context_window_known <- is.null(size)
 
         size <- ifelse(

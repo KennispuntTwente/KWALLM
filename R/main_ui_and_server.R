@@ -28,7 +28,6 @@ main_ui <- function() {
 # Here we build the main server for the Shiny app
 
 main_server <- function(
-  preconfigured_llm_provider = NULL,
   preconfigured_main_models = NULL,
   preconfigured_large_models = NULL,
   azure_auth = FALSE,
@@ -293,7 +292,7 @@ main_server <- function(
       mode,
       lang
     )
-    
+
     # Extract both values from the result
     write_paragraphs_toggle <- write_paragraphs_result$write_paragraphs
     style_prompt <- write_paragraphs_result$style_prompt
@@ -316,12 +315,21 @@ main_server <- function(
 
     #### 3 Model management ####
 
+    # Determine if we have preconfigured LLM providers or not
+    # Are both preconfigured_llm_provider and preconfigured_main_models provided?
+    has_preconfigured_llm_provider <- if (
+      length(preconfigured_main_models) > 0 &&
+        length(preconfigured_large_models) > 0
+    ) {
+      TRUE
+    } else {
+      FALSE
+    }
+
     llm_provider_rv <- llm_provider_server(
       "llm_provider",
       processing = processing,
-      preconfigured_llm_provider = preconfigured_llm_provider,
-      preconfigured_main_models = preconfigured_main_models,
-      preconfigured_large_models = preconfigured_large_models,
+      has_preconfigured_llm_provider = has_preconfigured_llm_provider,
       lang = lang
     )
 
@@ -330,7 +338,9 @@ main_server <- function(
       processing = processing,
       mode = mode,
       llm_provider_rv = llm_provider_rv,
-      lang = lang
+      lang = lang,
+      preconfigured_llm_provider_model_main = preconfigured_main_models,
+      preconfigured_llm_provider_model_large = preconfigured_large_models
     )
 
     #### 4 Category & score fields ####
