@@ -73,12 +73,17 @@ if (!getOption("shiny.testmode", FALSE)) {
 #   The function will default to 2048 if a model is not recognised
 preconfigured_models_main <- list(
   tidyprompt::llm_provider_openai()$set_parameters(list(
+    model = "gpt-5-mini",
+    reasoning = list(
+      effort = "low"
+    )
+  )),
+  tidyprompt::llm_provider_openai()$set_parameters(list(
     model = "gpt-4.1-mini"
   )),
   tidyprompt::llm_provider_openai()$set_parameters(list(
     model = "gpt-4.1-nano"
-  )),
-  tidyprompt::llm_provider_openrouter()
+  ))
 )
 preconfigured_models_large <- list(
   tidyprompt::llm_provider_openai()$set_parameters(list(
@@ -89,8 +94,7 @@ preconfigured_models_large <- list(
   )),
   tidyprompt::llm_provider_openai()$set_parameters(list(
     model = "o4-mini"
-  )),
-  tidyprompt::llm_provider_openrouter()
+  ))
 )
 
 # Optionally set other options
