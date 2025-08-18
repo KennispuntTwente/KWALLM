@@ -146,6 +146,107 @@ model_server <- function(
         saved[[mode]] <- cur
       }
 
+      # --- DRY helpers --------------------------------------------------------
+
+      `%||%` <- function(a, b) if (is.null(a)) b else a
+
+      # Clone provider and set parameters (overwrite params entirely)
+      clone_with_params <- function(prov, p) {
+        cp <- prov$clone(deep = TRUE)
+        cp$parameters <- p
+        cp
+      }
+
+      # Touch the appropriate "updated" reactiveVal
+      touch_provider_updated <- function(
+        which,
+        main_provider_updated,
+        large_provider_updated
+      ) {
+        if (which == "main") main_provider_updated(Sys.time()) else
+          large_provider_updated(Sys.time())
+      }
+
+      # Read modal inputs for one side (main/large)
+      read_modal_inputs <- function(input, which) {
+        list(
+          effort = (input[[paste0(which, "_reasoning_effort")]] %||% ""),
+          verbosity = (input[[paste0(which, "_verbosity")]] %||% ""),
+          temperature = input[[paste0(which, "_temperature")]] # NA/NULL => remove
+        )
+      }
+
+      # Build new parameters list from inputs (blank/NA => remove)
+      build_parameters <- function(old_params, inps) {
+        p <- old_params
+        if (is.null(p)) p <- list()
+
+        # reasoning.effort
+        if (nzchar(inps$effort)) p$reasoning <- list(effort = inps$effort) else
+          p$reasoning <- NULL
+
+        # text.verbosity
+        if (nzchar(inps$verbosity))
+          p$text <- list(verbosity = inps$verbosity) else p$text <- NULL
+
+        # temperature (NA/NULL/length0 => remove)
+        tp <- inps$temperature
+        if (length(tp) == 0 || is.null(tp) || is.na(tp))
+          p$temperature <- NULL else p$temperature <- as.numeric(tp)
+
+        p
+      }
+
+      # Update Temperature input (keeps field synced with provider)
+      update_temperature_ui <- function(session, input, models, which) {
+        input_id <- paste0(which, "_temperature")
+        # Only update if the modal control exists
+        if (!is.null(input[[input_id]])) {
+          prov <- models[[which]]
+          if (!is.null(prov)) {
+            val <- prov$parameters$temperature
+            if (is.null(val)) val <- NA_real_
+            updateNumericInput(session, input_id, value = val)
+          }
+        }
+      }
+
+      # Wire a single observer for main/large settings
+      wire_settings_observer <- function(
+        which,
+        input,
+        session,
+        models,
+        main_provider_updated,
+        large_provider_updated
+      ) {
+        observeEvent(
+          list(
+            input[[paste0(which, "_reasoning_effort")]],
+            input[[paste0(which, "_verbosity")]],
+            input[[paste0(which, "_temperature")]]
+          ),
+          ignoreInit = TRUE,
+          handlerExpr = {
+            req(models[[which]])
+
+            old_params <- models[[which]]$parameters
+            inps <- read_modal_inputs(input, which)
+            p <- build_parameters(old_params, inps)
+
+            models[[which]] <- clone_with_params(models[[which]], p)
+
+            # keep preview + UI in sync
+            touch_provider_updated(
+              which,
+              main_provider_updated,
+              large_provider_updated
+            )
+            update_temperature_ui(session, input, models, which)
+          }
+        )
+      }
+
       # Main card UI -----------------------------------------------------------
 
       output$card <- renderUI({
@@ -298,43 +399,6 @@ model_server <- function(
         )
       })
 
-      # Update model reactiveValues when selected;
-      #   If preconfigured, get the complete LLM provider from list by name
-      #   If configured, use the configured LLM provider & set model parameter
-      observeEvent(input$main_model, {
-        req(input$main_model)
-        req(llm_provider_rv$provider_mode)
-
-        if (llm_provider_rv$provider_mode == "preconfigured") {
-          req(input$main_model)
-          models$main <- preconfigured_llm_provider_model_main[[
-            input$main_model
-          ]]
-        } else {
-          models$main <- llm_provider_rv$llm_provider_configured$clone()
-          models$main <- models$main$set_parameters(list(
-            model = input$main_model
-          ))
-        }
-      })
-      observeEvent(input$large_model, {
-        req(input$large_model)
-        req(llm_provider_rv$provider_mode)
-
-        if (llm_provider_rv$provider_mode == "preconfigured") {
-          req(input$large_model)
-          models$large <- preconfigured_llm_provider_model_large[[
-            input$large_model
-          ]]
-        } else {
-          req(input$large_model)
-          models$large <- llm_provider_rv$llm_provider_configured$clone()
-          models$large <- models$large$set_parameters(list(
-            model = input$large_model
-          ))
-        }
-      })
-
       # Keep saved selections valid if the configured provider's model list changes
       observe({
         mode <- current_mode()
@@ -356,6 +420,7 @@ model_server <- function(
         saved[[mode]] <- cur
       })
 
+      # When main/large model is selected or changed
       observeEvent(input$main_model, {
         req(input$main_model)
         req(llm_provider_rv$provider_mode)
@@ -373,6 +438,7 @@ model_server <- function(
 
         save_selection("main")
         update_json_mode_ui("main")
+        update_temperature_ui(session, input, models, "main")
         main_provider_updated(Sys.time())
       })
 
@@ -393,6 +459,7 @@ model_server <- function(
 
         save_selection("large")
         update_json_mode_ui("large")
+        update_temperature_ui(session, input, models, "large")
         large_provider_updated(Sys.time())
       })
 
@@ -417,6 +484,10 @@ model_server <- function(
         selected_json_type <- provider$json_type
         if (is.null(selected_json_type) || !nzchar(selected_json_type))
           selected_json_type <- "auto"
+
+        # current temperature (NA renders as blank)
+        selected_temperature <- provider$parameters$temperature
+        if (is.null(selected_temperature)) selected_temperature <- NA_real_
 
         id_prefix <- if (which == "main") "main" else "large"
 
@@ -499,6 +570,36 @@ model_server <- function(
                   label = NULL,
                   choices = verbosity_choices,
                   selected = selected_verbosity
+                )
+              ),
+
+              # Temperature (live)
+              div(
+                class = "d-flex flex-column",
+                tags$label(
+                  class = "form-label",
+                  tagList(
+                    lang()$t("Temperature"),
+                    bslib::tooltip(
+                      bsicons::bs_icon("info-circle"),
+                      paste0(
+                        lang()$t(
+                          "Stel de sampling-temperatuur in (0–2, hoger = creatiever). "
+                        ),
+                        lang()$t(
+                          "Laat leeg om de provider-standaard te gebruiken."
+                        )
+                      )
+                    )
+                  )
+                ),
+                numericInput(
+                  inputId = session$ns(paste0(id_prefix, "_temperature")),
+                  label = NULL,
+                  value = selected_temperature, # NA shows as blank
+                  min = 0,
+                  max = 2,
+                  step = 0.1
                 )
               ),
 
@@ -672,82 +773,8 @@ model_server <- function(
         open_settings_modal("large")
       })
 
-      # Live update — MAIN (overwrite parameters)
-      observeEvent(
-        list(input$main_reasoning_effort, input$main_verbosity),
-        ignoreInit = TRUE,
-        handlerExpr = {
-          req(models$main)
+      # Render JSON preview of provider fields/parameters ----------------------
 
-          # Start from current (or empty) params
-          p <- models$main$parameters
-          if (is.null(p)) p <- list()
-
-          # Read inputs
-          eff <- input$main_reasoning_effort
-          if (is.null(eff)) eff <- ""
-          vb <- input$main_verbosity
-          if (is.null(vb)) vb <- ""
-
-          # Apply reasoning.effort
-          if (nzchar(eff)) {
-            p$reasoning <- list(effort = eff)
-          } else {
-            p$reasoning <- NULL # ensure removal
-          }
-
-          # Apply text.verbosity
-          if (nzchar(vb)) {
-            p$text <- list(verbosity = vb)
-          } else {
-            p$text <- NULL # ensure removal
-          }
-
-          # Overwrite (don't merge) and reassign a fresh instance
-          prov <- models$main$clone(deep = TRUE)
-          prov$parameters <- p
-          models$main <- prov
-
-          main_provider_updated(Sys.time())
-        }
-      )
-
-      # Live update — LARGE (overwrite parameters)
-      observeEvent(
-        list(input$large_reasoning_effort, input$large_verbosity),
-        ignoreInit = TRUE,
-        handlerExpr = {
-          req(models$large)
-
-          p <- models$large$parameters
-          if (is.null(p)) p <- list()
-
-          eff <- input$large_reasoning_effort
-          if (is.null(eff)) eff <- ""
-          vb <- input$large_verbosity
-          if (is.null(vb)) vb <- ""
-
-          if (nzchar(eff)) {
-            p$reasoning <- list(effort = eff)
-          } else {
-            p$reasoning <- NULL
-          }
-
-          if (nzchar(vb)) {
-            p$text <- list(verbosity = vb)
-          } else {
-            p$text <- NULL
-          }
-
-          prov <- models$large$clone(deep = TRUE)
-          prov$parameters <- p
-          models$large <- prov
-
-          large_provider_updated(Sys.time())
-        }
-      )
-
-      # Render JSON preview of provider fields/parameters
       get_llm_provider_fields <- function(llm_provider) {
         # Get parameters from the LLM provider
         p <- llm_provider$parameters
@@ -791,6 +818,7 @@ model_server <- function(
         models$main <- prov
         main_provider_updated(Sys.time())
         update_json_mode_ui("main")
+        update_temperature_ui(session, input, models, "main")
       })
 
       # Live update — JSON mode (LARGE)
@@ -801,6 +829,7 @@ model_server <- function(
         models$large <- prov
         large_provider_updated(Sys.time())
         update_json_mode_ui("large")
+        update_temperature_ui(session, input, models, "large")
       })
 
       # Update the JSON mode select input in the modal
@@ -837,6 +866,19 @@ model_server <- function(
             shinyjs::enable("large_cog")
           }
         }
+      })
+
+      # Wire the DRY observers for settings -----------------------------------
+
+      lapply(c("main", "large"), function(w) {
+        wire_settings_observer(
+          which = w,
+          input = input,
+          session = session,
+          models = models,
+          main_provider_updated = main_provider_updated,
+          large_provider_updated = large_provider_updated
+        )
       })
 
       # Return reactive values -------------------------------------------------
