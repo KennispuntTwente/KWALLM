@@ -4379,14 +4379,14 @@
     },
     "tidyprompt": {
       "Package": "tidyprompt",
-      "Version": "0.0.1.9000",
+      "Version": "0.1.0.9000",
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
       "RemoteUsername": "kennispunttwente",
       "RemoteRepo": "tidyprompt",
-      "RemoteRef": "a8f56e47ef473de440bcbb711f6f8a8a72c9c9e8",
-      "RemoteSha": "a8f56e47ef473de440bcbb711f6f8a8a72c9c9e8"
+      "RemoteRef": "b98e4415e93070a831de165244e216a538a79a7d",
+      "RemoteSha": "b98e4415e93070a831de165244e216a538a79a7d"
     },
     "tidyr": {
       "Package": "tidyr",

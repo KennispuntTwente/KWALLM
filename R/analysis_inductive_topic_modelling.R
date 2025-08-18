@@ -218,7 +218,8 @@ prompt_candidate_topics <- function(
             )
           )
         ),
-        required = list("topics")
+        required = list("topics"),
+        additionalProperties = FALSE
       ),
       type = "auto"
     )
@@ -388,7 +389,8 @@ reduce_topics <- function(
         properties = list(
           topics = list(type = "array", items = list(type = "string"))
         ),
-        required = list("topics")
+        required = list("topics"),
+        additionalProperties = FALSE
       ),
       type = "auto"
     ) |>
