@@ -517,7 +517,7 @@ model_server <- function(
 
         id_prefix <- if (which == "main") "main" else "large"
 
-        unset_lbl <- lang()$t("Unset (provider-standaard)")
+        unset_lbl <- lang()$t("Niet ingesteld")
 
         effort_choices <- setNames(
           c("", "minimal", "low", "medium", "high"),
@@ -532,166 +532,180 @@ model_server <- function(
         showModal(
           modalDialog(
             title = title_txt,
-            size = "l",
+            size = "xl",
             easyClose = TRUE,
             footer = modalButton(lang()$t("Sluiten")),
             div(
-              class = "d-flex flex-column gap-4",
-              # Reasoning effort (live)
-              div(
-                class = "d-flex flex-column",
-                tags$label(
-                  class = "form-label",
-                  tagList(
-                    lang()$t("Reasoning effort"),
-                    bslib::tooltip(
-                      bsicons::bs_icon("info-circle"),
-                      paste0(
-                        lang()$t(
-                          "Voor modellen die het ondersteunen (bijv., gpt-5) regelt dit de denkinspanning van het model (snelheid vs. diepgang)."
-                        ),
-                        lang()$t(
-                          " Als het model het niet ondersteunt, doet deze parameter niets of kan het mogelijk tot errors leiden. Raadpleeg de API-documentatie."
-                        ),
-                        lang()$t(
-                          " Laat het veld leeg om de parameter niet mee sturen."
+              # === Controls in a 2-col wrap ===
+              bslib::layout_column_wrap(
+                width = 1 / 2, # <= up to 2 per row
+                gap = "1rem",
+                # Reasoning effort
+                div(
+                  class = "d-flex flex-column",
+                  tags$label(
+                    class = "form-label",
+                    tagList(
+                      lang()$t("Reasoning effort"),
+                      bslib::tooltip(
+                        bsicons::bs_icon("info-circle"),
+                        paste0(
+                          lang()$t(
+                            "Voor modellen die het ondersteunen (bijv., gpt-5) regelt dit de denkinspanning van het model (snelheid vs. diepgang)."
+                          ),
+                          lang()$t(
+                            " Als het model het niet ondersteunt, doet deze parameter niets of kan het mogelijk tot errors leiden. Raadpleeg de API-documentatie."
+                          ),
+                          lang()$t(
+                            " Laat het veld leeg om de parameter niet mee sturen."
+                          )
                         )
                       )
                     )
+                  ),
+                  selectInput(
+                    inputId = session$ns(paste0(
+                      id_prefix,
+                      "_reasoning_effort"
+                    )),
+                    label = NULL,
+                    choices = effort_choices,
+                    selected = selected_effort
                   )
                 ),
-                selectInput(
-                  inputId = session$ns(paste0(id_prefix, "_reasoning_effort")),
-                  label = NULL,
-                  choices = effort_choices,
-                  selected = selected_effort
-                )
-              ),
 
-              # Verbosity (live)
-              div(
-                class = "d-flex flex-column",
-                tags$label(
-                  class = "form-label",
-                  tagList(
-                    lang()$t("Verbosity"),
-                    bslib::tooltip(
-                      bsicons::bs_icon("info-circle"),
-                      paste0(
-                        lang()$t(
-                          "Voor modellen die het ondersteunen (bijv., gpt-5) regelt dit de verbositeit van het model (beknopt vs. uitgebreid)."
-                        ),
-                        lang()$t(
-                          " Als het model het niet ondersteunt, doet deze parameter niets of kan het mogelijk tot errors leiden. Raadpleeg de API-documentatie."
-                        ),
-                        lang()$t(
-                          " Laat het veld leeg om de parameter niet mee sturen."
+                # Verbosity
+                div(
+                  class = "d-flex flex-column",
+                  tags$label(
+                    class = "form-label",
+                    tagList(
+                      lang()$t("Verbosity"),
+                      bslib::tooltip(
+                        bsicons::bs_icon("info-circle"),
+                        paste0(
+                          lang()$t(
+                            "Voor modellen die het ondersteunen (bijv., gpt-5) regelt dit de verbositeit van het model (beknopt vs. uitgebreid)."
+                          ),
+                          lang()$t(
+                            " Als het model het niet ondersteunt, doet deze parameter niets of kan het mogelijk tot errors leiden. Raadpleeg de API-documentatie."
+                          ),
+                          lang()$t(
+                            " Laat het veld leeg om de parameter niet mee sturen."
+                          )
                         )
                       )
                     )
+                  ),
+                  selectInput(
+                    inputId = session$ns(paste0(id_prefix, "_verbosity")),
+                    label = NULL,
+                    choices = verbosity_choices,
+                    selected = selected_verbosity
                   )
                 ),
-                selectInput(
-                  inputId = session$ns(paste0(id_prefix, "_verbosity")),
-                  label = NULL,
-                  choices = verbosity_choices,
-                  selected = selected_verbosity
-                )
-              ),
 
-              # Temperature (live)
-              div(
-                class = "d-flex flex-column",
-                tags$label(
-                  class = "form-label",
-                  tagList(
-                    lang()$t("Temperature"),
-                    bslib::tooltip(
-                      bsicons::bs_icon("info-circle"),
-                      paste0(
-                        lang()$t(
-                          "Stel de sampling-temperatuur in (0–2, hoger = creatiever). "
-                        ),
-                        lang()$t(
-                          "Laat leeg om de provider-standaard te gebruiken."
+                # Temperature
+                div(
+                  class = "d-flex flex-column",
+                  tags$label(
+                    class = "form-label",
+                    tagList(
+                      lang()$t("Temperature"),
+                      bslib::tooltip(
+                        bsicons::bs_icon("info-circle"),
+                        paste0(
+                          lang()$t(
+                            "Stel de sampling-temperatuur in (0–2, hoger = creatiever). "
+                          ),
+                          lang()$t(
+                            "Laat leeg om de provider-standaard te gebruiken."
+                          ),
+                          lang()$t(
+                            " Het wordt afgeraden om deze parameter samen met een 'top p'-parameter te gebruiken."
+                          )
                         )
                       )
                     )
+                  ),
+                  numericInput(
+                    inputId = session$ns(paste0(id_prefix, "_temperature")),
+                    label = NULL,
+                    value = selected_temperature,
+                    min = 0,
+                    max = 2,
+                    step = 0.1
                   )
                 ),
-                numericInput(
-                  inputId = session$ns(paste0(id_prefix, "_temperature")),
-                  label = NULL,
-                  value = selected_temperature, # NA shows as blank
-                  min = 0,
-                  max = 2,
-                  step = 0.1
-                )
-              ),
 
-              div(
-                class = "d-flex flex-column",
-                tags$label(
-                  class = "form-label",
-                  tagList(
-                    lang()$t("Top-p (nucleus sampling)"),
-                    bslib::tooltip(
-                      bsicons::bs_icon("info-circle"),
-                      paste0(
-                        lang()$t(
-                          "Beperk sampling tot de kleinste token set met cumulatieve kans p (0–1). "
-                        ),
-                        lang()$t(
-                          "Laat leeg om de provider-standaard te gebruiken."
+                # Top-p
+                div(
+                  class = "d-flex flex-column",
+                  tags$label(
+                    class = "form-label",
+                    tagList(
+                      lang()$t("Top-p (nucleus sampling)"),
+                      bslib::tooltip(
+                        bsicons::bs_icon("info-circle"),
+                        paste0(
+                          lang()$t(
+                            "Beperk sampling tot de kleinste token set met cumulatieve kans p (0–1). "
+                          ),
+                          lang()$t(
+                            "Laat leeg om de provider-standaard te gebruiken."
+                          ),
+                          lang()$t(
+                            " Het wordt afgeraden om deze parameter samen met een 'temperature'-parameter te gebruiken."
+                          )
                         )
                       )
                     )
+                  ),
+                  numericInput(
+                    inputId = session$ns(paste0(id_prefix, "_top_p")),
+                    label = NULL,
+                    value = selected_top_p,
+                    min = 0,
+                    max = 1,
+                    step = 0.01
                   )
                 ),
-                numericInput(
-                  inputId = session$ns(paste0(id_prefix, "_top_p")),
-                  label = NULL,
-                  value = selected_top_p, # NA shows as blank
-                  min = 0,
-                  max = 1,
-                  step = 0.01
-                )
-              ),
 
-              # JSON mode (auto/text-based)
-              div(
-                class = "d-flex flex-column",
-                tags$label(
-                  class = "form-label",
-                  tagList(
-                    lang()$t("JSON-modus"),
-                    bslib::tooltip(
-                      bsicons::bs_icon("info-circle"),
-                      paste0(
-                        lang()$t(
-                          "Sommige prompts tijdens de analyse vragen om JSON-output (structured output)."
-                        ),
-                        lang()$t(
-                          " Voor OpenAI-type API's & Ollama, wordt dit automatisch gedaan via specifieke parameters in de API-requests."
-                        ),
-                        lang()$t(
-                          " Een vereiste is dan wel dat het model deze structured-output-parameters ondersteunt (de meeste moderne modellen doen dit)."
-                        ),
-                        lang()$t(
-                          " Maar als het model dit niet ondersteunt, kan dit ('auto') tot errors leiden."
-                        ),
-                        lang()$t(
-                          " In dat geval kan je hier 'text-based' kiezen, wat werkt voor alle modellen."
+                # JSON mode
+                div(
+                  class = "d-flex flex-column",
+                  tags$label(
+                    class = "form-label",
+                    tagList(
+                      lang()$t("JSON-modus"),
+                      bslib::tooltip(
+                        bsicons::bs_icon("info-circle"),
+                        paste0(
+                          lang()$t(
+                            "Sommige prompts tijdens de analyse vragen om JSON-output (structured output)."
+                          ),
+                          lang()$t(
+                            " Voor OpenAI-type API's & Ollama, wordt dit automatisch gedaan via specifieke parameters in de API-requests."
+                          ),
+                          lang()$t(
+                            " Een vereiste is dan wel dat het model deze structured-output-parameters ondersteunt (de meeste moderne modellen doen dit)."
+                          ),
+                          lang()$t(
+                            " Maar als het model dit niet ondersteunt, kan dit ('auto') tot errors leiden."
+                          ),
+                          lang()$t(
+                            " In dat geval kan je hier 'text-based' kiezen, wat werkt voor alle modellen."
+                          )
                         )
                       )
                     )
+                  ),
+                  selectInput(
+                    inputId = session$ns(paste0(id_prefix, "_json_mode")),
+                    label = NULL,
+                    choices = c("auto", "text-based"),
+                    selected = selected_json_type
                   )
-                ),
-                selectInput(
-                  inputId = session$ns(paste0(id_prefix, "_json_mode")),
-                  label = NULL,
-                  choices = c("auto", "text-based"),
-                  selected = selected_json_type
                 )
               ),
 
@@ -703,15 +717,13 @@ model_server <- function(
               ))),
 
               tags$hr(),
-              # Two buttons to test the provider; with and without JSON
               div(
-                # Button to test the provider
+                style = "display: flex; justify-content: center; flex-wrap: wrap; gap: 10px;",
                 actionButton(
                   label = lang()$t("Test provider (regular output)"),
                   inputId = ns(paste0(which, "_test_provider")),
                   class = "btn btn-primary"
                 ),
-                # Button to test the provider with JSON
                 actionButton(
                   label = lang()$t("Test provider (JSON output)"),
                   inputId = ns(paste0(which, "_test_provider_json")),

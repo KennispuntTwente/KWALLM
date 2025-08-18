@@ -1286,8 +1286,8 @@
         "en": "Advanced settings — primary model"
       },
       {
-        "nl": "Unset (provider-standaard)",
-        "en": "Unset (provider default)"
+        "nl": "Niet ingesteld",
+        "en": "Not set"
       },
       {
         "nl": "Reasoning effort",
@@ -1368,6 +1368,14 @@
       {
         "nl": "Beperk sampling tot de kleinste token set met cumulatieve kans p (0–1). ",
         "en": "Limit sampling to the smallest set of tokens with cumulative probability p (0–1). "
+      },
+      {
+        "nl": " Het wordt afgeraden om deze parameter samen met een 'top p'-parameter te gebruiken.",
+        "en": " It is not recommended to use this parameter together with a 'top p' parameter."
+      },
+      {
+        "nl": " Het wordt afgeraden om deze parameter samen met een 'temperature'-parameter te gebruiken.",
+        "en": " It is not recommended to use this parameter together with a 'temperature' parameter."
       }
     ]
 }
