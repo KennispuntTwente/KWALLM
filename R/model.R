@@ -275,9 +275,11 @@ model_server <- function(
                 bsicons::bs_icon("info-circle"),
                 paste0(
                   lang()$t(
-                    "Bij onderwerpextractie kan je een apart model kiezen ... "
+                    "Bij onderwerpextractie kan je een apart model kiezen dat gebruikt zal worden voor het terugbrengen van mogelijke onderwerpen tot een finale lijst van onderwerpen."
                   ),
-                  lang()$t("Omdat deze stap slechts één keer gebeurt ...")
+                  lang()$t(
+                    " Omdat deze stap slechts één keer gebeurt maar wel grote invloed heeft op de resultaten, wordt aangeraden om een groter model te kiezen (mogelijk een 'thinking'-model zoals OpenAI's o3 of Deepseek's R1)."
+                  )
                 )
               ),
               bslib::tooltip(
