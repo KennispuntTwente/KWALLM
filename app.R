@@ -70,7 +70,12 @@ if (!getOption("shiny.testmode", FALSE)) {
 #     in function `get_context_window_size_in_tokens` in R/context_window.R
 #   You may want to replace this function with a more dynamic one,
 #     or add your own hardcoded values for the models you use
-#   The function will default to 2048 if a model is not recognised
+#     The function will default to 2048 if a model is not recognised
+# - Note: if you make the 'preconfigured_models_...' object a named list,
+#     the names will be shown in the dropdown for the user. If you do not provide names,
+#     the model names will be shown. Names must be unique. If you want to use
+#     a specific model twice but with different settings, a named list is
+#     then required
 preconfigured_models_main <- list(
   tidyprompt::llm_provider_openai()$set_parameters(list(
     model = "gpt-5-mini",
