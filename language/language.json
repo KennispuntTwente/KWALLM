@@ -1268,6 +1268,98 @@
       {
         "nl": "Onderstaande parameters bepalen of en hoe de teksten worden gesplitst naar kleinere stukken in de 'markeren'-modus.",
         "en": "Below parameters determine if and how the texts are split into smaller pieces in the 'mark' mode."
+      },
+      {
+        "nl": "",
+        "en": "'"
+      },
+      {
+        "nl": "Model",
+        "en": "Model"
+      },
+      {
+        "nl": "Geavanceerde instellingen voor dit model",
+        "en": "Advanced settings for this model"
+      },
+      {
+        "nl": "Geavanceerde instellingen — primair model",
+        "en": "Advanced settings — primary model"
+      },
+      {
+        "nl": "Unset (provider-standaard)",
+        "en": "Unset (provider default)"
+      },
+      {
+        "nl": "Reasoning effort",
+        "en": "Reasoning effort"
+      },
+      {
+        "nl": "Voor modellen die het ondersteunen (bijv., gpt-5) regelt dit de denkinspanning van het model (snelheid vs. diepgang).",
+        "en": "For models that support it (e.g., gpt-5), this controls the model’s reasoning effort (speed vs. depth)."
+      },
+      {
+        "nl": " Als het model het niet ondersteunt, doet deze parameter niets of kan het mogelijk tot errors leiden. Raadpleeg de API-documentatie.",
+        "en": " If the model doesn’t support it, this parameter does nothing or may cause errors. Consult the API documentation."
+      },
+      {
+        "nl": " Laat het veld leeg om de parameter niet mee sturen.",
+        "en": " Leave the field empty to omit this parameter."
+      },
+      {
+        "nl": "Verbosity",
+        "en": "Verbosity"
+      },
+      {
+        "nl": "Voor modellen die het ondersteunen (bijv., gpt-5) regelt dit de verbositeit van het model (beknopt vs. uitgebreid).",
+        "en": "For models that support it (e.g., gpt-5), this controls the model’s verbosity (concise vs. detailed)."
+      },
+      {
+        "nl": "Temperature",
+        "en": "Temperature"
+      },
+      {
+        "nl": "Stel de sampling-temperatuur in (0–2, hoger = creatiever). ",
+        "en": "Set the sampling temperature (0–2, higher = more creative). "
+      },
+      {
+        "nl": "Laat leeg om de provider-standaard te gebruiken.",
+        "en": "Leave empty to use the provider default."
+      },
+      {
+        "nl": "JSON-modus",
+        "en": "JSON mode"
+      },
+      {
+        "nl": "Sommige prompts tijdens de analyse vragen om JSON-output (structured output).",
+        "en": "Some analysis prompts require JSON output (structured output)."
+      },
+      {
+        "nl": " Voor OpenAI-type API's & Ollama, wordt dit automatisch gedaan via specifieke parameters in de API-requests.",
+        "en": " For OpenAI-type APIs & Ollama, this is handled automatically via specific parameters in the API requests."
+      },
+      {
+        "nl": " Een vereiste is dan wel dat het model deze structured-output-parameters ondersteunt (de meeste moderne modellen doen dit).",
+        "en": " A requirement is that the model supports these structured-output parameters (most modern models do)."
+      },
+      {
+        "nl": " Maar als het model dit niet ondersteunt, kan dit ('auto') tot errors leiden.",
+        "en": " But if the model doesn’t support this, using ('auto') can lead to errors."
+      },
+      {
+        "nl": " In dat geval kan je hier 'text-based' kiezen, wat werkt voor alle modellen.",
+        "en": " In that case you can choose 'text-based' here, which works for all models."
+      },
+      {
+        "nl": "Huidige parameters:",
+        "en": "Current parameters:"
+      },
+      {
+        "nl": "Test provider (regular output)",
+        "en": "Test provider (reguliere output)"
+      },
+      {
+        "nl": "Test provider (JSON output)",
+        "en": "Test provider (JSON output)"
       }
     ]
 }
