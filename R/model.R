@@ -172,7 +172,8 @@ model_server <- function(
         list(
           effort = (input[[paste0(which, "_reasoning_effort")]] %||% ""),
           verbosity = (input[[paste0(which, "_verbosity")]] %||% ""),
-          temperature = input[[paste0(which, "_temperature")]] # NA/NULL => remove
+          temperature = input[[paste0(which, "_temperature")]], # NA/NULL => remove
+          top_p = input[[paste0(which, "_top_p")]]
         )
       }
 
@@ -194,6 +195,11 @@ model_server <- function(
         if (length(tp) == 0 || is.null(tp) || is.na(tp))
           p$temperature <- NULL else p$temperature <- as.numeric(tp)
 
+        # top_p
+        tp_p <- inps$top_p
+        if (length(tp_p) == 0 || is.null(tp_p) || is.na(tp_p))
+          p$top_p <- NULL else p$top_p <- as.numeric(tp_p)
+
         p
       }
 
@@ -205,6 +211,19 @@ model_server <- function(
           prov <- models[[which]]
           if (!is.null(prov)) {
             val <- prov$parameters$temperature
+            if (is.null(val)) val <- NA_real_
+            updateNumericInput(session, input_id, value = val)
+          }
+        }
+      }
+
+      # Update top_p input (keeps field synced with provider)
+      update_top_p_ui <- function(session, input, models, which) {
+        input_id <- paste0(which, "_top_p")
+        if (!is.null(input[[input_id]])) {
+          prov <- models[[which]]
+          if (!is.null(prov)) {
+            val <- prov$parameters$top_p
             if (is.null(val)) val <- NA_real_
             updateNumericInput(session, input_id, value = val)
           }
@@ -224,7 +243,8 @@ model_server <- function(
           list(
             input[[paste0(which, "_reasoning_effort")]],
             input[[paste0(which, "_verbosity")]],
-            input[[paste0(which, "_temperature")]]
+            input[[paste0(which, "_temperature")]],
+            input[[paste0(which, "_top_p")]]
           ),
           ignoreInit = TRUE,
           handlerExpr = {
@@ -243,6 +263,7 @@ model_server <- function(
               large_provider_updated
             )
             update_temperature_ui(session, input, models, which)
+            update_top_p_ui(session, input, models, which)
           }
         )
       }
@@ -439,6 +460,7 @@ model_server <- function(
         save_selection("main")
         update_json_mode_ui("main")
         update_temperature_ui(session, input, models, "main")
+        update_top_p_ui(session, input, models, "large")
         main_provider_updated(Sys.time())
       })
 
@@ -460,6 +482,7 @@ model_server <- function(
         save_selection("large")
         update_json_mode_ui("large")
         update_temperature_ui(session, input, models, "large")
+        update_top_p_ui(session, input, models, "large")
         large_provider_updated(Sys.time())
       })
 
@@ -488,6 +511,9 @@ model_server <- function(
         # current temperature (NA renders as blank)
         selected_temperature <- provider$parameters$temperature
         if (is.null(selected_temperature)) selected_temperature <- NA_real_
+
+        selected_top_p <- provider$parameters$top_p
+        if (is.null(selected_top_p)) selected_top_p <- NA_real_
 
         id_prefix <- if (which == "main") "main" else "large"
 
@@ -600,6 +626,35 @@ model_server <- function(
                   min = 0,
                   max = 2,
                   step = 0.1
+                )
+              ),
+
+              div(
+                class = "d-flex flex-column",
+                tags$label(
+                  class = "form-label",
+                  tagList(
+                    lang()$t("Top-p (nucleus sampling)"),
+                    bslib::tooltip(
+                      bsicons::bs_icon("info-circle"),
+                      paste0(
+                        lang()$t(
+                          "Beperk sampling tot de kleinste token set met cumulatieve kans p (0–1). "
+                        ),
+                        lang()$t(
+                          "Laat leeg om de provider-standaard te gebruiken."
+                        )
+                      )
+                    )
+                  )
+                ),
+                numericInput(
+                  inputId = session$ns(paste0(id_prefix, "_top_p")),
+                  label = NULL,
+                  value = selected_top_p, # NA shows as blank
+                  min = 0,
+                  max = 1,
+                  step = 0.01
                 )
               ),
 
@@ -819,6 +874,7 @@ model_server <- function(
         main_provider_updated(Sys.time())
         update_json_mode_ui("main")
         update_temperature_ui(session, input, models, "main")
+        update_top_p_ui(session, input, models, "main")
       })
 
       # Live update — JSON mode (LARGE)
@@ -830,6 +886,7 @@ model_server <- function(
         large_provider_updated(Sys.time())
         update_json_mode_ui("large")
         update_temperature_ui(session, input, models, "large")
+        update_top_p_ui(session, input, models, "large")
       })
 
       # Update the JSON mode select input in the modal
