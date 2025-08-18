@@ -1,6 +1,6 @@
 {
   "name": "kwallm-text-analysis-app",
-  "version": "1.1.9",
+  "version": "1.2.0",
   "description": "KWALLM, text analysis app, desktop version; see: github.com/kennispunttwente/tekstanalyse_met_llm",
   "author": "Luka Koning <l.koning@kennispunttwente.nl>",
   "license": "AGPL-3.0",
