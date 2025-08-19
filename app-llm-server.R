@@ -103,6 +103,7 @@ if (length(available_models) == 0) {
 }
 preconfigured_models_list = list()
 for (model in available_models) {
+  if (stringr::str_detect(model, stringr::fixed("-coder"))) next
   llm_prov <- tidyprompt::llm_provider_ollama(num_ctx = 2048)
   llm_prov$parameters$stream <- FALSE
   llm_prov$parameters$model <- model
