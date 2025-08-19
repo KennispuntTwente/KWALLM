@@ -9,11 +9,13 @@ renv::restore()
 
 # Setup Python with reticulate & uv
 try({
+  Sys.unsetenv("RETICULATE_PYTHON")
   reticulate:::uv_exec("sync")
   reticulate::use_virtualenv("./.venv")
 })
 
 # Load core packages
+library(rlang)
 library(tidyverse)
 library(tidyprompt)
 library(shiny)
@@ -80,7 +82,6 @@ repeat {
 }
 
 # Set LLM provider, load available models
-llm_provider <- tidyprompt::llm_provider_ollama(num_ctx = 2048)
 available_models <- tryCatch(
   {
     rollama::list_models() |>
@@ -92,7 +93,6 @@ available_models <- tryCatch(
     NULL
   }
 )
-
 if (length(available_models) == 0) {
   app_error(
     error = "No available models on Ollama server",
@@ -101,13 +101,13 @@ if (length(available_models) == 0) {
     in_shiny = FALSE
   )
 }
-
-llm_provider$parameters$model <- available_models[[1]]
-if ("gemma3:27b" %in% available_models) {
-  llm_provider$parameters$model <- "gemma3:27b"
-  available_models <- c("gemma3:27b", available_models) |> unique()
+preconfigured_models_list = list()
+for (model in available_models) {
+  llm_prov <- tidyprompt::llm_provider_ollama(num_ctx = 2048)
+  llm_prov$parameters$stream <- FALSE
+  llm_prov$parameters$model <- model
+  preconfigured_models_list[[length(preconfigured_models_list) + 1]] <- llm_prov
 }
-llm_provider$parameters$stream <- FALSE
 
 # Optionally set other options
 options(
@@ -191,8 +191,7 @@ shiny::addResourcePath("www", "www")
 shiny::shinyApp(
   ui = main_ui(),
   server = main_server(
-    preconfigured_llm_provider = llm_provider,
-    preconfigured_main_models = available_models,
-    preconfigured_large_models = available_models
+    preconfigured_main_models = preconfigured_models_list,
+    preconfigured_large_models = preconfigured_models_list
   )
 )
