@@ -792,6 +792,8 @@ model_server <- function(
               type = "message",
               duration = 5
             )
+            shinyjs::enable(paste0(which, "_test_provider"))
+            shinyjs::enable(paste0(which, "_test_provider_json"))
           }) %...!%
           (function(e) {
             removeNotification(nid)
@@ -801,8 +803,6 @@ model_server <- function(
               fatal = FALSE,
               lang = lang()
             )
-          }) %>%
-          finally({
             shinyjs::enable(paste0(which, "_test_provider"))
             shinyjs::enable(paste0(which, "_test_provider_json"))
           })
