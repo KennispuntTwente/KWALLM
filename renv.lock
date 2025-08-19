@@ -4115,6 +4115,12 @@
       "NeedsCompilation": "yes",
       "Repository": "RSPM"
     },
+    "stringdist": {
+      "Package": "stringdist",
+      "Version": "0.9.15",
+      "Source": "Repository",
+      "Repository": "CRAN"
+    },
     "stringi": {
       "Package": "stringi",
       "Version": "1.8.7",
