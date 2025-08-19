@@ -327,32 +327,96 @@ mark_text_prompt <- function(
 
         text_parts <- x$text_parts
 
-        # If of length NULL, return an empty character vector
-        if (length(text_parts) == 0) {
-          return(character(0))
-        }
-        # If there is one entry and it's "", return an empty character vector
-        if (length(text_parts) == 1 && text_parts[1] == "") {
-          return(character(0))
+        # Empty handling
+        if (length(text_parts) == 0) return(character(0))
+        if (length(text_parts) == 1 && identical(text_parts[1], "")) return(character(0))
+
+        normalize_for_dist <- function(s) {
+          if (is.null(s)) return("")
+          s <- gsub("[\u2018\u2019]", "'", s)   # curly -> straight apostrophes
+          s <- gsub("[\u201C\u201D]", "\"", s)  # curly -> straight quotes
+          s <- gsub("[\u2013\u2014]", "-", s)   # en/em dash -> hyphen
+          s <- tolower(s)
+          s <- gsub("\\s+", " ", s)
+          trimws(s)
         }
 
-        # Check if all text parts are present in the original text
-        not_found <- vapply(
+        fuzzy_threshold <- function(needle_len, rel = 0.12, abs = 2) {
+          max(abs, ceiling(needle_len * rel))
+        }
+
+        best_literal_substring <- function(needle, haystack, rel = 0.12, abs = 2) {
+          n <- normalize_for_dist(needle)
+          h <- haystack
+          if (nchar(n) == 0L || nchar(h) == 0L) return(NULL)
+
+          # Fast paths
+          if (grepl(needle, h, fixed = TRUE)) return(needle) # exact literal
+          if (grepl(normalize_for_dist(needle),
+                    normalize_for_dist(h), fixed = TRUE)) {
+            # If the normalized needle appears, try to find a close literal window of similar length.
+            # We still compute distances below to pick the best literal span.
+          }
+
+          md <- fuzzy_threshold(nchar(n), rel = rel, abs = abs)
+
+          L <- nchar(h)
+          nlen <- nchar(n)
+          minw <- max(1L, nlen - md)
+          maxw <- min(L, nlen + md)
+          if (L < minw) return(NULL)
+
+          step <- max(1L, floor(nlen / 5))
+
+          best <- NULL
+          best_d <- Inf
+
+          # Scan windows across the original haystack; compute distance on normalized forms
+          for (w in seq(minw, maxw)) {
+            last_start <- L - w + 1L
+            if (last_start <= 0L) next
+            for (i in seq(1L, last_start, by = step)) {
+              sub <- substr(h, i, i + w - 1L)
+              d <- stringdist::stringdist(
+                n,
+                normalize_for_dist(sub),
+                method = "lv"
+              )
+              if (d < best_d) {
+                best_d <- d
+                best <- sub
+                if (best_d == 0L) break
+              }
+            }
+            if (best_d == 0L) break
+          }
+
+          if (!is.infinite(best_d) && best_d <= md) return(best)
+          NULL
+        }
+
+        # Try to snap each proposed part to a literal substring in `text`
+        snapped <- vapply(
           text_parts,
-          function(part) !grepl(part, text, fixed = TRUE),
-          logical(1)
+          function(part) {
+            hit <- best_literal_substring(part, text, rel = 0.12, abs = 2)
+            if (is.null(hit)) NA_character_ else hit
+          },
+          character(1)
         )
+
+        not_found <- is.na(snapped)
         if (any(not_found)) {
           missing_parts <- text_parts[not_found]
           return(tidyprompt::llm_feedback(paste0(
-            "The following text parts could not be found in the original text: ",
+            "The following text parts could not be matched (lenient fuzzy check) in the original text: ",
             paste(shQuote(missing_parts), collapse = ", "),
-            ". Please ensure all sections are present exactly as they appear in the text."
+            ". Please ensure each item is a literal excerpt from the text (or shorten it)."
           )))
         }
 
-        # If all parts are found, it's valid
-        return(text_parts)
+        # Return the *literal* substrings from the original text
+        unname(snapped)
       }
     )
 
