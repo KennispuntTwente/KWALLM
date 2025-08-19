@@ -303,9 +303,7 @@ mark_text_prompt <- function(
         properties = list(
           text_parts = list(
             type = "array",
-            items = list(
-              type = "string"
-            )
+            items = list(type = "string")
           )
         ),
         required = list("text_parts"),
@@ -314,7 +312,6 @@ mark_text_prompt <- function(
       type = "auto"
     )
 
-  # Add validation function
   prompt <- prompt |>
     tidyprompt::prompt_wrap(
       extraction_fn = function(x) {
@@ -329,96 +326,301 @@ mark_text_prompt <- function(
 
         # Empty handling
         if (length(text_parts) == 0) return(character(0))
-        if (length(text_parts) == 1 && identical(text_parts[1], "")) return(character(0))
+        if (length(text_parts) == 1 && identical(text_parts[1], ""))
+          return(character(0))
 
-        normalize_for_dist <- function(s) {
-          if (is.null(s)) return("")
-          s <- gsub("[\u2018\u2019]", "'", s)   # curly -> straight apostrophes
-          s <- gsub("[\u201C\u201D]", "\"", s)  # curly -> straight quotes
-          s <- gsub("[\u2013\u2014]", "-", s)   # en/em dash -> hyphen
-          s <- tolower(s)
-          s <- gsub("\\s+", " ", s)
-          trimws(s)
-        }
-
-        fuzzy_threshold <- function(needle_len, rel = 0.12, abs = 2) {
-          max(abs, ceiling(needle_len * rel))
-        }
-
-        best_literal_substring <- function(needle, haystack, rel = 0.12, abs = 2) {
-          n <- normalize_for_dist(needle)
-          h <- haystack
-          if (nchar(n) == 0L || nchar(h) == 0L) return(NULL)
-
-          # Fast paths
-          if (grepl(needle, h, fixed = TRUE)) return(needle) # exact literal
-          if (grepl(normalize_for_dist(needle),
-                    normalize_for_dist(h), fixed = TRUE)) {
-            # If the normalized needle appears, try to find a close literal window of similar length.
-            # We still compute distances below to pick the best literal span.
-          }
-
-          md <- fuzzy_threshold(nchar(n), rel = rel, abs = abs)
-
-          L <- nchar(h)
-          nlen <- nchar(n)
-          minw <- max(1L, nlen - md)
-          maxw <- min(L, nlen + md)
-          if (L < minw) return(NULL)
-
-          step <- max(1L, floor(nlen / 5))
-
-          best <- NULL
-          best_d <- Inf
-
-          # Scan windows across the original haystack; compute distance on normalized forms
-          for (w in seq(minw, maxw)) {
-            last_start <- L - w + 1L
-            if (last_start <= 0L) next
-            for (i in seq(1L, last_start, by = step)) {
-              sub <- substr(h, i, i + w - 1L)
-              d <- stringdist::stringdist(
-                n,
-                normalize_for_dist(sub),
-                method = "lv"
-              )
-              if (d < best_d) {
-                best_d <- d
-                best <- sub
-                if (best_d == 0L) break
-              }
-            }
-            if (best_d == 0L) break
-          }
-
-          if (!is.infinite(best_d) && best_d <= md) return(best)
-          NULL
-        }
-
-        # Try to snap each proposed part to a literal substring in `text`
-        snapped <- vapply(
-          text_parts,
-          function(part) {
-            hit <- best_literal_substring(part, text, rel = 0.12, abs = 2)
-            if (is.null(hit)) NA_character_ else hit
-          },
-          character(1)
+        # Find matches
+        res <- find_matches(
+          haystack = text,
+          needles = text_parts,
+          rel = 0.12,
+          abs = 2,
+          step_div = 5L
         )
 
-        not_found <- is.na(snapped)
-        if (any(not_found)) {
-          missing_parts <- text_parts[not_found]
+        missing_idx <- which(is.na(res$match))
+        if (length(missing_idx)) {
           return(tidyprompt::llm_feedback(paste0(
-            "The following text parts could not be matched (lenient fuzzy check) in the original text: ",
-            paste(shQuote(missing_parts), collapse = ", "),
-            ". Please ensure each item is a literal excerpt from the text (or shorten it)."
+            "The following text parts could not be found in the original text:\n\n  - ",
+            paste(shQuote(res$needle[missing_idx]), collapse = "\n\n  - "),
+            "\n\nEach text part must be a literal excerpt from the original text."
           )))
         }
 
         # Return the *literal* substrings from the original text
-        unname(snapped)
+        unname(res$match)
       }
     )
 
   return(prompt)
+}
+
+#' Fuzzy literal matching of candidate snippets against a haystack
+#'
+#' Attempts to "snap" each needle to a *literal* substring in `haystack`
+#' using a normalized Levenshtein distance with a leniency threshold:
+#' max(abs, ceil(rel * nchar(needle))).
+#'
+#' @param haystack Character scalar. The full text to search within.
+#' @param needles  Character vector. Candidate snippets to match.
+#' @param rel      Numeric. Relative tolerance (default 0.12).
+#' @param abs      Integer. Absolute minimum tolerance (default 2).
+#' @param step_div Integer. Window step divisor; step = max(1, floor(nlen / step_div)).
+#'
+#' @return A tibble with columns:
+#'   - needle: original input
+#'   - match:  literal substring from `haystack` (or NA if no match within threshold)
+#'   - distance: Levenshtein distance (on normalized strings) to the chosen window
+#'   - start, end: 1-based indices of the match in `haystack` (NA if no match)
+#'
+#' @export
+find_matches <- function(
+  haystack,
+  needles,
+  rel = 0.12,
+  abs = 2,
+  step_div = 5L
+) {
+  stopifnot(is.character(haystack), length(haystack) == 1L)
+  if (!length(needles)) {
+    return(tibble::tibble(
+      needle = character(0),
+      match = character(0),
+      distance = integer(0),
+      start = integer(0),
+      end = integer(0)
+    ))
+  }
+
+  rows <- lapply(
+    needles,
+    function(nd)
+      best_literal_substring(
+        needle = nd,
+        haystack = haystack,
+        rel = rel,
+        abs = abs,
+        step_div = step_div
+      )
+  )
+
+  tibble::tibble(
+    needle = needles,
+    match = vapply(rows, `[[`, "", "match"),
+    distance = vapply(
+      rows,
+      function(r)
+        ifelse(is.na(r$distance), NA_integer_, as.integer(r$distance)),
+      integer(1)
+    ),
+    start = vapply(
+      rows,
+      function(r) ifelse(is.na(r$start), NA_integer_, as.integer(r$start)),
+      integer(1)
+    ),
+    end = vapply(
+      rows,
+      function(r) ifelse(is.na(r$end), NA_integer_, as.integer(r$end)),
+      integer(1)
+    )
+  )
+}
+# --- helper: normalize + index map back to original (unchanged if you already added it) ---
+normalize_with_map <- function(s) {
+  if (is.null(s) || is.na(s)) {
+    return(list(norm = "", start_idx = integer(0), end_idx = integer(0)))
+  }
+  chars <- strsplit(s, "", fixed = FALSE, perl = FALSE)[[1]]
+  n <- character(0)
+  start_idx <- integer(0)
+  end_idx <- integer(0)
+  i <- 1L
+  L <- length(chars)
+  add <- function(ch, st, en) {
+    n <<- c(n, ch)
+    start_idx <<- c(start_idx, st)
+    end_idx <<- c(end_idx, en)
+  }
+  is_space <- function(ch) grepl("^[[:space:]]$", ch)
+
+  while (i <= L) {
+    ch <- chars[i]
+    if (is_space(ch)) {
+      # collapse runs of whitespace to a single space
+      j <- i
+      while (j <= L && is_space(chars[j])) j <- j + 1L
+      add(" ", i, j - 1L)
+      i <- j
+      next
+    }
+    if (ch %in% c("\u2018", "\u2019")) ch <- "'" else if (
+      ch %in% c("\u201C", "\u201D")
+    )
+      ch <- "\"" else if (ch %in% c("\u2013", "\u2014")) ch <- "-"
+    add(tolower(ch), i, i)
+    i <- i + 1L
+  }
+  if (length(n) && n[1] == " ") {
+    n <- n[-1]
+    start_idx <- start_idx[-1]
+    end_idx <- end_idx[-1]
+  }
+  if (length(n) && tail(n, 1) == " ") {
+    n <- n[-length(n)]
+    start_idx <- start_idx[-length(start_idx)]
+    end_idx <- end_idx[-length(end_idx)]
+  }
+  list(
+    norm = paste0(n, collapse = ""),
+    start_idx = start_idx,
+    end_idx = end_idx
+  )
+}
+
+normalize_for_dist <- function(s) normalize_with_map(s)$norm
+
+# --- patched matcher ---
+best_literal_substring <- function(
+  needle,
+  haystack,
+  rel = 0.12,
+  abs = 2,
+  step_div = 5L
+) {
+  # 0) guard: NA/empty needles and empty haystacks
+  if (is.na(needle) || is.null(needle)) {
+    return(list(
+      match = NA_character_,
+      distance = NA_integer_,
+      start = NA_integer_,
+      end = NA_integer_
+    ))
+  }
+  n <- normalize_for_dist(needle)
+  if (nchar(n) == 0L || is.na(haystack) || nchar(haystack) == 0L) {
+    return(list(
+      match = NA_character_,
+      distance = NA_integer_,
+      start = NA_integer_,
+      end = NA_integer_
+    ))
+  }
+
+  # 1) exact literal (no normalization)
+  #    safe now because we've ruled out empty/NA pattern
+  exact_loc <- regexpr(needle, haystack, fixed = TRUE)
+  if (exact_loc[1] != -1L) {
+    st <- as.integer(exact_loc[1])
+    en <- st + attr(exact_loc, "match.length") - 1L
+    return(list(
+      match = substr(haystack, st, en),
+      distance = 0L,
+      start = st,
+      end = en
+    ))
+  }
+
+  # 2) exact-on-normalized
+  nm <- normalize_with_map(haystack)
+  Hn <- nm$norm
+  nlen <- nchar(n)
+  Ln <- nchar(Hn)
+  if (Ln == 0L) {
+    return(list(
+      match = NA_character_,
+      distance = NA_integer_,
+      start = NA_integer_,
+      end = NA_integer_
+    ))
+  }
+  md <- fuzzy_threshold(nlen, rel = rel, abs = abs)
+
+  pos <- regexpr(n, Hn, fixed = TRUE)
+  if (pos[1] != -1L) {
+    stn <- as.integer(pos[1])
+    enn <- stn + nlen - 1L
+    st <- nm$start_idx[stn]
+    en <- nm$end_idx[enn]
+    return(list(
+      match = substr(haystack, st, en),
+      distance = 0L,
+      start = st,
+      end = en
+    ))
+  }
+
+  # 3) fuzzy on normalized; coarse scan then refine to guarantee correctness
+  minw <- max(1L, nlen - md)
+  maxw <- min(Ln, nlen + md)
+  if (Ln < minw) {
+    return(list(
+      match = NA_character_,
+      distance = NA_integer_,
+      start = NA_integer_,
+      end = NA_integer_
+    ))
+  }
+
+  scan_step <- function(step) {
+    cands <- list()
+    for (w in seq.int(minw, maxw)) {
+      last_start <- Ln - w + 1L
+      if (last_start <= 0L) next
+      for (i in seq.int(1L, last_start)) {
+        subn <- substr(Hn, i, i + w - 1L)
+        d <- stringdist::stringdist(n, subn, method = "lv")
+        if (d <= md) {
+          cands[[length(cands) + 1L]] <- list(
+            d = as.integer(d),
+            w = as.integer(w),
+            i = as.integer(i)
+          )
+        }
+      }
+    }
+    cands
+  }
+
+  # coarse pass using requested granularity
+  step_coarse <- max(1L, floor(nlen / step_div))
+  cands <- scan_step(step_coarse)
+
+  if (!length(cands)) {
+    return(list(
+      match = NA_character_,
+      distance = NA_integer_,
+      start = NA_integer_,
+      end = NA_integer_
+    ))
+  }
+
+  # refine pass (step = 1) only if coarse found nothing
+  if (!length(cands)) {
+    cands <- scan_step(1L)
+    if (!length(cands)) {
+      return(list(
+        match = NA_character_,
+        distance = NA_integer_,
+        start = NA_integer_,
+        end = NA_integer_
+      ))
+    }
+  }
+
+  # Prefer: (1) window length closest to needle, (2) smaller distance, (3) earlier start
+  wdiffs <- vapply(cands, function(c) as.integer(abs(c$w - nlen)), integer(1))
+  ds <- vapply(cands, function(c) c$d, integer(1))
+  is <- vapply(cands, function(c) c$i, integer(1))
+  pick <- order(wdiffs, ds, is)[1]
+  c <- cands[[pick]]
+
+  stn <- c$i
+  enn <- c$i + c$w - 1L
+  st <- nm$start_idx[stn]
+  en <- nm$end_idx[enn]
+  list(match = substr(haystack, st, en), distance = c$d, start = st, end = en)
+}
+
+fuzzy_threshold <- function(needle_len, rel = 0.12, abs = 2) {
+  max(abs, ceiling(needle_len * rel))
 }
