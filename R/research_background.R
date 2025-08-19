@@ -82,7 +82,7 @@ research_background_server <- function(
         processing(),
         {
           shinyjs::toggleState(
-            id = ns("research_background"),
+            "research_background",
             condition = !processing()
           )
         },

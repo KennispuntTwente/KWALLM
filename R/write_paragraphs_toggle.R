@@ -155,6 +155,17 @@ write_paragraphs_toggle_server <- function(
             easyClose = TRUE
           )
         )
+
+        # If processing, disable text field & also disable the save/reset buttons
+        if (isTRUE(processing())) {
+          shinyjs::disable("style_prompt_input")
+          shinyjs::disable("save_style")
+          shinyjs::disable("discard_style") 
+        } else {
+          shinyjs::enable("style_prompt_input")
+          shinyjs::enable("save_style")
+          shinyjs::enable("discard_style")
+        }
       })
 
       # Save style prompt
@@ -188,11 +199,11 @@ write_paragraphs_toggle_server <- function(
             condition = !processing()
           )
           shinyjs::toggleState(
-            ns("show_style_modal"),
+            "show_style_modal",
             condition = !processing()
           )
           shinyjs::toggleState(
-            ns("style_prompt_input"),
+            "style_prompt_input",
             condition = !processing()
           )
         },

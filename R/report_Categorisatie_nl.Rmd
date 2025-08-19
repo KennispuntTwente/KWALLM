@@ -11,16 +11,19 @@ params:
 
 ```{r include=FALSE, error=TRUE}
 rl <- params$result_list
+source(here::here("R", "report_datatable_config.R"), local = TRUE)
+source(here::here("R", "report_quote_utils.R"), local = TRUE)
 ```
 
 ## Methode
 
-Er zijn `r nrow(rl$df)` teksten geanalyseerd met een LLM (model: `r rl$model`),
+Er zijn `r nrow(rl$df)` teksten geanalyseerd met een LLM (model: `r htmltools::htmlEscape(rl$model)`),
 waarbij het LLM gevraagd werd om het in te delen in één van de volgende `r length(rl$categories)` categorieën:
 
 ```{r echo=FALSE, results='asis', error=TRUE}
 cat("<blockquote>")
-cat(paste0("* *", rl$categories, "*"), sep = "\n")
+safe_categories <- vapply(rl$categories, htmltools::htmlEscape, character(1))
+cat(paste0("* *", safe_categories, "*"), sep = "\n")
 cat("</blockquote>")
 ```
 
@@ -37,7 +40,7 @@ if (isTRUE(rl$assign_multiple_categories)) {
 if (!is.null(rl$paragraphs)) {
   cat(paste0(
     "Met de teksten waaraan onderwerpen zijn toegevoegd, heeft een taalmodel ",
-    "(", rl$model, ") tenslotte een rapport geschreven.", "\n",
+  "(", htmltools::htmlEscape(rl$model), ") tenslotte een rapport geschreven.", "\n",
     "Per onderwerp is met quotes samengevat wat er is gezegd."
   ))
 }
@@ -52,9 +55,9 @@ if (
   cat(paste0(
     "### Onderzoeksachtergrond\n",
     "De gebruiker heeft de volgende achtergrondinformatie over het onderzoek opgegeven:\n\n",
-    "<blockquote><i>",
-    research_background,
-    "</i></blockquote>", "\n\n",
+  "<blockquote><i>",
+  htmltools::htmlEscape(research_background),
+  "</i></blockquote>", "\n\n",
     "Deze informatie is toegevoegd aan elke prompt die naar het taalmodel is gestuurd, zodat het beter de context van het onderzoek kon begrijpen."
   ))
 }
@@ -105,15 +108,7 @@ if (!isTRUE(rl$assign_multiple_categories)) {
     DT::datatable(
       rownames = FALSE,
       extensions = 'Buttons',
-      options = list(
-        pageLength = 10,
-        lengthMenu = c(10, 25, 50, 100),
-        scrollX = TRUE,
-        scrollY = "400px",
-        scrollCollapse = TRUE,
-        dom = 'Bfrtip',
-        buttons = list('excel', 'csv', 'pdf', 'print')
-      )
+      options = get_datatable_options()
     )
 } else {
   rl$df |>
@@ -132,15 +127,7 @@ if (!isTRUE(rl$assign_multiple_categories)) {
     DT::datatable(
       rownames = FALSE,
       extensions = 'Buttons',
-      options = list(
-        pageLength = 10,
-        lengthMenu = c(10, 25, 50, 100),
-        scrollX = TRUE,
-        scrollY = "400px",
-        scrollCollapse = TRUE,
-        dom = 'Bfrtip',
-        buttons = list('excel', 'csv', 'pdf', 'print')
-      )
+      options = get_datatable_options()
     )
 }
 
@@ -158,30 +145,14 @@ if (!isTRUE(rl$assign_multiple_categories)) {
   dplyr::rename(Tekst = text, Categorie = result) |>
   dplyr::arrange(Categorie) |>
   DT::datatable(
-    options = list(
-      pageLength = 10,
-      lengthMenu = c(10, 25, 50, 100),
-      scrollX = TRUE,
-      scrollY = "400px",
-      scrollCollapse = TRUE,
-      dom = 'Bfrtip',
-      buttons = list('excel', 'csv', 'pdf', 'print')
-    )
+    options = get_datatable_options()
   )
 } else {
   rl$df |>
     dplyr::rename(Tekst = text) |>
     dplyr::arrange(dplyr::desc(Tekst)) |>
     DT::datatable(
-      options = list(
-        pageLength = 10,
-        lengthMenu = c(10, 25, 50, 100),
-        scrollX = TRUE,
-        scrollY = "400px",
-        scrollCollapse = TRUE,
-        dom = 'Bfrtip',
-        buttons = list('excel', 'csv', 'pdf', 'print')
-      )
+      options = get_datatable_options()
     )
 }
 ```
@@ -217,116 +188,25 @@ output <- append(output, list(
   )
 ))
 
-sub_fixed <- function(pattern, replacement, text) {
-  loc <- regexpr(pattern, text, fixed = TRUE)
-  if (loc == -1) return(text)
-  paste0(
-    substr(text, 1, loc - 1),
-    replacement,
-    substr(text, loc + attr(loc, "match.length"), nchar(text))
-  )
-}
+## quote utils loaded from report_quote_utils.R
 
 for (i in seq_along(rl$paragraphs)) {
   paragraph <- rl$paragraphs[[i]]
-  topic <- paragraph$topic
-  paragraph_text <- paragraph$paragraph
+  topic <- htmltools::htmlEscape(paragraph$topic)
+  paragraph_text <- htmltools::htmlEscape(paragraph$paragraph)
   
-  supporting_texts <- paste(paragraph$texts, collapse = " ")
+  supporting_texts <- paste(htmltools::htmlEscape(paragraph$texts), collapse = " ")
   if (length(supporting_texts) == 0) {
     next
   }
   
   #### 1 Verify quotes on presence in supporting texts ####
-  
-  # We'll build a map of placeholders to replacement values
-  placeholder_map <- list()
-  
-  extract_quotes_matrix <- function(text) {
-    # --- Input Validation ---
-    # Ensure input is a single character string
-    if (!is.character(text) || length(text) != 1) {
-      warning("Input 'text' must be a single character string. Returning empty matrix.", call. = FALSE)
-      # Return an empty matrix with the correct column names
-      result_matrix <- matrix(character(0), ncol = 2, nrow = 0)
-      colnames(result_matrix) <- c("Full Match", "Content")
-      return(result_matrix)
-    }
-    
-    # --- Regex Definition ---
-    # Define the improved regex pattern with backreference
-    # Group 1: Captures the specific opening quote character
-    # Group 2: Captures the content inside the quotes (non-greedily)
-    # \\1: Matches the same character captured by Group 1 for the closing quote
-    # Note the double backslash \\ needed within an R string for \1
-    quote_regex <- '([\\p{Pi}\\p{Pf}"\'‘’‚‛“”„‟‹›«»"「」『』【】〝〞〟⹂｢｣＂＇])(.*?)\\1'
-    # Raw string version (R 4.0+) for potentially clearer reading:
-    # quote_regex <- r"(([\\p{Pi}\\p{Pf}"\'‘’‚‛“”„‟‹›«»"「」『』【】〝〞〟⹂｢｣＂＇])(.*?)\1)"
-    
-    # --- Perform Matching ---
-    # Use stringr::str_match_all to find all matches and capture groups
-    # The :: ensures the function is found without explicitly loading the library
-    # The result is a list; for a single input string, we access the first element [[1]]
-    all_groups_list <- stringr::str_match_all(text, quote_regex)
-    
-    # If no match is found, all_groups_list[[1]] will be a matrix with 0 rows.
-    all_groups_matrix <- all_groups_list[[1]]
-    
-    # --- Format Output ---
-    # Check if any matches were found (i.e., the matrix has rows)
-    if (nrow(all_groups_matrix) > 0) {
-      # Select Column 1 (Full Match) and Column 3 (Content, which is Group 2)
-      # drop = FALSE ensures the result is always a matrix, even if only one match is found
-      result_matrix <- all_groups_matrix[, c(1, 3), drop = FALSE]
-    } else {
-      # If no matches were found, create an empty matrix with 0 rows and 2 columns
-      result_matrix <- matrix(character(0), ncol = 2, nrow = 0)
-    }
-    
-    # Assign standard column names for clarity and consistency
-    colnames(result_matrix) <- c("Full Match", "Content")
-    
-    # Return the resulting matrix
-    return(result_matrix)
-  }
-  quote_matches <- extract_quotes_matrix(paragraph_text)
-  
-  # Check if any matches were found
-  if (nrow(quote_matches) > 0) {
-    quotes <- quote_matches[, 2]
-    
-    # Continue with the quote replacement logic...
-    for (j in seq_along(quotes)) {
-      q <- quotes[j]
-      q_clean <- stringr::str_remove(q, "[,\\.]+$")
-      placeholder <- paste0("___QUOTEPLACEHOLDER", j, "___")
-      
-      if (
-        length(q_clean) > 0 && 
-        !is.na(q_clean) &&
-        stringr::str_detect(supporting_texts, stringr::fixed(q_clean, ignore_case = TRUE))
-      ) {
-        icon_html <- as.character(
-          bsicons::bs_icon("check-circle-fill", title = "Quote geverifieerd", class = "text-success")
-        )
-      } else {
-        icon_html <- as.character(
-          bsicons::bs_icon("exclamation-triangle-fill", title = "Quote niet teruggevonden in teksten", class = "text-warning")
-        )
-      }
-  
-      replacement <- paste0('"', q, '"<sup>', icon_html, '</sup>')
-      placeholder_map[[placeholder]] <- replacement
-  
-      quoted_with_marks <- paste0('"', q, '"')
-      paragraph_text <- sub_fixed(quoted_with_marks, placeholder, paragraph_text)
-    }
-  }
-  
-  # Replace placeholders with their final replacements
-  for (ph in names(placeholder_map)) {
-    paragraph_text <- stringr::str_replace_all(paragraph_text, stringr::fixed(ph), placeholder_map[[ph]])
-  }
+  paragraph_text <- verify_and_decorate_quotes(
+    paragraph_text = paragraph_text,
+    supporting_texts = supporting_texts,
+    lang = "nl",
+    escape_html = TRUE
+  )
   
   #### 2 Check if paragraph has attribute about prompt not fitting in context window ####
   
@@ -369,7 +249,16 @@ for (i in seq_along(rl$paragraphs)) {
     acc <- bslib::accordion(
       bslib::accordion_panel(
         title = "Bekijk teksten",
-        htmltools::HTML(paste0("<ul>", paste0("<li><i>", paragraph$texts, "</i></li>", collapse = ""), "</ul>")),
+        htmltools::HTML(paste0(
+          "<ul>",
+          paste0(
+            "<li><i>",
+            vapply(paragraph$texts, htmltools::htmlEscape, character(1)),
+            "</i></li>",
+            collapse = ""
+          ),
+          "</ul>"
+        )),
       ),
       id = paste0("acc-", i),
       open = FALSE

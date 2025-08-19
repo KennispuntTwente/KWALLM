@@ -17,9 +17,7 @@ llm_provider_ui <- function(
 llm_provider_server <- function(
   id,
   processing = reactiveVal(FALSE),
-  preconfigured_llm_provider = NULL,
-  preconfigured_main_models = NULL,
-  preconfigured_large_models = NULL,
+  has_preconfigured_llm_provider = TRUE,
   can_configure_oai = getOption("llm_provider__can_configure_oai", TRUE),
   can_configure_ollama = getOption("llm_provider__can_configure_ollama", TRUE),
   lang = reactiveVal(
@@ -28,33 +26,12 @@ llm_provider_server <- function(
     )
   )
 ) {
-  if (
-    is.null(preconfigured_llm_provider) &
-      !can_configure_oai &
-      !can_configure_ollama
-  ) {
-    stop(paste0(
-      "At least one LLM provider must be preconfigured or configurable.",
-      " Set `preconfigured_llm_provider` to a valid LLM provider,",
-      " or set `can_configure_oai` or `can_configure_ollama` to TRUE."
-    ))
-  }
-
-  if (
-    !is.null(preconfigured_llm_provider) &&
-      (length(preconfigured_main_models) == 0 ||
-        length(preconfigured_large_models) == 0)
-  ) {
-    stop(
-      "You must provide at least one main and one large model",
-      " when using a preconfigured LLM provider."
-    )
-  }
-
   moduleServer(
     id,
     function(input, output, session) {
       ns <- session$ns
+
+      # Main card UI -----------------------------------------------------------
 
       # Decide to render the card; only render if can at least configure Ollama or OpenAI
       output$llm_provider_card <- renderUI({
@@ -175,6 +152,22 @@ llm_provider_server <- function(
         )
       })
 
+      # Reactive values --------------------------------------------------------
+
+      # Reactive values to store the current LLM provider and mode;
+      #   these values will be passed on to the 'model' module
+      # In preconfigured mode, LLM provider will be NULL; one will
+      #   be chosen in the model module
+      # In Ollama/OpenAI mode, llm_provider will be built here and passed
+      #   on to the model module for further configuration
+      #   In this module, we ping the API to get the available models
+      #   and pass those on to the model module
+
+      shiny::exportTestValues(
+        available_models_openai = available_models_openai(),
+        available_models_ollama = available_models_ollama()
+      )
+
       # Default URLs and state
       openai_url <- reactiveVal(getOption(
         "llm_provider__default_oai_url",
@@ -184,17 +177,8 @@ llm_provider_server <- function(
         "llm_provider__default_ollama_url",
         "http://localhost:11434/api"
       ))
-      api_key_input <- reactiveVal(Sys.getenv("OPENAI_API_KEY"))
-      available_models_openai <- reactiveVal(NULL)
-      available_models_ollama <- reactiveVal(NULL)
-      last_model_request_time <- reactiveVal(Sys.time() - 10) # initialize as 10 seconds ago
 
-      shiny::exportTestValues(
-        available_models_openai = available_models_openai(),
-        available_models_ollama = available_models_ollama()
-      )
-
-      initial_provider_mode <- if (!is.null(preconfigured_llm_provider)) {
+      initial_provider_mode <- if (has_preconfigured_llm_provider) {
         "preconfigured"
       } else if (can_configure_oai) {
         "openai"
@@ -203,7 +187,7 @@ llm_provider_server <- function(
       }
 
       initial_llm_provider <- if (initial_provider_mode == "preconfigured") {
-        preconfigured_llm_provider$clone()
+        NULL
       } else if (initial_provider_mode == "openai") {
         tidyprompt::llm_provider_openai(
           parameters = list(model = "gpt-4o-mini", stream = FALSE),
@@ -237,24 +221,25 @@ llm_provider_server <- function(
         )
       }
 
-      # Reactive values to store the current LLM provider and mode
       llm_provider_rv <- reactiveValues(
-        llm_provider = initial_llm_provider,
+        llm_provider_configured = initial_llm_provider,
         provider_mode = initial_provider_mode,
-        available_models_main = NULL,
-        available_models_large = NULL
+        configured_models = NULL
       )
+
+      # Provider mode selection UI & listeners ---------------------------------
 
       # Render the provider mode selection UI
       #   3 action icons for switching between modes, preconfigured, openai, and ollama
       #   Render according to can_configure_oai and can_configure_ollama
+
       output$provider_mode_selection <- renderUI({
         current_mode <- llm_provider_rv$provider_mode
 
         div(
           class = "d-flex justify-content-center gap-3",
 
-          if (!is.null(preconfigured_llm_provider)) {
+          if (has_preconfigured_llm_provider) {
             div(
               id = ns("select_preconfigured"),
               class = paste(
@@ -327,7 +312,7 @@ llm_provider_server <- function(
 
       # Provider switching logic
       observeEvent(input$select_preconfigured, {
-        req(!is.null(preconfigured_llm_provider))
+        req(has_preconfigured_llm_provider)
         req(!isTRUE(processing()))
         llm_provider_rv$provider_mode <- "preconfigured"
       })
@@ -347,14 +332,13 @@ llm_provider_server <- function(
         req(!isTRUE(processing()))
 
         if (llm_provider_rv$provider_mode == "preconfigured") {
-          req(!is.null(preconfigured_llm_provider))
-          llm_provider_rv$llm_provider <- preconfigured_llm_provider$clone()
+          llm_provider_rv$llm_provider_configured <- NULL
         } else if (llm_provider_rv$provider_mode == "openai") {
           req(isTRUE(can_configure_oai))
           req(api_key_input())
           req(openai_url())
 
-          llm_provider_rv$llm_provider <- tidyprompt::llm_provider_openai(
+          llm_provider_rv$llm_provider_configured <- tidyprompt::llm_provider_openai(
             parameters = list(model = "gpt-4o-mini", stream = FALSE),
             verbose = getOption("tidyprompt.verbose", TRUE),
             url = paste0(
@@ -367,7 +351,7 @@ llm_provider_server <- function(
           req(isTRUE(can_configure_ollama))
           req(ollama_url())
 
-          llm_provider_rv$llm_provider <- tidyprompt::llm_provider_ollama(
+          llm_provider_rv$llm_provider_configured <- tidyprompt::llm_provider_ollama(
             parameters = list(model = "llama3.1:8b", stream = FALSE),
             verbose = getOption("tidyprompt.verbose", TRUE),
             url = paste0(
@@ -377,6 +361,35 @@ llm_provider_server <- function(
           )
         }
       })
+
+      # UI Inputs based on mode
+      output$url_input <- renderUI({
+        if (llm_provider_rv$provider_mode == "openai") {
+          return(div(
+            class = "llm-narrow-container mb-1",
+            textInput(
+              ns("openai_url"),
+              lang()$t("OpenAI-API-compatible endpoint URL:"),
+              value = openai_url(),
+              width = "100%"
+            )
+          ))
+        }
+        if (llm_provider_rv$provider_mode == "ollama") {
+          return(div(
+            class = "llm-narrow-container mb-1",
+            textInput(
+              ns("ollama_url"),
+              lang()$t("Ollama-API endpoint URL:"),
+              value = ollama_url(),
+              width = "100%"
+            )
+          ))
+        }
+        return(NULL)
+      })
+
+      # Mode description UI ----------------------------------------------------
 
       output$mode_description <- renderUI({
         mode <- llm_provider_rv$provider_mode
@@ -413,36 +426,12 @@ llm_provider_server <- function(
         )
       })
 
-      # Custom inputs
+      # API key  ---------------------------------------------------------------
+
+      api_key_input <- reactiveVal(Sys.getenv("OPENAI_API_KEY"))
+
       # Reactively update API key (updating URLs only when 'get models' is clicked)
       observeEvent(input$api_key_text, api_key_input(input$api_key_text))
-
-      # UI Inputs based on mode
-      output$url_input <- renderUI({
-        if (llm_provider_rv$provider_mode == "openai") {
-          return(div(
-            class = "llm-narrow-container mb-1",
-            textInput(
-              ns("openai_url"),
-              lang()$t("OpenAI-API-compatible endpoint URL:"),
-              value = openai_url(),
-              width = "100%"
-            )
-          ))
-        }
-        if (llm_provider_rv$provider_mode == "ollama") {
-          return(div(
-            class = "llm-narrow-container mb-1",
-            textInput(
-              ns("ollama_url"),
-              lang()$t("Ollama-API endpoint URL:"),
-              value = ollama_url(),
-              width = "100%"
-            )
-          ))
-        }
-        return(NULL)
-      })
 
       output$api_key_input <- renderUI({
         req(llm_provider_rv$provider_mode == "openai")
@@ -509,7 +498,7 @@ llm_provider_server <- function(
 
       observeEvent(api_key_input(), {
         if (llm_provider_rv$provider_mode == "openai") {
-          llm_provider_rv$llm_provider <- tidyprompt::llm_provider_openai(
+          llm_provider_rv$llm_provider_configured <- tidyprompt::llm_provider_openai(
             parameters = list(model = "gpt-4o-mini", stream = FALSE),
             verbose = getOption("tidyprompt.verbose", TRUE),
             url = paste0(openai_url(), "/chat/completions"),
@@ -524,6 +513,14 @@ llm_provider_server <- function(
           message = paste0(ns("api_key_text"))
         )
       })
+
+      # Fetch available models -------------------------------------------------
+
+      available_models_openai <- reactiveVal(NULL)
+      available_models_ollama <- reactiveVal(NULL)
+
+      # Keep track of requests for available models
+      last_model_request_time <- reactiveVal(Sys.time() - 10)
 
       # Button to trigger model fetch
       output$models_output <- renderUI({
@@ -651,43 +648,16 @@ llm_provider_server <- function(
       observe({
         provider_mode <- llm_provider_rv$provider_mode
         if (provider_mode == "openai") {
-          llm_provider_rv$available_models_main <- available_models_openai()
-          llm_provider_rv$available_models_large <- available_models_openai()
+          llm_provider_rv$configured_models <- available_models_openai()
         } else if (provider_mode == "ollama") {
-          llm_provider_rv$available_models_main <- available_models_ollama()
-          llm_provider_rv$available_models_large <- available_models_ollama()
-        } else if (provider_mode == "preconfigured") {
-          # Use preconfigured models if available
-          llm_provider_rv$available_models_main <- preconfigured_main_models
-          llm_provider_rv$available_models_large <- preconfigured_large_models
+          llm_provider_rv$configured_models <- available_models_ollama()
         } else {
-          llm_provider_rv$available_models_main <- character(0)
-          llm_provider_rv$available_models_large <- character(0)
+          llm_provider_rv$configured_models <- character(0)
         }
       })
 
-      # output$model_dropdown <- renderUI({
-      #   provider_mode <- llm_provider_rv$provider_mode
-      #   models <- if (provider_mode == "openai") {
-      #     available_models_openai()
-      #   } else if (provider_mode == "ollama") {
-      #     available_models_ollama()
-      #   } else {
-      #     character(0)
-      #   }
-      #
-      #   if (length(models)) {
-      #     selectInput(
-      #       ns("available_models"),
-      #       "Beschikbare modellen",
-      #       choices = models
-      #     )
-      #   } else {
-      #     helpText("...")
-      #   }
-      # })
+      # Disable inputs when processing -----------------------------------------
 
-      # Disable/enable inputs when processing status changes
       observe({
         if (isTRUE(processing())) {
           shinyjs::disable("openai_url")
@@ -699,6 +669,8 @@ llm_provider_server <- function(
           shinyjs::disable("select_ollama")
         }
       })
+
+      # Return reactive values --------------------------------------------------
 
       return(llm_provider_rv)
     }
@@ -729,9 +701,6 @@ if (FALSE) {
     llm_provider_rv <- llm_provider_server(
       "llm_provider",
       processing
-      # preconfigured_llm_provider = tidyprompt::llm_provider_openai(),
-      # preconfigured_main_models = c("gpt-4o-mini", "gpt-3.5-turbo"),
-      # preconfigured_large_models = c("gpt-4o", "o3")
     )
   }
 

@@ -25,6 +25,7 @@ gliner_load_model <- function(
 
   print_message("Loading Python and GLiNER module...")
 
+  Sys.unsetenv("RETICULATE_PYTHON")
   reticulate:::uv_exec("sync")
   reticulate::use_virtualenv("./.venv")
   gliner <- reticulate::import("gliner")

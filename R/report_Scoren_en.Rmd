@@ -12,18 +12,20 @@ params:
 
 ```{r include=FALSE, error=TRUE}
 rl <- params$result_list
+source(here::here("R", "report_datatable_config.R"), local = TRUE)
 ```
 
 ## Method
 
-`r nrow(rl$df)` texts were analyzed with an LLM (model: `r rl$model`),
+`r nrow(rl$df)` texts were analyzed with an LLM (model: `r htmltools::htmlEscape(rl$model)`),
 where the LLM was asked to provide a score (1-100) indicating
-how well a text fits the characteristic '*`r rl$scoring_characteristic`*'.
+how well a text fits the characteristic '*`r htmltools::htmlEscape(rl$scoring_characteristic)`*'.
 
 Each text was presented separately to the LLM.
 
 ```{r echo=FALSE, results='asis', error=TRUE}
 research_background <- rl$research_background
+research_background <- htmltools::htmlEscape(research_background)
 if (
   !is.null(rl$research_background)
   && research_background != ""
@@ -32,7 +34,7 @@ if (
     "### Research background\n",
     "The user provided the following background information about the research:\n\n",
     "<blockquote><i>",
-    research_background,
+  research_background,
     "</i></blockquote>", "\n\n",
     "This information was added to each prompt sent to the language model, so that it could better understand the context of the research."
   ))
@@ -41,6 +43,7 @@ if (
 
 ```{r echo=FALSE, results='asis', error=TRUE}
 if (!is.null(rl$irr)) {
+  sensitivity_sentence <- htmltools::htmlEscape(rl$irr$sensitivity_sentence)
   cat(paste0(
     "### Reliability\n",
     "The inter-rater reliability between the language model and a human rater was calculated.",
@@ -68,7 +71,7 @@ if (!is.null(rl$irr)) {
       rl$irr$llm_mean > rl$irr$user_mean ~ "an overestimation of the scores by the language model",
       rl$irr$llm_mean < rl$irr$user_mean ~ "an underestimation of the scores by the language model",
       TRUE ~ "?"
-    ), ".\n\n", rl$irr$sensitivity_sentence
+  ), ".\n\n", sensitivity_sentence
   ))
 }
 ```
@@ -91,15 +94,7 @@ rl$df |>
   DT::datatable(
     rownames = FALSE,
     extensions = 'Buttons',
-    options = list(
-      pageLength = 10,
-      lengthMenu = c(10, 25, 50, 100),
-      scrollX = TRUE,
-      scrollY = "400px",
-      scrollCollapse = TRUE,
-      dom = 'Bfrtip',
-      buttons = list('excel', 'csv', 'pdf', 'print')
-    )
+    options = get_datatable_options_en()
   )
 ```
 
@@ -114,16 +109,7 @@ rl$df |>
   dplyr::arrange(dplyr::desc(Score)) |>
   DT::datatable(
     extensions = 'Buttons',
-    options = list(
-      rownnames = FALSE,
-      pageLength = 10,
-      lengthMenu = c(10, 25, 50, 100),
-      scrollX = TRUE,
-      scrollY = "400px",
-      scrollCollapse = TRUE,
-      dom = 'Bfrtip',
-      buttons = list('excel', 'csv', 'pdf', 'print')
-    )
+    options = get_datatable_options_en()
   )
 ```
  

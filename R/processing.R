@@ -157,9 +157,6 @@ processing_server <- function(
         # Set initial progress
         progress_primary$set_with_total(0, length(texts$preprocessed), "...")
 
-        # Set model
-        llm_provider <- llm_provider_rv$llm_provider$clone()
-        llm_provider$parameters$model <- models$main
         # Disable button
         shinyjs::disable("process")
         shinyjs::addClass("process", "loading")
@@ -305,7 +302,7 @@ processing_server <- function(
             results
           },
           globals = list(
-            llm_provider = llm_provider,
+            llm_provider = models$main,
             texts = texts$preprocessed,
             research_background = research_background(),
             style_prompt = style_prompt(),
@@ -400,11 +397,7 @@ processing_server <- function(
 
         # Set processing state
         processing(TRUE)
-        # Set models
-        llm_provider_main <- llm_provider_rv$llm_provider$clone()
-        llm_provider_main$parameters$model <- models$main
-        llm_provider_large <- llm_provider_rv$llm_provider$clone()
-        llm_provider_large$parameters$model <- models$large
+
         # Disable button
         shinyjs::disable("process")
         shinyjs::addClass("process", "loading")
@@ -482,8 +475,8 @@ processing_server <- function(
             prompt_category = prompt_category,
             prompt_multi_category = prompt_multi_category,
             assign_topics = assign_topics,
-            llm_provider_main = llm_provider_main,
-            llm_provider_large = llm_provider_large,
+            llm_provider_main = models$main,
+            llm_provider_large = models$large,
             texts = texts$preprocessed,
             research_background = research_background(),
             mode = mode(),
@@ -555,16 +548,12 @@ processing_server <- function(
           lang()$t("Onderwerpen bewerken...")
         )
 
-        # Build LLM provider for re-reducing topics during editing
-        llm_provider_large <- llm_provider_rv$llm_provider$clone()
-        llm_provider_large$parameters$model <- models$large
-
         # Launch modal dialog to edit topics
         edited_topics <- edit_topics_server(
           "edit_topics",
           topics = topics,
           exclusive_topics = exclusive_topics,
-          llm_provider = llm_provider_large,
+          llm_provider = models$large,
           research_background = research_background,
           assign_multiple_categories = assign_multiple_categories,
           lang = lang
@@ -601,10 +590,6 @@ processing_server <- function(
           "Starting topic assignment with topics: ",
           paste(topics(), collapse = ", ")
         ))
-
-        # Set model
-        llm_provider <- llm_provider_rv$llm_provider$clone()
-        llm_provider$parameters$model <- models$main
 
         # Write progress
         progress_primary$set_with_total(
@@ -781,7 +766,7 @@ processing_server <- function(
             prompt_multi_category = prompt_multi_category,
             assign_topics = assign_topics,
             write_paragraph = write_paragraph,
-            llm_provider = llm_provider,
+            llm_provider = models$main,
             texts = texts$preprocessed,
             research_background = research_background(),
             style_prompt = style_prompt(),
@@ -858,15 +843,14 @@ processing_server <- function(
         if (!number_of_texts_under_maximum()) return()
         if (!codes_are_valid()) return()
         req(isFALSE(context_window$any_fit_problem))
+        req(context_window$max_tokens)
+        req(context_window$overlap)
 
         # Set processing state
         processing(TRUE)
         # Set initial progress
         progress_primary$set_with_total(0, length(texts$preprocessed), "...")
 
-        # Set model
-        llm_provider <- llm_provider_rv$llm_provider$clone()
-        llm_provider$parameters$model <- models$main
         # Disable button
         shinyjs::disable("process")
         shinyjs::addClass("process", "loading")
@@ -884,10 +868,12 @@ processing_server <- function(
               interrupter = interrupter,
               lang = lang,
               write_paragraphs = write_paragraphs,
+              text_size_tokens = text_size_tokens,
+              overlap_size_tokens = overlap_size_tokens
             )
           },
           globals = list(
-            llm_provider = llm_provider,
+            llm_provider = models$main,
             texts = texts$preprocessed,
             research_background = research_background(),
             style_prompt = style_prompt(),
@@ -905,7 +891,9 @@ processing_server <- function(
             progress_secondary = progress_secondary$async,
             interrupter = interrupter,
             write_paragraph = write_paragraph,
-            write_paragraphs = write_paragraphs()
+            write_paragraphs = write_paragraphs(),
+            text_size_tokens = context_window$max_tokens,
+            overlap_size_tokens = context_window$overlap
           ),
           packages = c(
             "tidyprompt",
@@ -1299,13 +1287,12 @@ processing_server <- function(
           mode = mode(),
           research_background = research_background(),
           style_prompt = style_prompt(),
-          url = llm_provider_rv$llm_provider$url,
           irr = irr_result(),
           language = lang()$get_translation_language()
         )
 
         if (mode() == "Categorisatie") {
-          result_list$model <- models$main
+          result_list$model <- models$main$parameters$model
           result_list$categories <- categories$texts()
           result_list$exclusive_categories <- categories$exclusive_texts()
           result_list$assign_multiple_categories <- assign_multiple_categories()
@@ -1320,7 +1307,7 @@ processing_server <- function(
         }
 
         if (mode() == "Scoren") {
-          result_list$model <- models$main
+          result_list$model <- models$main$parameters$model
           result_list$scoring_characteristic <- scoring_characteristic()
           result_list$prompt <- prompt_score(
             text = lang()$t("<< TEKST >>"),
@@ -1331,8 +1318,8 @@ processing_server <- function(
         }
 
         if (mode() == "Onderwerpextractie") {
-          result_list$model <- models$main
-          result_list$model_reductie <- models$large
+          result_list$model <- models$main$parameters$model
+          result_list$model_reductie <- models$large$parameters$model
           result_list$topics <- topics()
           result_list$exclusive_topics <- exclusive_topics()
           result_list$assign_multiple_categories <- assign_multiple_categories()
@@ -1357,7 +1344,7 @@ processing_server <- function(
         }
 
         if (mode() == "Markeren") {
-          result_list$model <- models$main
+          result_list$model <- models$main$parameters$model
           result_list$codes <- codes$texts()
           result_list$write_paragraphs <- write_paragraphs()
           result_list$prompt <- mark_text_prompt(
@@ -1366,6 +1353,8 @@ processing_server <- function(
             code = "<< CODE >>"
           ) |>
             tidyprompt::construct_prompt_text()
+          result_list$text_size_tokens <- context_window$max_tokens
+          result_list$overlap_size_tokens <- context_window$overlap
         }
 
         # Transfer paragraphs if present as attribute
@@ -1519,7 +1508,7 @@ processing_server <- function(
       #### Processing button ####
 
       output$process_button <- renderUI({
-        req(mode(), lang())
+        req(mode(), lang(), is.null(results_df()))
 
         # Count how many preprocessed texts we have
         preproc <- texts$preprocessed

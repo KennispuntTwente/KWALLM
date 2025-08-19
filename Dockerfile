@@ -1,6 +1,19 @@
 # ─────────────────────── R builder stage (from rocker) ────────────────────────
 FROM rocker/r-ver:4.4.2 AS r-builder
 
+# Install required system dependencies for building R packages
+RUN apt-get update -qq && apt-get install -y --no-install-recommends \
+    libcurl4-openssl-dev \
+    libfontconfig1-dev \
+    libfreetype6-dev \
+    libicu-dev \
+    libssl-dev \
+    libx11-dev \
+    libxml2-dev \
+    zlib1g-dev \
+    pandoc \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
 ARG DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Amsterdam
 
@@ -30,7 +43,9 @@ RUN apt-get update -qq && \
       dirmngr gnupg ca-certificates wget curl \
       libcurl4 libssl3 libxml2 pandoc cmake unzip tzdata \
       libblas3 liblapack3 libopenblas0-pthread libgfortran5 libpcre2-8-0 \
-      libdeflate0 libgomp1 libpng16-16 && \
+      libdeflate0 libgomp1 libpng16-16 libcairo2 libcairo2-dev \
+      libxt-dev libpng-dev libtiff-dev libpangocairo-* \
+      python3.12-dev && \
     ln -fs /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime && \
     dpkg-reconfigure --frontend noninteractive tzdata && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
@@ -53,13 +68,14 @@ COPY --chown=appuser:appuser language/ language/
 COPY --chown=appuser:appuser LICENSE.md LICENSE.md
 COPY --chown=appuser:appuser pyproject.toml pyproject.toml
 COPY --chown=appuser:appuser uv.lock uv.lock
+COPY --chown=appuser:appuser tekstanalyse_met_llm.Rproj tekstanalyse_met_llm.Rproj
 
 # Switch to non-root user
 RUN chown -R appuser:appuser /home/appuser/app && \
     chmod -R u+rwX /home/appuser/app
 USER appuser
 
-# Install Python packages with 'uv' & cache GliNEr model
+# Install Python packages with 'uv' & cache GLINER model
 ENV HF_HUB_OFFLINE=0
 RUN Rscript -e "\
   reticulate:::uv_exec('sync');\

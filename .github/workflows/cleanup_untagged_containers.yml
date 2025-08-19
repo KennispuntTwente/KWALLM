@@ -1,0 +1,47 @@
+name: (3) Cleanup untagged container versions
+
+on:
+  # manual run from the UI / API
+  workflow_dispatch:
+    inputs:
+      dry-run:
+        description: 'Dry run (true = no actual deletions)'
+        required: false
+        default: 'false'  # GitHub Actions inputs are always strings
+
+  # fire when the build-and-publish workflow *named* “Build & Push Container” finishes
+  workflow_run:
+    workflows: ["(2) Build & push container"]
+    types: [completed]
+
+permissions:
+  packages: write
+  contents: read
+
+jobs:
+  cleanup:
+    # run if triggered manually **or** the upstream run succeeded *and* was a release
+    if: github.event_name == 'workflow_dispatch' || (
+          github.event.workflow_run.conclusion == 'success' &&
+          github.event.workflow_run.event == 'release'
+        )
+    runs-on: ubuntu-latest
+    concurrency:
+      group: cleanup-images
+
+    steps:
+      - name: Delete orphan / untagged images safely
+        uses: dataaxiom/ghcr-cleanup-action@v1
+        with:
+          # ---- what to clean ---------------------------------------------
+          owner: kennispunttwente
+          packages: tekstanalyse_met_llm
+          delete-untagged: true
+          delete-partial-images: true
+          delete-ghost-images: true
+          # ---- housekeeping ----------------------------------------------
+          validate: true
+          log-level: info
+          dry-run: ${{ github.event_name == 'workflow_dispatch' && inputs.dry-run == 'true' }}
+          # ---- auth -------------------------------------------------------
+          token: ${{ secrets.GHCR_PAT }}

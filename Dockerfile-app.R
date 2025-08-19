@@ -48,35 +48,46 @@ if (!getOption("shiny.testmode", FALSE)) {
 #     in the interface of the app (OpenAI compatible or Ollama; see options below)
 # - This example uses the OpenAI API; you can configure any other LLM provider
 #     (e.g., Ollama, Azure OpenAI API, OpenRouter, etc.)
-# - See: https://tjarkvandemerwe.github.io/tidyprompt/articles/getting_started.html#setup-an-llm-provider
+# - See: https://kennspunttwente.github.io/tidyprompt/articles/getting_started.html#setup-an-llm-provider
 # - Note: your system may need to have the relevant environment variables set
 #     for the LLM provider to work, e.g., `OPENAI_API_KEY` for OpenAI
 # - Note: currently, context window size for models is hardcoded
 #     in function `get_context_window_size_in_tokens` in R/context_window.R
 #   You may want to replace this function with a more dynamic one,
 #     or add your own hardcoded values for the models you use
-#   The function will default to 2048 if a model is not recognised
-preconfigured_llm_provider <- NULL
+#     The function will default to 2048 if a model is not recognised
+# - Note: if you make the 'preconfigured_models_...' object a named list,
+#     the names will be shown in the dropdown for the user. If you do not provide names,
+#     the model names will be shown. Names must be unique. If you want to use
+#     a specific model twice but with different settings, a named list is
+#     then required
 preconfigured_models_main <- NULL
 preconfigured_models_large <- NULL
 if (FALSE) {
-  preconfigured_llm_provider <-
-    tidyprompt::llm_provider_openai()
-  preconfigured_llm_provider$parameters$model <-
-    "gpt-4.1-mini-2025-04-14"
-  preconfigured_llm_provider$parameters$stream <-
-    FALSE
-  preconfigured_models_main <- c(
-    # For most prompts:
-    "gpt-4.1-mini-2025-04-14",
-    "gpt-4.1-2025-04-14"
+  preconfigured_models_main <- list(
+    tidyprompt::llm_provider_openai()$set_parameters(list(
+      model = "gpt-5-mini",
+      reasoning = list(
+        effort = "low"
+      )
+    )),
+    tidyprompt::llm_provider_openai()$set_parameters(list(
+      model = "gpt-4.1-mini"
+    )),
+    tidyprompt::llm_provider_openai()$set_parameters(list(
+      model = "gpt-4.1-nano"
+    ))
   )
-  preconfigured_models_large <- c(
-    # For topic reduction during topic modelling:
-    "gpt-4.1-mini-2025-04-14",
-    "gpt-4.1-2025-04-14",
-    "o3-2025-04-16",
-    "o4-mini-2025-04-16"
+  preconfigured_models_large <- list(
+    tidyprompt::llm_provider_openai()$set_parameters(list(
+      model = "gpt-4.1-mini"
+    )),
+    tidyprompt::llm_provider_openai()$set_parameters(list(
+      model = "gpt-4.1-nano"
+    )),
+    tidyprompt::llm_provider_openai()$set_parameters(list(
+      model = "o4-mini"
+    ))
   )
 }
 
@@ -170,7 +181,6 @@ shiny::addResourcePath("www", "www")
 shiny::shinyApp(
   ui = main_ui(),
   server = main_server(
-    preconfigured_llm_provider = preconfigured_llm_provider,
     preconfigured_main_models = preconfigured_models_main,
     preconfigured_large_models = preconfigured_models_large
   )

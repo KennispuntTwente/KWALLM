@@ -1,0 +1,88 @@
+name: (2) Build & push container
+
+# Build container on push to main (preview) or on release (version+latest)
+#
+# This workflow is triggered by:
+#   * **push to main**            → builds a `preview` tag for quick testing
+#   * **release published**       → builds **the same commit** and tags the image as `<version>` **and** `latest`
+#
+# Behaviour:
+#   • Push builds → `preview`                (for every commit to main)
+#   • Release builds → `<version>` & `latest` (no `preview` tag)
+
+on:
+  push:
+    branches:
+      - main
+  release:
+    types: [published]
+
+env:
+  IMAGE_NAME: ghcr.io/kennispunttwente/tekstanalyse_met_llm
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+
+    steps:
+      # Checkout – the tagged commit on release, otherwise just HEAD
+      - name: Checkout release tag
+        if: github.event_name == 'release'
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Checkout commit
+        if: github.event_name != 'release'
+        uses: actions/checkout@v4
+
+      # Determine which tags we should push
+      - name: Set image tags
+        id: vars
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "tags=${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }},${{ env.IMAGE_NAME }}:latest" >> "$GITHUB_OUTPUT"
+            echo "primary_tag=${{ env.IMAGE_NAME }}:${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "tags=${{ env.IMAGE_NAME }}:preview" >> "$GITHUB_OUTPUT"
+            echo "primary_tag=${{ env.IMAGE_NAME }}:preview" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Log in to GHCR
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_PAT }}
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      # Build & push (tags determined above)
+      - name: Build & push image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.vars.outputs.tags }}
+          platforms: linux/amd64
+          cache-from: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.IMAGE_NAME }}:buildcache,mode=max
+
+      # Show resulting image config (inspect the primary tag)
+      - name: Check image config
+        run: |
+          docker pull ${{ steps.vars.outputs.primary_tag }}
+          docker inspect ${{ steps.vars.outputs.primary_tag }} | jq '.[0].Config'

@@ -308,7 +308,8 @@ mark_text_prompt <- function(
             )
           )
         ),
-        required = list("text_parts")
+        required = list("text_parts"),
+        additionalProperties = FALSE
       ),
       type = "auto"
     )

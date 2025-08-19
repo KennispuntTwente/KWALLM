@@ -508,6 +508,7 @@ text_upload_server <- function(
         shinyjs::disable("sheet")
         shinyjs::disable("column")
         shinyjs::disable("filter_btn")
+        shinyjs::disable("txt_split_lines")
       }
     })
 
