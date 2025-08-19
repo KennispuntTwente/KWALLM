@@ -26,6 +26,7 @@ semchunk_load_chunker <- function(
   ## ── Load Python & tiktoken module ───────────────────────────────
   print_message("Loading Python and semchunk module...")
 
+  Sys.unsetenv("RETICULATE_PYTHON")
   reticulate:::uv_exec("sync")
   reticulate::use_virtualenv("./.venv")
   semchunk <- reticulate::import("semchunk")
