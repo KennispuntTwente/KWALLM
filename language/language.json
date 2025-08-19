@@ -1376,6 +1376,22 @@
       {
         "nl": " Het wordt afgeraden om deze parameter samen met een 'temperature'-parameter te gebruiken.",
         "en": " It is not recommended to use this parameter together with a 'temperature' parameter."
+      },
+      {
+        "nl": "Dit is de URL van de OpenAI-compatibele API om te gebruiken.",
+        "en": "This is the URL of the OpenAI-compatible API to use."
+      },
+      {
+        "nl": " Je kan hier zowel de het chat completions endpoint (/chat/completions) als het responses endpoint (/responses) gebruiken.",
+        "en": " You can use both the chat completions endpoint (/chat/completions) and the responses endpoint (/responses) here."
+      },
+      {
+        "nl": " Het responses endpoint biedt soms meer mogelijkheden (bijv., 'reasoning effort' parameter), maar wordt niet altijd ondersteund.",
+        "en": " The responses endpoint sometimes offers more capabilities (e.g., 'reasoning effort' parameter), but is not always supported."
+      },
+      {
+        "nl": " Raadpleeg de documentatie van je LLM-provider.",
+        "en": " Consult the documentation of your LLM provider."
       }
     ]
 }
