@@ -309,7 +309,7 @@ marking_codes_server <- function(
         }
 
         # Verify a LLM provider is set
-        if (is.null(llm_provider_rv$llm_provider) | is.null(models$main)) {
+        if (is.null(llm_provider_rv$main)) {
           shiny::showNotification(
             lang()$t("Er is nog geen LLM provider ingesteld"),
             type = "error"
@@ -341,8 +341,7 @@ marking_codes_server <- function(
         })
 
         # Set model
-        llm_provider <- llm_provider_rv$llm_provider$clone()
-        llm_provider$parameters$model <- models$main
+        llm_provider <- llm_provider_rv$main
 
         # Async generate codes
         queue$consumer$start()
