@@ -115,6 +115,8 @@ options(
   shiny.port = 8100,
   shiny.host = "0.0.0.0",
 
+  future.globals.maxSize = 3 * 1024^3,
+
   # - Retry behaviour upon LLM API errors;
   #   max tries defines the maximum number of retries
   #   in connecting to the LLM API, while max interactions
