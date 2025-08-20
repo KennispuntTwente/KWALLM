@@ -101,6 +101,9 @@ options(
   # - This is the maximum size of the file that can be uploaded to the app;
   shiny.maxRequestSize = 100 * 1024^2, # 100 MB
 
+  # Set max size of memory transfer between main & async processes
+  future.globals.maxSize = 3 * 1024^3, # 3 GB
+
   # - Retry behaviour upon LLM API errors;
   #   max tries defines the maximum number of retries
   #   in connecting to the LLM API, while max interactions
