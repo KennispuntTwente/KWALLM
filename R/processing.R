@@ -893,7 +893,12 @@ processing_server <- function(
             write_paragraph = write_paragraph,
             write_paragraphs = write_paragraphs(),
             text_size_tokens = context_window$max_tokens,
-            overlap_size_tokens = context_window$overlap
+            overlap_size_tokens = context_window$overlap,
+            find_matches = find_matches,
+            normalize_with_map = normalize_with_map,
+            best_literal_substring = best_literal_substring,
+            fuzzy_threshold = fuzzy_threshold,
+            normalize_for_dist = normalize_for_dist
           ),
           packages = c(
             "tidyprompt",
