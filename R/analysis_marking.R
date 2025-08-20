@@ -341,9 +341,9 @@ mark_text_prompt <- function(
         missing_idx <- which(is.na(res$match))
         if (length(missing_idx)) {
           return(tidyprompt::llm_feedback(paste0(
-            "The following text parts could not be found in the original text:\n\n  - ",
+            "Error: below text parts are not present in the original text:\n\n  - ",
             paste(shQuote(res$needle[missing_idx]), collapse = "\n\n  - "),
-            "\n\nEach text part must be a literal excerpt from the original text."
+            "\n\nYou must quote literally from the original text."
           )))
         }
 
