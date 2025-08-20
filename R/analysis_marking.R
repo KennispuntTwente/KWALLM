@@ -17,7 +17,8 @@ mark_texts <- function(
   lang = shiny.i18n::Translator$new(
     translation_json_path = "language/language.json"
   ),
-  write_paragraphs = TRUE
+  write_paragraphs = TRUE,
+  max_interactions = getOption("send_prompt_with_retries__max_interaction", 10)
 ) {
   stopifnot(
     is.character(texts),
@@ -124,8 +125,12 @@ mark_texts <- function(
           interrupter$execInterrupts()
         }
 
-        prompt <- mark_text_prompt(txt, cd)
-        result <- send_prompt_with_retries(prompt, llm_provider)
+        prompt <- mark_text_prompt(txt, cd, max_interactions = max_interactions)
+        result <- send_prompt_with_retries(
+          prompt,
+          llm_provider,
+          max_interactions = max_interactions
+        )
 
         # Ensure result is always a character vector for unnesting
         if (length(result) == 0 || is.null(result)) {
@@ -277,7 +282,8 @@ mark_texts <- function(
 mark_text_prompt <- function(
   text,
   code,
-  research_background = ""
+  research_background = "",
+  max_interactions = getOption("send_prompt_with_retries__max_interaction", 10)
 ) {
   prompt <- "You are given a qualitative 'code' and a 'text'.\nYour task is to mark the relevant parts in the text that correspond to the code."
   if (!is.null(research_background) && research_background != "") {
@@ -312,9 +318,13 @@ mark_text_prompt <- function(
       type = "auto"
     )
 
+  interaction_count <- 0
+
   prompt <- prompt |>
     tidyprompt::prompt_wrap(
       extraction_fn = function(x) {
+        interaction_count <<- interaction_count + 1
+
         if (!is.list(x) || length(x) == 0 || !("text_parts" %in% names(x))) {
           return(tidyprompt::llm_feedback(paste0(
             "Invalid response format. Please return a JSON object with a 'text_parts' key containing an array of relevant text parts.",
@@ -340,6 +350,13 @@ mark_text_prompt <- function(
 
         missing_idx <- which(is.na(res$match))
         if (length(missing_idx)) {
+          # If we've hit max interactions, drop unmatched parts and return what *did* match
+          if (interaction_count >= max_interactions) {
+            matched <- unname(res$match[!is.na(res$match)])
+            return(matched)
+          }
+
+          # Otherwise, ask the model to correct by quoting literally
           return(tidyprompt::llm_feedback(paste0(
             "Error: below text parts are not present in the original text:\n\n  - ",
             paste(shQuote(res$needle[missing_idx]), collapse = "\n\n  - "),
