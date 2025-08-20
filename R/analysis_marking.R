@@ -318,18 +318,12 @@ mark_text_prompt <- function(
       type = "auto"
     )
 
-  interaction_count <- 1
+  interaction_count <- 0
 
   prompt <- prompt |>
     tidyprompt::prompt_wrap(
       extraction_fn = function(x) {
         interaction_count <<- interaction_count + 1
-        message(paste0(
-          "Interaction count: ",
-          interaction_count,
-          "; max_interactions: ",
-          max_interactions
-        ))
 
         if (!is.list(x) || length(x) == 0 || !("text_parts" %in% names(x))) {
           return(tidyprompt::llm_feedback(paste0(
