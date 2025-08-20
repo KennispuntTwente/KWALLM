@@ -28,6 +28,8 @@ app_error <- function(
     fatal <- FALSE
   }
 
+  error <- capture.output(print(error)) |> paste0(collapse = "\n")
+
   current_time <- Sys.time()
   formatted_time <- format(current_time, "%Y-%m-%d %H:%M:%S")
   log_message <- paste0(
