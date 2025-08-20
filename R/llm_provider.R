@@ -175,7 +175,7 @@ llm_provider_server <- function(
       ))
       ollama_url <- reactiveVal(getOption(
         "llm_provider__default_ollama_url",
-        "http://localhost:11434/api"
+        "http://localhost:11434/api/chat"
       ))
 
       initial_provider_mode <- if (has_preconfigured_llm_provider) {
@@ -195,11 +195,7 @@ llm_provider_server <- function(
           url = paste0(
             getOption(
               "llm_provider__default_oai_url",
-              "https://api.openai.com/v1"
-            ),
-            getOption(
-              "llm_provider_default_oai_url_chat_suffix",
-              "/chat/completions"
+              "https://api.openai.com/v1/chat/completions"
             )
           ),
           api_key = Sys.getenv("OPENAI_API_KEY")
@@ -211,11 +207,7 @@ llm_provider_server <- function(
           url = paste0(
             getOption(
               "llm_provider__default_ollama_url",
-              "http://localhost:11434/api"
-            ),
-            getOption(
-              "llm_provider_default_ollama_url_chat_suffix",
-              "/chat"
+              "http://localhost:11434/api/chat"
             )
           )
         )
@@ -342,8 +334,7 @@ llm_provider_server <- function(
             parameters = list(model = "gpt-4o-mini", stream = FALSE),
             verbose = getOption("tidyprompt.verbose", TRUE),
             url = paste0(
-              openai_url(),
-              "/chat/completions"
+              openai_url()
             ),
             api_key = api_key_input()
           )
@@ -355,8 +346,7 @@ llm_provider_server <- function(
             parameters = list(model = "llama3.1:8b", stream = FALSE),
             verbose = getOption("tidyprompt.verbose", TRUE),
             url = paste0(
-              ollama_url(),
-              "/chat"
+              ollama_url()
             )
           )
         }
@@ -369,7 +359,26 @@ llm_provider_server <- function(
             class = "llm-narrow-container mb-1",
             textInput(
               ns("openai_url"),
-              lang()$t("OpenAI-API-compatible endpoint URL:"),
+              label = span(
+                lang()$t("OpenAI-API-compatible endpoint URL:"),
+                tooltip(
+                  bs_icon("info-circle"),
+                  paste0(
+                    lang()$t(
+                      "Dit is de URL van de OpenAI-compatibele API om te gebruiken."
+                    ),
+                    lang()$t(
+                      " Je kan hier zowel de het chat completions endpoint (/chat/completions) als het responses endpoint (/responses) gebruiken."
+                    ),
+                    lang()$t(
+                      " Het responses endpoint biedt soms meer mogelijkheden (bijv., 'reasoning effort' parameter), maar wordt niet altijd ondersteund."
+                    ),
+                    lang()$t(
+                      " Raadpleeg de documentatie van je LLM-provider."
+                    )
+                  )
+                )
+              ),
               value = openai_url(),
               width = "100%"
             )
@@ -501,7 +510,7 @@ llm_provider_server <- function(
           llm_provider_rv$llm_provider_configured <- tidyprompt::llm_provider_openai(
             parameters = list(model = "gpt-4o-mini", stream = FALSE),
             verbose = getOption("tidyprompt.verbose", TRUE),
-            url = paste0(openai_url(), "/chat/completions"),
+            url = paste0(openai_url()),
             api_key = api_key_input()
           )
         }
@@ -573,8 +582,11 @@ llm_provider_server <- function(
         future(
           {
             if (provider_mode == "openai") {
+              # For OpenAI url, reduce the URL first to base URL
+              # e.g., "https://api.openai.com/v1/" (remove everything after version)
+              openai_base_url <- sub("(.*?/v[0-9]+/).*", "\\1", openai_url)
               res <- httr::GET(
-                paste0(openai_url, "/models"),
+                paste0(openai_base_url, "/models"),
                 httr::add_headers(
                   Authorization = paste("Bearer", api_key_input)
                 )
@@ -588,8 +600,11 @@ llm_provider_server <- function(
               }
               httr::content(res)$data |> purrr::map_chr("id")
             } else if (provider_mode == "ollama") {
+              # Make base URL for Ollama too
+              ollama_base_url <- sub("(.*?/api/).*", "\\1", ollama_url)
+
               res <- httr::GET(
-                url = paste0(ollama_url, "/tags"),
+                url = paste0(ollama_base_url, "/tags"),
                 httr::add_headers(`Content-Type` = "application/json")
               )
               if (httr::http_error(res)) {
