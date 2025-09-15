@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - {os: ubuntu-latest, r: release}
+          - {os: ubuntu-latest, r: "4.5.1"}
 
     # ── Environment ─────────────────────────────────────────────────────
     env:
@@ -29,30 +29,31 @@ jobs:
 
     steps:
       # 1 source code ---------------------------------------------------
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@08eba0b27e820071cde6df949e0beb9ba4906955
 
       # 2 uv ------------------------------------------------------------
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@b75a909f75acd358c2196fb9a5f1299a9a8868a4
 
       - name: Install python modules with uv
         run: uv sync
 
-      # 3 R toolchain ---------------------------------------------------
-      - uses: r-lib/actions/setup-pandoc@v2
-      - uses: r-lib/actions/setup-r@v2
+      # 2 system deps for R packages -----------------------------------
+      - name: Install system dependencies for R packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y chromium-browser libfontconfig1-dev libpng-dev \
+          libx11-dev libnode-dev libwebp-dev
+
+      # 4 R toolchain ---------------------------------------------------
+      - uses: r-lib/actions/setup-pandoc@bd49c52ffe281809afa6f0fecbf37483c5dd0b93
+      - uses: r-lib/actions/setup-r@bd49c52ffe281809afa6f0fecbf37483c5dd0b93
         with:
           r-version: ${{ matrix.config.r }}
           use-public-rspm: true
-      - uses: r-lib/actions/setup-renv@v2
-
-      # 4 system deps for shinytest2 -----------------------------------
-      - name: Install Chromium
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y chromium-browser
+      - uses: r-lib/actions/setup-renv@bd49c52ffe281809afa6f0fecbf37483c5dd0b93
 
       # 5 run the tests -------------------------------------------------
-      - uses: rstudio/shinytest2/actions/test-app@actions/v1
+      - uses: rstudio/shinytest2/actions/test-app@6ce71fd73f00b3d6925bc92a9a1f51eef91e3443
         with:
           app-dir: "."

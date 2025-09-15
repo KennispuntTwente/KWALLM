@@ -1,5 +1,5 @@
 # ─────────────────────── R builder stage (from rocker) ────────────────────────
-FROM rocker/r-ver:4.4.2 AS r-builder
+FROM rocker/r-ver:4.5.1 AS r-builder
 
 # Install required system dependencies for building R packages
 RUN apt-get update -qq && apt-get install -y --no-install-recommends \
@@ -12,6 +12,8 @@ RUN apt-get update -qq && apt-get install -y --no-install-recommends \
     libxml2-dev \
     zlib1g-dev \
     pandoc \
+    libnode-dev \
+    libwebp-dev \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 ARG DEBIAN_FRONTEND=noninteractive
@@ -45,7 +47,7 @@ RUN apt-get update -qq && \
       libblas3 liblapack3 libopenblas0-pthread libgfortran5 libpcre2-8-0 \
       libdeflate0 libgomp1 libpng16-16 libcairo2 libcairo2-dev \
       libxt-dev libpng-dev libtiff-dev libpangocairo-* \
-      python3.12-dev && \
+      python3.12-dev libnode-dev libwebp-dev && \
     ln -fs /usr/share/zoneinfo/Europe/Amsterdam /etc/localtime && \
     dpkg-reconfigure --frontend noninteractive tzdata && \
     apt-get clean && rm -rf /var/lib/apt/lists/*

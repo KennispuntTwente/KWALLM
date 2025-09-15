@@ -13,7 +13,7 @@ app_error <- function(
   shiny_session = shiny::getDefaultReactiveDomain(),
   admin_name = getOption("app_admin_name", NULL),
   admin_email = getOption("app_admin_email", NULL),
-  github_repo = "https://github.com/KennispuntTwente/tekstanalyse_met_llm",
+  github_repo = "https://github.com/KennispuntTwente/KWALLM",
   lang = shiny.i18n::Translator$new(
     translation_json_path = "language/language.json"
   )
@@ -47,7 +47,9 @@ app_error <- function(
 
   # Define subdirectory based on error type
   log_dir <- if (fatal) "app_errors/fatal" else "app_errors/nonfatal"
-  if (!dir.exists(log_dir)) dir.create(log_dir, recursive = TRUE)
+  if (!dir.exists(log_dir)) {
+    dir.create(log_dir, recursive = TRUE)
+  }
 
   log_file <- file.path(
     log_dir,

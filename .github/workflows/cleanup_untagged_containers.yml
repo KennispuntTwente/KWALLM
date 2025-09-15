@@ -31,11 +31,11 @@ jobs:
 
     steps:
       - name: Delete orphan / untagged images safely
-        uses: dataaxiom/ghcr-cleanup-action@v1
+        uses: dataaxiom/ghcr-cleanup-action@cd0cdb900b5dbf3a6f2cc869f0dbb0b8211f50c4
         with:
           # ---- what to clean ---------------------------------------------
           owner: kennispunttwente
-          packages: tekstanalyse_met_llm
+          packages: tekstanalyse_met_llm, kwallm
           delete-untagged: true
           delete-partial-images: true
           delete-ghost-images: true

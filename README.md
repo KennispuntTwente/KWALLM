@@ -73,7 +73,7 @@ The app can be run in three ways. In all cases, the file `app.R` (or a variant) 
 
 The application can be run from an R environment.
 This requires an installation of [R](https://www.r-project.org/)
-(this project was built with R 4.4.2, but other versions may work),
+(this project was built with R 4.5.1, but other versions may work),
 and optionally an environment such as [RStudio](https://www.rstudio.com/products/rstudio/download/).
 [Pandoc](https://pandoc.org/) is required to generate reports (installed with RStudio).
 [RTools](https://cran.r-project.org/bin/windows/Rtools/) may be required to build packages that this application needs.
@@ -295,7 +295,7 @@ Er zijn drie opties om de applicatie te starten:
 
 De applicatie kan gerund worden vanuit een R-omgeving.
 Hiervoor een installatie van [R](https://www.r-project.org/) nodig 
-(dit project is gemaakt met R 4.4.2, maar andere versies kunnen ook werken),
+(dit project is gemaakt met R 4.5.1, maar andere versies kunnen ook werken),
 en optioneel een omgeving zoals [RStudio](https://www.rstudio.com/products/rstudio/download/).
 [Pandoc](https://pandoc.org/) is nodig voor het genereren van rapporten (wordt geïnstalleerd met RStudio).
 Mogelijk is [RTools](https://cran.r-project.org/bin/windows/Rtools/) nodig om packages te bouwen die deze applicatie nodig heeft.
