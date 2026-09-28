@@ -2923,10 +2923,10 @@
       "Source": "GitHub",
       "RemoteType": "github",
       "RemoteHost": "api.github.com",
-      "RemoteUsername": "kennispunttwente",
+      "RemoteUsername": "KennispuntTwente",
       "RemoteRepo": "tidyprompt",
-      "RemoteRef": "28a15b3ea6560fa8802fdbecfa92eb1050a12aa4",
-      "RemoteSha": "28a15b3ea6560fa8802fdbecfa92eb1050a12aa4"
+      "RemoteRef": "a647762dc9ef768884695fb4e120fcb19a039da3",
+      "RemoteSha": "a647762dc9ef768884695fb4e120fcb19a039da3"
     },
     "tidyr": {
       "Package": "tidyr",
