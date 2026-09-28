@@ -9,10 +9,40 @@ kwallm_llm_error_diagnostics <- function(error, elapsed_ms, sensitive_text = NUL
     as.character(x)
   }
   field <- function(x, name) tryCatch(x[[name]], error = function(e) NULL)
+  sanitize <- function(message, limit = 1000L) {
+    message <- scalar(message)
+    if (is.null(message)) return("")
+    if (is.character(sensitive_text)) {
+      for (value in sensitive_text[!is.na(sensitive_text) & nzchar(sensitive_text)]) {
+        message <- gsub(value, "[redacted]", message, fixed = TRUE)
+      }
+    }
+    message <- gsub("(?i)(bearer|basic)\\s+[^\\s,;\"']+", "\\1 [redacted]", message, perl = TRUE)
+    message <- gsub(
+      "(?i)((?:api[_-]?key|access[_-]?token|refresh[_-]?token|authorization|password)[\"']?\\s*[:=]\\s*[\"']?)[^\\s,;\"'&]+",
+      "\\1[redacted]", message, perl = TRUE
+    )
+    message <- gsub("sk-[A-Za-z0-9_-]+", "[redacted]", message, perl = TRUE)
+    message <- gsub("(https?://)[^/\\s@]+:[^/\\s@]+@", "\\1[redacted]@", message, perl = TRUE)
+    message <- gsub("[[:cntrl:]]+", " | ", message)
+    if (nchar(message) > limit) paste0(substr(message, 1, limit), " [truncated]") else message
+  }
   status_code <- NULL
   request_id <- NULL
+  retry_after <- NULL
+  causes <- list()
   current <- error
   for (depth in seq_len(9L)) {
+    # Read each message separately: rlang's conditionMessage() also formats
+    # parents and calls, which can duplicate causes or expose call arguments.
+    cause_message <- scalar(field(current, "message"))
+    if (is.null(cause_message)) {
+      cause_message <- tryCatch(conditionMessage(current), error = function(e) "LLM request failed")
+    }
+    causes[[depth]] <- list(
+      error_class = vapply(utils::head(class(current), 10L), sanitize, character(1), limit = 100L),
+      message = sanitize(cause_message)
+    )
     response <- field(current, "resp")
     if (is.null(response)) response <- field(current, "response")
     for (candidate in list(field(current, "status"), field(current, "status_code"),
@@ -25,6 +55,14 @@ kwallm_llm_error_diagnostics <- function(error, elapsed_ms, sensitive_text = NUL
     candidates <- list(field(current, "request_id"))
     headers <- field(response, "headers")
     if (!is.null(names(headers))) {
+      for (value in as.list(headers[tolower(names(headers)) == "retry-after"])) {
+        value <- scalar(value)
+        if (is.null(retry_after) && !is.null(value) &&
+            (grepl("^[0-9]{1,10}$", value) ||
+             grepl("^[A-Za-z]{3}, [0-9]{2} [A-Za-z]{3} [0-9]{4} [0-9]{2}:[0-9]{2}:[0-9]{2} GMT$", value))) {
+          retry_after <- value
+        }
+      }
       for (name in c("x-request-id", "request-id", "x-ms-request-id", "apim-request-id", "x-amzn-requestid")) {
         candidates <- c(candidates, as.list(headers[tolower(names(headers)) == name]))
       }
@@ -32,32 +70,24 @@ kwallm_llm_error_diagnostics <- function(error, elapsed_ms, sensitive_text = NUL
     for (candidate in candidates) {
       candidate <- scalar(candidate)
       if (is.null(request_id) && !is.null(candidate) &&
-          grepl("^[A-Za-z0-9._:-]{1,200}$", candidate)) request_id <- candidate
+          grepl("^[A-Za-z0-9._:-]{1,200}$", candidate)) request_id <- sanitize(candidate)
     }
     current <- field(current, "parent")
     if (!inherits(current, "condition")) break
   }
 
-  message <- tryCatch(conditionMessage(error), error = function(e) "LLM request failed")
-  # Replace known prompt/key values and common credential forms in messages.
-  # This is deliberately independent of optional full prompt tracing.
-  if (is.character(sensitive_text)) {
-    for (value in sensitive_text[!is.na(sensitive_text) & nzchar(sensitive_text)]) {
-      message <- gsub(value, "[redacted]", message, fixed = TRUE)
-    }
+  message <- paste(unique(vapply(causes, `[[`, character(1), "message")), collapse = " | Caused by: ")
+  package_field <- function(package, name) {
+    tryCatch(scalar(utils::packageDescription(package)[[name]]), error = function(e) NULL)
   }
-  message <- gsub("(?i)(bearer|basic)\\s+[^\\s,;\"']+", "\\1 [redacted]", message, perl = TRUE)
-  message <- gsub(
-    "(?i)((?:api[_-]?key|access[_-]?token|refresh[_-]?token|authorization|password)[\"']?\\s*[:=]\\s*[\"']?)[^\\s,;\"'&]+",
-    "\\1[redacted]", message, perl = TRUE
-  )
-  message <- gsub("sk-[A-Za-z0-9_-]+", "[redacted]", message, perl = TRUE)
-  message <- gsub("(https?://)[^/\\s@]+:[^/\\s@]+@", "\\1[redacted]@", message, perl = TRUE)
-  message <- gsub("[\r\n]+", " | ", message)
   list(
     message = substr(message, 1, 4000),
-    error_class = class(error), status_code = status_code,
-    request_id = request_id, elapsed_ms = elapsed_ms
+    error_class = causes[[1L]]$error_class, causes = causes,
+    status_code = status_code, request_id = request_id,
+    retry_after = retry_after, elapsed_ms = elapsed_ms,
+    tidyprompt_version = package_field("tidyprompt", "Version"),
+    tidyprompt_sha = package_field("tidyprompt", "RemoteSha"),
+    httr2_version = package_field("httr2", "Version")
   )
 }
 
@@ -256,6 +286,7 @@ send_prompt_with_retries <- function(
         prompt_id, model_name, tries, max_tries, details$elapsed_ms),
       if (!is.null(details$status_code)) paste0(", HTTP status=", details$status_code),
       if (!is.null(details$request_id)) paste0(", request_id=", details$request_id),
+      if (!is.null(details$retry_after)) paste0(", Retry-After=", details$retry_after),
       "]"
     )
     details

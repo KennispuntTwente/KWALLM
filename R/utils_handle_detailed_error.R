@@ -90,13 +90,34 @@ kwallm_capture_worker_error <- function(expr) {
 
 
 kwallm_error_diagnostics <- function(error) {
-  if (!inherits(error, c("kwallm_remote_error", "kwallm_context_error"))) {
+  if (!inherits(error, c("kwallm_remote_error", "kwallm_context_error", "kwallm_llm_error"))) {
     return(character())
   }
   details <- character()
   for (depth in seq_len(9L)) {
     classes <- if (length(error$original_class)) error$original_class else class(error)
     details <- c(details, paste("Cause class:", paste(classes, collapse = ", ")))
+    if ("kwallm_llm_error" %in% classes && is.list(error$diagnostics)) {
+      diagnostic <- error$diagnostics
+      labels <- c(
+        status_code = "HTTP status", request_id = "Provider request ID",
+        retry_after = "Retry-After (provider header)",
+        elapsed_ms = "Total elapsed ms (including retries and waits)",
+        prompt_id = "Prompt ID", model = "Model", attempt = "Final attempt",
+        tidyprompt_version = "tidyprompt version", tidyprompt_sha = "tidyprompt commit",
+        httr2_version = "httr2 version"
+      )
+      for (name in names(labels)) {
+        value <- diagnostic[[name]]
+        if (is.atomic(value) && length(value) == 1L && !is.na(value)) {
+          details <- c(details, paste0(labels[[name]], ": ", value))
+        }
+      }
+      for (cause in diagnostic$causes) {
+        details <- c(details, paste0("Provider cause [",
+          paste(cause$error_class, collapse = ", "), "]: ", cause$message))
+      }
+    }
     if (!is.null(conditionCall(error))) {
       details <- c(details, paste("Originating call:",
         paste(deparse(conditionCall(error)), collapse = " ")))
