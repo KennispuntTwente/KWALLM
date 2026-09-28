@@ -3,6 +3,48 @@ library(testthat)
 source(here::here("R", "utils_send_prompt_with_retries.R"), local = TRUE)
 source(here::here("R", "utils_handle_detailed_error.R"), local = TRUE)
 
+test_that("real HTTP failures work through streaming and non-streaming providers", {
+  # Use an actual HTTP server: mocking req_perform() cannot exercise streaming
+  # connection setup or how httr2 attaches the response to its condition.
+  ready <- tempfile()
+  withr::defer(unlink(ready))
+  port <- httpuv::randomPort()
+  server <- callr::r_bg(function(port, ready) {
+    server <- httpuv::startServer("127.0.0.1", port, list(call = function(req) {
+      list(status = 400L, headers = list(
+        "Content-Type" = "application/json", "X-Request-ID" = "req-real-http",
+        "Retry-After" = "15"
+      ), body = paste0('{"error":{"message":"Unsupported parameter"},',
+                       '"debug":"PRIVATE_HTTP_BODY"}'))
+    }))
+    on.exit(httpuv::stopServer(server))
+    writeLines("ready", ready)
+    repeat httpuv::service(100)
+  }, args = list(port = port, ready = ready), libpath = .libPaths())
+  withr::defer(server$kill())
+  deadline <- Sys.time() + 15
+  while (!file.exists(ready) && server$is_alive() && Sys.time() < deadline) Sys.sleep(0.05)
+  expect_true(file.exists(ready), info = paste(server$read_error_lines(), collapse = "\n"))
+  if (!file.exists(ready)) return(invisible(NULL))
+
+  for (stream in c(FALSE, TRUE)) {
+    for (provider_name in c("openai", "ollama")) {
+      args <- list(parameters = list(model = "test-model", stream = stream),
+                   verbose = FALSE, url = paste0("http://127.0.0.1:", port, "/error"))
+      if (provider_name == "openai") args$api_key <- "test-only"
+      provider <- do.call(getExportedValue("tidyprompt", paste0("llm_provider_", provider_name)), args)
+      error <- tryCatch(send_prompt_with_retries("test", provider, max_tries = 1), error = identity)
+      expect_s3_class(error, "kwallm_llm_error")
+      expect_identical(error$status_code, 400L)
+      expect_identical(error$request_id, "req-real-http")
+      expect_identical(error$diagnostics$retry_after, "15")
+      expect_match(conditionMessage(error), "Unsupported parameter", fixed = TRUE)
+      expect_true("httr2_http_400" %in% error$diagnostics$causes[[2]]$error_class)
+      expect_false(grepl("PRIVATE_HTTP_BODY", paste(capture.output(str(error)), collapse = "\n")))
+    }
+  }
+})
+
 test_that("real tidyprompt HTTP errors reach logs, provenance and diagnostic reports", {
   source(here::here("R", "utils_send_prompt_with_retries.R"), local = TRUE)
   withr::local_options(send_prompt_with_retries__log_prompts_to_file = FALSE,

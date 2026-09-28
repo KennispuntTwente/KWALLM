@@ -30,6 +30,50 @@ make_fake_session <- function() {
   )
 }
 
+test_that("LLM diagnostics reach the downloadable report and sharing link", {
+  source(here::here("R", "utils_send_prompt_with_retries.R"), local = TRUE)
+  source(here::here("R", "utils_app_error.R"), local = TRUE)
+  log_warn <- function(...) invisible(NULL)
+  logged <- NULL
+  log_error <- function(message, ...) logged <<- message
+  ui <- NULL
+  showModal <- function(value, ...) ui <<- value
+  showNotification <- function(value, ...) ui <<- value
+  withr::local_options(send_prompt_with_retries__log_prompts = FALSE,
+                      send_prompt_with_retries__log_prompts_to_file = FALSE)
+  provider <- tidyprompt::llm_provider_openai(
+    list(model = "test-model", stream = FALSE), verbose = FALSE, api_key = "private-key"
+  )
+  error <- httr2::with_mocked_responses(list(httr2::response(
+    status_code = 401L, headers = list("content-type" = "application/json", "x-request-id" = "req-ui-401"),
+    body = charToRaw('{"error":{"message":"Rejected private-key"},"debug":"PRIVATE_UI_BODY"}')
+  )), tryCatch(send_prompt_with_retries("test", provider, max_tries = 1), error = identity))
+  # Also exercise the snapshot used to transfer conditions from a worker.
+  remote <- kwallm_capture_worker_error(stop(error))$error
+  for (condition in list(error, remote)) {
+    for (fatal in c(FALSE, TRUE)) {
+      capture.output(app_error(condition, fatal = fatal,
+        shiny_session = make_fake_session(), lang = make_translator("en")))
+      html <- xml2::read_html(htmltools::renderTags(ui)$html)
+      report <- xml2::xml_text(xml2::xml_find_first(html, ".//textarea"))
+      for (expected in c("HTTP status: 401", "Provider request ID: req-ui-401",
+                         "tidyprompt commit:", "tidyprompt_request_error", "httr2_http_401")) {
+        expect_match(report, expected, fixed = TRUE)
+        expect_match(logged, expected, fixed = TRUE)
+      }
+      expect_false(grepl("private-key|PRIVATE_UI_BODY", report))
+      expect_match(report, "[redacted]", fixed = TRUE)
+      if (fatal) {
+        href <- xml2::xml_attr(xml2::xml_find_first(html, ".//a[@href]"), "href")
+        expect_match(href, "github.com/KennispuntTwente/KWALLM/issues/new", fixed = TRUE)
+        expect_lt(nchar(href, type = "bytes"), 1800)
+        id <- xml2::xml_attr(xml2::xml_find_first(html, ".//*[@data-error-id]"), "data-error-id")
+        expect_match(utils::URLdecode(href), id, fixed = TRUE)
+      }
+    }
+  }
+})
+
 test_that("every error includes deployment and version in console and file", {
   log_dir <- withr::local_tempdir()
   withr::local_options(
