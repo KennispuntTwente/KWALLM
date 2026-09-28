@@ -756,6 +756,9 @@ kwallm_mirai_submit <- function(
   then_fn = promises::then
 ) {
   expr <- substitute(.expr)
+  capture_error <- kwallm_capture_worker_error
+  environment(capture_error) <- baseenv()
+  expr <- substitute(CAPTURE(EXPR), list(CAPTURE = capture_error, EXPR = expr))
   if (is.null(try_mirai_fn)) {
     try_mirai_fn <- if (isTRUE(getOption("kwallm.test_sync_mirai", FALSE))) {
       mirai::mirai
@@ -819,7 +822,13 @@ kwallm_mirai_submit <- function(
 
       then_fn(
         worker,
-        onFulfilled = resolve,
+        onFulfilled = function(value) {
+          if (inherits(value, "kwallm_worker_failure")) {
+            reject(value$error)
+          } else {
+            resolve(value)
+          }
+        },
         onRejected = reject
       )
       invisible(NULL)

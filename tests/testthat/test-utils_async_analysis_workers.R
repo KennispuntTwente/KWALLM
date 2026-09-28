@@ -672,7 +672,7 @@ test_that("kwallm_mirai_submit forwards task configuration unchanged", {
   )
 
   expect_s3_class(result, "test_promise")
-  expect_identical(state$expr, quote(x + y))
+  expect_identical(eval(state$expr, list2env(state$args)), 42L)
   expect_identical(state$args, list(x = 20L, y = 22L))
   expect_identical(state$timeout, 1234L)
   expect_identical(state$compute, "analysis")

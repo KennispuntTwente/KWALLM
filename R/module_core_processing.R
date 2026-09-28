@@ -456,7 +456,7 @@ processing_server <- function(
             paragraphs <- NULL
 
             if (write_paragraphs) {
-              paragraphs <- tryCatch(
+              paragraphs <- withCallingHandlers(
                 {
                   categories_texts <- collect_grouped_paragraph_inputs(
                     results = results,
@@ -709,7 +709,7 @@ processing_server <- function(
               lang$t("...")
             )
 
-            candidate_topics <- tryCatch(
+            candidate_topics <- withCallingHandlers(
               create_candidate_topics(
                 text_batches = text_batches,
                 analysis_unit_ids = analysis_unit_ids,
@@ -738,7 +738,7 @@ processing_server <- function(
               lang$t("Onderwerpen reduceren...")
             )
 
-            topics <- tryCatch(
+            topics <- withCallingHandlers(
               reduce_topics(
                 candidate_topics,
                 research_background,
@@ -997,7 +997,7 @@ processing_server <- function(
               progress_secondary$set_with_total(i, n, text)
             }
 
-            topic_assignment_results <- tryCatch(
+            topic_assignment_results <- withCallingHandlers(
               {
                 results <- assign_topics(
                   texts = texts,
@@ -1028,7 +1028,7 @@ processing_server <- function(
             paragraphs <- NULL
 
             if (write_paragraphs) {
-              paragraphs <- tryCatch(
+              paragraphs <- withCallingHandlers(
                 {
                   topics_texts_list <- collect_grouped_paragraph_inputs(
                     results = topic_assignment_results,

@@ -32,7 +32,11 @@ app_error <- function(
   # Use the condition message rather than printing the full condition object.
   # Printing promise/rlang errors exposes wrapper calls such as
   # `<simpleError in onFulfilled(...)>` and can bury the provider's message.
+  error_diagnostics <- kwallm_error_diagnostics(error)
   error <- kwallm_error_message(error)
+  if (length(error_diagnostics)) {
+    error <- paste(error, paste(error_diagnostics, collapse = "\n"), sep = "\n\n")
+  }
 
   session_id <- "system"
   if (
