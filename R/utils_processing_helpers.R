@@ -789,8 +789,14 @@ analysis_result_report_globals <- function() {
 # rmarkdown's converter for its path quoting, version handling and environment
 # setup; only the conversion runs in a child R process.
 kwallm_pandoc_convert <- function(
-  input, to = NULL, from = NULL, output = NULL, citeproc = FALSE,
-  options = NULL, verbose = FALSE, wd = NULL
+  input,
+  to = NULL,
+  from = NULL,
+  output = NULL,
+  citeproc = FALSE,
+  options = NULL,
+  verbose = FALSE,
+  wd = NULL
 ) {
   stdout_file <- tempfile("pandoc-stdout-", fileext = ".log")
   stderr_file <- tempfile("pandoc-stderr-", fileext = ".log")
@@ -798,17 +804,24 @@ kwallm_pandoc_convert <- function(
 
   # Bound diagnostics even when a document produces many Pandoc warnings.
   read_log <- function(path) {
-    tryCatch({
-      if (!file.exists(path)) return("(no output captured)")
-      con <- file(path, "rb")
-      on.exit(close(con))
-      size <- file.info(path)$size
-      if (size > 16000) seek(con, size - 16000)
-      contents <- rawToChar(readBin(con, "raw", n = 16000))
-      # Truncation may split a multibyte character; keep the diagnostic printable.
-      contents <- iconv(contents, from = "UTF-8", to = "UTF-8", sub = "byte")
-      paste0(if (size > 16000) "[truncated; last 16000 bytes]\n", contents)
-    }, error = function(e) "(diagnostic output could not be read)")
+    tryCatch(
+      {
+        if (!file.exists(path)) {
+          return("(no output captured)")
+        }
+        con <- file(path, "rb")
+        on.exit(close(con))
+        size <- file.info(path)$size
+        if (size > 16000) {
+          seek(con, size - 16000)
+        }
+        contents <- rawToChar(readBin(con, "raw", n = 16000))
+        # Truncation may split a multibyte character; keep the diagnostic printable.
+        contents <- iconv(contents, from = "UTF-8", to = "UTF-8", sub = "byte")
+        paste0(if (size > 16000) "[truncated; last 16000 bytes]\n", contents)
+      },
+      error = function(e) "(diagnostic output could not be read)"
+    )
   }
 
   tryCatch(
@@ -820,8 +833,14 @@ kwallm_pandoc_convert <- function(
       },
       args = list(
         args = list(
-          input = input, to = to, from = from, output = output,
-          citeproc = citeproc, options = options, verbose = TRUE, wd = wd
+          input = input,
+          to = to,
+          from = from,
+          output = output,
+          citeproc = citeproc,
+          options = options,
+          verbose = TRUE,
+          wd = wd
         ),
         pandoc_dir = rmarkdown::find_pandoc()$dir
       ),
@@ -832,15 +851,21 @@ kwallm_pandoc_convert <- function(
       system_profile = FALSE
     ),
     error = function(e) {
-      stop(paste0(
-        conditionMessage(e),
-        "\n\n--- Pandoc conversion context ---\n",
-        "Caller working directory: ", getwd(),
-        "\nRequested working directory: ",
-        if (is.null(wd)) "automatic (input directory)" else wd,
-        "\n\n--- Pandoc stdout / command ---\n", read_log(stdout_file),
-        "\n\n--- Pandoc stderr ---\n", read_log(stderr_file)
-      ), call. = FALSE)
+      stop(
+        paste0(
+          conditionMessage(e),
+          "\n\n--- Pandoc conversion context ---\n",
+          "Caller working directory: ",
+          getwd(),
+          "\nRequested working directory: ",
+          if (is.null(wd)) "automatic (input directory)" else wd,
+          "\n\n--- Pandoc stdout / command ---\n",
+          read_log(stdout_file),
+          "\n\n--- Pandoc stderr ---\n",
+          read_log(stderr_file)
+        ),
+        call. = FALSE
+      )
     }
   )
   invisible(NULL)
@@ -892,52 +917,72 @@ write_analysis_result_report_html <- function(
   )
 
   tryCatch(
-    withCallingHandlers({
-      input_file <- here::here(
-        "R",
-        paste0(
-          "report_",
-          .kwallm_mode_display_from_id(analysis_result@metadata@mode_id),
-          "_", analysis_result@metadata@language, ".Rmd"
+    withCallingHandlers(
+      {
+        input_file <- here::here(
+          "R",
+          paste0(
+            "report_",
+            .kwallm_mode_display_from_id(analysis_result@metadata@mode_id),
+            "_",
+            analysis_result@metadata@language,
+            ".Rmd"
+          )
         )
-      )
-      # Preserve each HTML template's YAML options, including its theme.
-      format_options <- rmarkdown::yaml_front_matter(input_file)$output$html_document
-      output_format <- do.call(rmarkdown::html_document, format_options)
-      output_format$pandoc$convert_fun <- kwallm_pandoc_convert
-      rmarkdown::render(
-        input = input_file,
-        output_format = output_format,
-        output_file = output_file_html,
-        intermediates_dir = temp_dir,
-        params = list(
-          analysis_result = analysis_result
-        ),
-        envir = report_env
-      )
+        # Preserve each HTML template's YAML options, including its theme.
+        format_options <- rmarkdown::yaml_front_matter(
+          input_file
+        )$output$html_document
+        output_format <- do.call(rmarkdown::html_document, format_options)
+        output_format$pandoc$convert_fun <- kwallm_pandoc_convert
+        rmarkdown::render(
+          input = input_file,
+          output_format = output_format,
+          output_file = output_file_html,
+          intermediates_dir = temp_dir,
+          params = list(
+            analysis_result = analysis_result
+          ),
+          envir = report_env
+        )
 
-      output_file_html
-    }, error = function(e) {
-      # traceback() in the outer tryCatch handler runs after stack unwinding.
-      render_calls <<- vapply(tail(sys.calls(), 20), function(call) {
-        substr(paste(deparse(call), collapse = " "), 1, 1000)
-      }, character(1))
-    }, warning = function(w) {
-      render_warnings <<- tail(c(
-        render_warnings, substr(conditionMessage(w), 1, 1000)
-      ), 20)
-    }),
+        output_file_html
+      },
+      error = function(e) {
+        # traceback() in the outer tryCatch handler runs after stack unwinding.
+        render_calls <<- vapply(
+          tail(sys.calls(), 20),
+          function(call) {
+            substr(paste(deparse(call), collapse = " "), 1, 1000)
+          },
+          character(1)
+        )
+      },
+      warning = function(w) {
+        render_warnings <<- tail(
+          c(
+            render_warnings,
+            substr(conditionMessage(w), 1, 1000)
+          ),
+          20
+        )
+      }
+    ),
     error = function(e) {
       error_details <- paste(
         "Error during rendering:",
         conditionMessage(e),
         "\n\n--- Render context ---\n",
-        paste(c(paste("Template:", input_file), render_context), collapse = "\n"),
+        paste(
+          c(paste("Template:", input_file), render_context),
+          collapse = "\n"
+        ),
         "\n\n--- Render warnings ---\n",
         paste(render_warnings, collapse = "\n"),
         "\n\n--- R calls at failure ---\n",
         paste(render_calls, collapse = "\n"),
-        "\n\nError class:", paste(class(e), collapse = ", ")
+        "\n\nError class:",
+        paste(class(e), collapse = ", ")
       )
 
       writeLines(error_details, con = output_file_txt)

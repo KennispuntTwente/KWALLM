@@ -25,29 +25,39 @@ kwallm_error_report_controls <- function(report, error_id, lang) {
       `data-copy-success` = lang$t("Diagnostisch rapport gekopieerd."),
       `data-copy-failure` = lang$t("Kopieer de geselecteerde tekst handmatig."),
       htmltools::tags$button(
-        type = "button", class = "btn btn-secondary btn-sm",
+        type = "button",
+        class = "btn btn-secondary btn-sm",
         `data-error-report-action` = "copy",
         lang$t("Kopieer diagnostisch rapport")
       ),
       " ",
       htmltools::tags$button(
-        type = "button", class = "btn btn-secondary btn-sm",
+        type = "button",
+        class = "btn btn-secondary btn-sm",
         `data-error-report-action` = "download",
         lang$t("Download diagnostisch rapport")
       ),
-      htmltools::tags$p(role = "status", `aria-live` = "polite",
-                        class = "kwallm-error-report-status"),
+      htmltools::tags$p(
+        role = "status",
+        `aria-live` = "polite",
+        class = "kwallm-error-report-status"
+      ),
       htmltools::tags$details(
         htmltools::tags$summary(lang$t("Technische details")),
         htmltools::tags$textarea(
-          readonly = "readonly", rows = 12, class = "form-control",
-          `aria-label` = lang$t("Diagnostisch rapport"), report
+          readonly = "readonly",
+          rows = 12,
+          class = "form-control",
+          `aria-label` = lang$t("Diagnostisch rapport"),
+          report
         )
       )
     ),
     htmltools::htmlDependency(
-      name = "kwallm-error-report", version = "1.0.0",
-      src = c(file = here::here("www")), script = "error-report.js",
+      name = "kwallm-error-report",
+      version = "1.0.0",
+      src = c(file = here::here("www")),
+      script = "error-report.js",
       all_files = FALSE
     )
   )
@@ -84,7 +94,11 @@ app_error <- function(
   error <- kwallm_error_message(error)
   error_preview <- stringr::str_trunc(gsub("[\r\n]+", " ", error), 160)
   if (length(error_diagnostics)) {
-    error <- paste(error, paste(error_diagnostics, collapse = "\n"), sep = "\n\n")
+    error <- paste(
+      error,
+      paste(error_diagnostics, collapse = "\n"),
+      sep = "\n\n"
+    )
   }
 
   session_id <- "system"
@@ -102,16 +116,24 @@ app_error <- function(
   error_id <- uuid::UUIDgenerate()
   formatted_time <- format(current_time, "%Y-%m-%d %H:%M:%S%z")
   app_version <- getOption("kwallm__app_version", "unknown")
-  if (!is.character(app_version) || length(app_version) != 1L ||
-      is.na(app_version) || !nzchar(app_version)) {
+  if (
+    !is.character(app_version) ||
+      length(app_version) != 1L ||
+      is.na(app_version) ||
+      !nzchar(app_version)
+  ) {
     app_version <- "unknown"
   }
   deployment <- tryCatch(get_app_mode(), error = function(e) "unknown")
   environment_details <- paste0(
-    "App version: ", app_version,
-    "\nDeployment: ", deployment,
-    "\nR: ", R.version.string,
-    "\nPlatform: ", R.version$platform
+    "App version: ",
+    app_version,
+    "\nDeployment: ",
+    deployment,
+    "\nR: ",
+    R.version.string,
+    "\nPlatform: ",
+    R.version$platform
   )
   log_message <- paste0(
     "Error: ",
@@ -125,7 +147,8 @@ app_error <- function(
     "\n",
     "Time: ",
     formatted_time,
-    "\nError ID: ", error_id,
+    "\nError ID: ",
+    error_id,
     "\n",
     environment_details,
     "\n"
@@ -161,28 +184,42 @@ app_error <- function(
 
   report_controls <- kwallm_error_report_controls(log_message, error_id, lang)
   summary <- paste0(
-    "Error ID: ", error_id,
-    "\nSession ID: ", session_id,
-    "\nTime: ", formatted_time,
-    "\nApp version: ", substr(app_version, 1, 60),
-    "\nDeployment: ", deployment,
-    "\nWhen: ", substr(when, 1, 80),
-    "\nError: ", error_preview
+    "Error ID: ",
+    error_id,
+    "\nSession ID: ",
+    session_id,
+    "\nTime: ",
+    formatted_time,
+    "\nApp version: ",
+    substr(app_version, 1, 60),
+    "\nDeployment: ",
+    deployment,
+    "\nWhen: ",
+    substr(when, 1, 80),
+    "\nError: ",
+    error_preview
   )
   if (fatal) {
     removeModal()
 
-    body_encoded <- kwallm_error_urlencode(paste0(
-      summary, "\n\n",
-      lang$t("Voeg het diagnostisch rapport toe aan uw melding.")
-    ), max_bytes = 1400)
+    body_encoded <- kwallm_error_urlencode(
+      paste0(
+        summary,
+        "\n\n",
+        lang$t("Voeg het diagnostisch rapport toe aan uw melding.")
+      ),
+      max_bytes = 1400
+    )
 
     # Fallback if admin contact info is missing
     contact_info <- if (!is.null(admin_name) && !is.null(admin_email)) {
-      email_subject <- kwallm_error_urlencode(paste0(
-        lang$t("Tekstanalyse-app-foutmelding: "),
-        stringr::str_trunc(error, 50, ellipsis = "...")
-      ), max_bytes = 250)
+      email_subject <- kwallm_error_urlencode(
+        paste0(
+          lang$t("Tekstanalyse-app-foutmelding: "),
+          stringr::str_trunc(error, 50, ellipsis = "...")
+        ),
+        max_bytes = 250
+      )
       mailto_link <- paste0(
         "mailto:",
         admin_email,
@@ -207,10 +244,13 @@ app_error <- function(
       github_issue_link <- paste0(
         github_repo,
         "/issues/new?labels=bug&title=",
-        kwallm_error_urlencode(paste0(
-          lang$t("Foutmelding: "),
-          stringr::str_trunc(error, 50)
-        ), max_bytes = 250),
+        kwallm_error_urlencode(
+          paste0(
+            lang$t("Foutmelding: "),
+            stringr::str_trunc(error, 50)
+          ),
+          max_bytes = 250
+        ),
         "&body=",
         body_encoded
       )
