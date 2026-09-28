@@ -1620,6 +1620,34 @@
       {
         "nl": "Vul een naam in (optioneel)...",
         "en": "Enter a name (optional)..."
+      },
+      {
+        "nl": "Diagnostisch rapport gekopieerd.",
+        "en": "Diagnostic report copied."
+      },
+      {
+        "nl": "Kopieer de geselecteerde tekst handmatig.",
+        "en": "Copy the selected text manually."
+      },
+      {
+        "nl": "Kopieer diagnostisch rapport",
+        "en": "Copy diagnostic report"
+      },
+      {
+        "nl": "Download diagnostisch rapport",
+        "en": "Download diagnostic report"
+      },
+      {
+        "nl": "Technische details",
+        "en": "Technical details"
+      },
+      {
+        "nl": "Diagnostisch rapport",
+        "en": "Diagnostic report"
+      },
+      {
+        "nl": "Voeg het diagnostisch rapport toe aan uw melding.",
+        "en": "Attach the diagnostic report to your report."
       }
   ]
 }

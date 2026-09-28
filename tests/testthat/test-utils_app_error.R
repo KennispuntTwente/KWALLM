@@ -58,6 +58,54 @@ test_that("every error includes deployment and version in console and file", {
   ), "App version: unknown", fixed = TRUE)
 })
 
+test_that("large reports have bounded sharing links and a matching error ID", {
+  modal <- NULL
+  logged <- NULL
+  showModal <- function(ui, ...) modal <<- ui
+  log_error <- function(message, ...) logged <<- message
+  app_error <- app_error
+  environment(app_error) <- environment()
+  long_error <- paste0(strrep("\u00e9 & # ? = ", 3000), "REPORT_END_SENTINEL")
+  ids <- character()
+  for (email in c(FALSE, TRUE)) {
+    sess <- make_fake_session()
+    capture.output(app_error(long_error, fatal = TRUE, when = "report export",
+      shiny_session = sess, lang = make_translator("en"),
+      admin_name = if (email) "Support" else NULL,
+      admin_email = if (email) "support@example.com" else NULL))
+    html <- xml2::read_html(htmltools::renderTags(modal)$html)
+    report <- xml2::xml_text(xml2::xml_find_first(html, ".//textarea"))
+    id <- xml2::xml_attr(xml2::xml_find_first(html, ".//*[@data-error-id]"), "data-error-id")
+    ids <- c(ids, id)
+    href <- xml2::xml_attr(xml2::xml_find_first(html, ".//a[@href]"), "href")
+    expect_lt(nchar(href, type = "bytes"), 1800)
+    expect_match(utils::URLdecode(href), id, fixed = TRUE)
+    expect_match(report, id, fixed = TRUE)
+    expect_match(logged, id, fixed = TRUE)
+    expect_match(report, long_error, fixed = TRUE)
+    expect_false(grepl("REPORT_END_SENTINEL", href, fixed = TRUE))
+    expect_match(href, "%26", fixed = TRUE)
+    expect_match(href, "%23", fixed = TRUE)
+    expect_true(sess$is_closed())
+    expect_match(htmltools::renderTags(modal)$html, "Copy diagnostic report", fixed = TRUE)
+  }
+  expect_false(identical(ids[1], ids[2]))
+})
+
+test_that("nonfatal errors also offer complete diagnostic reports", {
+  notification <- NULL
+  showNotification <- function(ui, ...) notification <<- ui
+  log_error <- function(...) invisible(NULL)
+  app_error <- app_error
+  environment(app_error) <- environment()
+  sess <- make_fake_session()
+  capture.output(app_error("retryable failure", shiny_session = sess, lang = make_translator()))
+  html <- xml2::read_html(htmltools::renderTags(notification)$html)
+  expect_match(xml2::xml_text(xml2::xml_find_first(html, ".//textarea")), "retryable failure")
+  expect_length(xml2::xml_find_all(html, ".//button[@data-error-report-action]"), 2L)
+  expect_false(sess$is_closed())
+})
+
 
 test_that("app_error: nonfatal logs to nonfatal folder and does not close session", {
   test_dir <- withr::local_tempdir()

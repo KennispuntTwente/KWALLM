@@ -5,6 +5,54 @@
 # Also shows contact details to report the error
 
 # 1 Functions --------------------------------------------------------
+
+# Limit encoded bytes, not characters: Unicode and reserved characters can
+# expand considerably inside mailto/GitHub URLs. Full details stay in the UI.
+kwallm_error_urlencode <- function(text, max_bytes) {
+  encoded <- utils::URLencode(enc2utf8(text), reserved = TRUE)
+  while (nchar(encoded, type = "bytes") > max_bytes) {
+    text <- substr(text, 1, floor(nchar(text) * 0.8))
+    encoded <- utils::URLencode(enc2utf8(text), reserved = TRUE)
+  }
+  encoded
+}
+
+kwallm_error_report_controls <- function(report, error_id, lang) {
+  htmltools::attachDependencies(
+    htmltools::tags$div(
+      class = "kwallm-error-report",
+      `data-error-id` = error_id,
+      `data-copy-success` = lang$t("Diagnostisch rapport gekopieerd."),
+      `data-copy-failure` = lang$t("Kopieer de geselecteerde tekst handmatig."),
+      htmltools::tags$button(
+        type = "button", class = "btn btn-secondary btn-sm",
+        `data-error-report-action` = "copy",
+        lang$t("Kopieer diagnostisch rapport")
+      ),
+      " ",
+      htmltools::tags$button(
+        type = "button", class = "btn btn-secondary btn-sm",
+        `data-error-report-action` = "download",
+        lang$t("Download diagnostisch rapport")
+      ),
+      htmltools::tags$p(role = "status", `aria-live` = "polite",
+                        class = "kwallm-error-report-status"),
+      htmltools::tags$details(
+        htmltools::tags$summary(lang$t("Technische details")),
+        htmltools::tags$textarea(
+          readonly = "readonly", rows = 12, class = "form-control",
+          `aria-label` = lang$t("Diagnostisch rapport"), report
+        )
+      )
+    ),
+    htmltools::htmlDependency(
+      name = "kwallm-error-report", version = "1.0.0",
+      src = c(file = here::here("www")), script = "error-report.js",
+      all_files = FALSE
+    )
+  )
+}
+
 app_error <- function(
   error,
   when = "unknown",
@@ -34,6 +82,7 @@ app_error <- function(
   # `<simpleError in onFulfilled(...)>` and can bury the provider's message.
   error_diagnostics <- kwallm_error_diagnostics(error)
   error <- kwallm_error_message(error)
+  error_preview <- stringr::str_trunc(gsub("[\r\n]+", " ", error), 160)
   if (length(error_diagnostics)) {
     error <- paste(error, paste(error_diagnostics, collapse = "\n"), sep = "\n\n")
   }
@@ -50,6 +99,7 @@ app_error <- function(
   }
 
   current_time <- Sys.time()
+  error_id <- uuid::UUIDgenerate()
   formatted_time <- format(current_time, "%Y-%m-%d %H:%M:%S%z")
   app_version <- getOption("kwallm__app_version", "unknown")
   if (!is.character(app_version) || length(app_version) != 1L ||
@@ -75,6 +125,7 @@ app_error <- function(
     "\n",
     "Time: ",
     formatted_time,
+    "\nError ID: ", error_id,
     "\n",
     environment_details,
     "\n"
@@ -91,10 +142,11 @@ app_error <- function(
   tryCatch(
     log_error(
       sprintf(
-        "Error occurred: %s | When: %s | Session ID: %s | %s",
+        "Error occurred: %s | When: %s | Session ID: %s | Error ID: %s | %s",
         error_for_log,
         when_for_log,
         session_id,
+        error_id,
         gsub("[\r\n]+", " | ", environment_details)
       ),
       component = "error",
@@ -107,21 +159,30 @@ app_error <- function(
     stop(error)
   }
 
+  report_controls <- kwallm_error_report_controls(log_message, error_id, lang)
+  summary <- paste0(
+    "Error ID: ", error_id,
+    "\nSession ID: ", session_id,
+    "\nTime: ", formatted_time,
+    "\nApp version: ", substr(app_version, 1, 60),
+    "\nDeployment: ", deployment,
+    "\nWhen: ", substr(when, 1, 80),
+    "\nError: ", error_preview
+  )
   if (fatal) {
     removeModal()
 
-    body_encoded <- URLencode(paste0(
-      lang$t("Ik kreeg zojuist deze foutmelding:"),
-      "\n\n",
-      log_message
-    ))
+    body_encoded <- kwallm_error_urlencode(paste0(
+      summary, "\n\n",
+      lang$t("Voeg het diagnostisch rapport toe aan uw melding.")
+    ), max_bytes = 1400)
 
     # Fallback if admin contact info is missing
     contact_info <- if (!is.null(admin_name) && !is.null(admin_email)) {
-      email_subject <- URLencode(paste0(
+      email_subject <- kwallm_error_urlencode(paste0(
         lang$t("Tekstanalyse-app-foutmelding: "),
         stringr::str_trunc(error, 50, ellipsis = "...")
-      ))
+      ), max_bytes = 250)
       mailto_link <- paste0(
         "mailto:",
         admin_email,
@@ -146,10 +207,10 @@ app_error <- function(
       github_issue_link <- paste0(
         github_repo,
         "/issues/new?labels=bug&title=",
-        URLencode(paste0(
+        kwallm_error_urlencode(paste0(
           lang$t("Foutmelding: "),
           stringr::str_trunc(error, 50)
-        )),
+        ), max_bytes = 250),
         "&body=",
         body_encoded
       )
@@ -176,7 +237,9 @@ app_error <- function(
           "Er gebeurde iets onverwachts, waardoor de app is gestopt. Sorry!"
         )),
         hr(),
-        pre(log_message),
+        pre(summary),
+        report_controls,
+        p(lang$t("Voeg het diagnostisch rapport toe aan uw melding.")),
         hr(),
         contact_info
       ),
@@ -188,7 +251,7 @@ app_error <- function(
     shiny_session$close()
   } else {
     showNotification(
-      paste0("Session ID: ", session_id, " | Error: ", error),
+      tagList(pre(summary), report_controls),
       type = "error",
       duration = NULL
     )
