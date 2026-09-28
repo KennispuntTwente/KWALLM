@@ -253,6 +253,76 @@ test_that("send_prompt_with_retries errors when response is NULL", {
   )
 })
 
+test_that("provider metadata is selected from nested HTTP conditions", {
+  source(here::here("R", "utils_send_prompt_with_retries.R"), local = TRUE)
+  http_error <- structure(list(
+    message = "HTTP 429 Too Many Requests", call = NULL, status = 429L,
+    resp = httr2::response(status_code = 429L,
+      headers = list("X-Request-Id" = "req-123", Authorization = "secret"),
+      body = charToRaw("private response"))
+  ), class = c("httr2_http_429", "error", "condition"))
+  wrapper <- structure(list(message = "Provider failed", call = NULL, parent = http_error),
+    class = c("error", "condition"))
+  details <- kwallm_llm_error_diagnostics(wrapper, elapsed_ms = 1234)
+  expect_identical(details$status_code, 429L)
+  expect_identical(details$request_id, "req-123")
+  expect_identical(details$elapsed_ms, 1234)
+  expect_null(details$resp)
+  expect_null(details$parent)
+  plain <- kwallm_llm_error_diagnostics(simpleError("offline"), elapsed_ms = 10)
+  expect_null(plain$status_code)
+  expect_null(plain$request_id)
+})
+
+test_that("failure reports and logs omit raw requests, bodies and credentials", {
+  source(here::here("R", "utils_send_prompt_with_retries.R"), local = TRUE)
+  withr::local_options(send_prompt_with_retries__log_prompts_to_file = FALSE)
+  .kwallm__prompt_execution_reset()
+  logged <- character()
+  log_warn <- function(message, ...) logged <<- c(logged, message)
+  provider <- create_mock_llm_provider()
+  provider$api_key <- "known-provider-secret"
+  local_mocked_bindings(send_prompt = function(...) stop(structure(list(
+    message = paste("HTTP 401: Authorization: Bearer bearer-secret",
+      "api_key=query-secret; sk-token-secret; known-provider-secret; private submitted text"),
+    call = NULL, status_code = 401L, request_id = "req-401",
+    request = list(headers = list(Authorization = "raw-header-secret")),
+    response = list(body = "raw-body-private-text")
+  ), class = c("provider_error", "error", "condition"))), .package = "tidyprompt")
+  error <- tryCatch(send_prompt_with_retries(
+    "private submitted text", provider, max_tries = 1, retry_delay_seconds = 0
+  ), error = identity)
+  expect_s3_class(error, "kwallm_llm_error")
+  expect_identical(error$status_code, 401L)
+  expect_identical(error$request_id, "req-401")
+  expect_gte(error$elapsed_ms, 0)
+  expect_match(conditionMessage(error), "HTTP status=401", fixed = TRUE)
+  expect_match(conditionMessage(error), "request_id=req-401", fixed = TRUE)
+  expect_match(conditionMessage(error), "elapsed_ms=", fixed = TRUE)
+  output <- paste(c(conditionMessage(error), logged,
+    .kwallm__prompt_execution_get()$final_error_message,
+    capture.output(str(error))), collapse = "\n")
+  for (secret in c("bearer-secret", "query-secret", "sk-token-secret",
+                   "known-provider-secret", "private submitted text",
+                   "raw-header-secret", "raw-body-private-text")) {
+    expect_false(grepl(secret, output, fixed = TRUE), info = secret)
+  }
+})
+
+test_that("invalid responses do not dump chat history into diagnostic reports", {
+  source(here::here("R", "utils_send_prompt_with_retries.R"), local = TRUE)
+  local_mocked_bindings(send_prompt = function(...) list(
+    response = NULL,
+    chat_history = data.frame(role = "user", content = "private interview text")
+  ), .package = "tidyprompt")
+  error <- tryCatch(send_prompt_with_retries(
+    "test prompt", create_mock_llm_provider(), max_tries = 1
+  ), error = identity)
+  expect_match(conditionMessage(error), "failed to get a valid reply", fixed = TRUE)
+  expect_match(conditionMessage(error), "prompt_id=", fixed = TRUE)
+  expect_false(grepl("private interview text", conditionMessage(error), fixed = TRUE))
+})
+
 test_that("send_prompt_with_retries respects max_interactions parameter", {
   source(here::here("R", "utils_send_prompt_with_retries.R"), local = TRUE)
 
