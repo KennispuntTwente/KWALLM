@@ -405,7 +405,7 @@ source(here::here("R", "utils_processing_helpers.R"), local = TRUE)
   )
 }
 
-test_that("report templates render (smoke)", {
+test_that("report templates render through the export helper (smoke)", {
   testthat::skip_if_not_installed("rmarkdown")
   testthat::skip_if_not_installed("knitr")
   testthat::skip_if_not_installed("here")
@@ -430,30 +430,24 @@ test_that("report templates render (smoke)", {
 
   withr::with_dir(here::here(), {
     for (report_path in reports) {
-      out_file <- file.path(
+      report_out_dir <- file.path(
         out_dir,
-        paste0(tools::file_path_sans_ext(basename(report_path)), ".html")
+        tools::file_path_sans_ext(basename(report_path))
+      )
+      dir.create(report_out_dir)
+      out_file <- file.path(report_out_dir, "report.html")
+
+      res <- write_analysis_result_report_html(
+        .build_smoke_analysis_result(report_path),
+        temp_dir = report_out_dir
       )
 
-      res <- try(
-        rmarkdown::render(
-          input = report_path,
-          output_file = out_file,
-          params = list(
-            analysis_result = .build_smoke_analysis_result(report_path)
-          ),
-          quiet = TRUE,
-          envir = .report_render_env(environment())
-        ),
-        silent = TRUE
-      )
-
-      if (inherits(res, "try-error")) {
+      if (endsWith(res, ".txt")) {
         stop(paste0(
           "Render failed for ",
           basename(report_path),
           ": ",
-          as.character(res)
+          paste(readLines(res, warn = FALSE), collapse = "\n")
         ))
       }
 
