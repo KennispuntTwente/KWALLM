@@ -30,6 +30,34 @@ make_fake_session <- function() {
   )
 }
 
+test_that("every error includes deployment and version in console and file", {
+  log_dir <- withr::local_tempdir()
+  withr::local_options(
+    kwallm__app_version = "1.2.3-test",
+    kwallm__logger_state = list(
+      initialized = TRUE, use_logger_pkg = FALSE, level = "DEBUG",
+      log_dir = log_dir, log_dir_abs = log_dir, app_mode = "electron"
+    )
+  )
+  for (fatal in c(FALSE, TRUE)) {
+    output <- capture.output(app_error(
+      simpleError("environment test"), fatal = fatal,
+      shiny_session = make_fake_session(), lang = make_translator()
+    ))
+    for (expected in c("App version: 1.2.3-test", "Deployment: electron", "R:", "Platform:")) {
+      expect_match(paste(output, collapse = "\n"), expected, fixed = TRUE)
+    }
+  }
+  lines <- readLines(file.path(log_dir, paste0(Sys.Date(), ".log")))
+  expect_true(all(grepl("App version: 1.2.3-test", lines, fixed = TRUE)))
+  expect_true(all(grepl("Deployment: electron", lines, fixed = TRUE)))
+
+  options(kwallm__app_version = NULL)
+  expect_output(app_error(
+    "missing version", shiny_session = make_fake_session(), lang = make_translator()
+  ), "App version: unknown", fixed = TRUE)
+})
+
 
 test_that("app_error: nonfatal logs to nonfatal folder and does not close session", {
   test_dir <- withr::local_tempdir()

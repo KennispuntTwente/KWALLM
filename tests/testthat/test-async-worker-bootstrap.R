@@ -20,6 +20,7 @@ test_that("kwallm_worker_bootstrap loads app functions and worker options in a r
 
   old_opts <- options(
     app__mode = "test",
+    kwallm__app_version = "diagnostics-test-version",
     kwallm.test_fake_llm = TRUE,
     send_prompt_with_retries__max_tries = 7L,
     topic_modelling__always_add_not_applicable = FALSE,
@@ -49,6 +50,7 @@ test_that("kwallm_worker_bootstrap loads app functions and worker options in a r
           envir = environment(),
           inherits = TRUE
         ),
+        app_version = getOption("kwallm__app_version"),
         option_values = stats::setNames(
           lapply(option_names, getOption),
           option_names
@@ -100,6 +102,7 @@ test_that("kwallm_worker_bootstrap loads app functions and worker options in a r
   }
 
   expect_true(all(result$function_presence))
+  expect_identical(result$app_version, "diagnostics-test-version")
   expect_identical(result$option_values$app__mode, "test")
   expect_identical(result$option_values$kwallm.test_fake_llm, TRUE)
   expect_identical(result$option_values$send_prompt_with_retries__max_tries, 7L)

@@ -20,6 +20,7 @@ kwallm_worker_app_root <- function(path = ".") {
 kwallm_worker_capture_options <- function() {
   option_names <- c(
     "app__mode",
+    "kwallm__app_version",
     "app_admin_name",
     "app_admin_email",
     "mori__enabled",

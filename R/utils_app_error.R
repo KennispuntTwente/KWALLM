@@ -47,6 +47,18 @@ app_error <- function(
 
   current_time <- Sys.time()
   formatted_time <- format(current_time, "%Y-%m-%d %H:%M:%S%z")
+  app_version <- getOption("kwallm__app_version", "unknown")
+  if (!is.character(app_version) || length(app_version) != 1L ||
+      is.na(app_version) || !nzchar(app_version)) {
+    app_version <- "unknown"
+  }
+  deployment <- tryCatch(get_app_mode(), error = function(e) "unknown")
+  environment_details <- paste0(
+    "App version: ", app_version,
+    "\nDeployment: ", deployment,
+    "\nR: ", R.version.string,
+    "\nPlatform: ", R.version$platform
+  )
   log_message <- paste0(
     "Error: ",
     error,
@@ -59,6 +71,8 @@ app_error <- function(
     "\n",
     "Time: ",
     formatted_time,
+    "\n",
+    environment_details,
     "\n"
   )
 
@@ -73,10 +87,11 @@ app_error <- function(
   tryCatch(
     log_error(
       sprintf(
-        "Error occurred: %s | When: %s | Session ID: %s",
+        "Error occurred: %s | When: %s | Session ID: %s | %s",
         error_for_log,
         when_for_log,
-        session_id
+        session_id,
+        gsub("[\r\n]+", " | ", environment_details)
       ),
       component = "error",
       fatal = fatal
