@@ -612,7 +612,7 @@ gliner_server <- function(
             ),
             br(),
             lang()$t(
-              "Alle checkboxes die aangevinkt zijn, worden geanonimiseerd nadat je op 'Sla op' klikt.",
+              "Alle checkboxes die aangevinkt zijn, worden geanonimiseerd nadat je op 'Sla op' klikt."
             ),
             hr()
           ),

@@ -94,7 +94,7 @@ context_window_server <- function(
               uiOutput(ns("context_window_ui")),
               uiOutput(ns("fit_context_window_warning")),
               uiOutput(ns("too_many_batches_warning")),
-              uiOutput(ns("n_batches_display")),
+              uiOutput(ns("n_batches_display"))
             )
           )
         )

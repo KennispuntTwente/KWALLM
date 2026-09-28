@@ -348,7 +348,7 @@ for (i in seq_len(nrow(paragraphs_df))) {
             collapse = ""
           ),
           "</ul>"
-        )),
+        ))
       ),
       id = paste0("acc-", i),
       open = FALSE

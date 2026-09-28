@@ -129,7 +129,7 @@ llm_provider_server <- function(
                     bsicons::bs_icon("info-circle"),
                     paste0(
                       lang()$t(
-                        "Hier staan details over de geconfigureerde LLM-provider.",
+                        "Hier staan details over de geconfigureerde LLM-provider."
                       ),
                       lang()$t(
                         " Een LLM-provider is een API die toegang biedt tot een taalmodel (LLM). Dit kan een lokale API of externe API zijn."
@@ -140,7 +140,7 @@ llm_provider_server <- function(
                     )
                   )
                 ),
-                uiOutput(ns("provider_mode_selection")),
+                uiOutput(ns("provider_mode_selection"))
               )
             ),
             card_body(

@@ -1045,7 +1045,7 @@ if (FALSE) {
     research_background,
     llm_provider = llm_provider_openai(
       parameters = list(model = "o3-2025-04-16")
-    ),
+    )
   )
 
   # Use LLM to assign topics

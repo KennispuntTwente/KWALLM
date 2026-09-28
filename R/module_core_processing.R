@@ -16,7 +16,7 @@ processing_ui <- function(id) {
     br(),
     div(
       class = "text-center",
-      uiOutput(ns("process_button")),
+      uiOutput(ns("process_button"))
     ),
     div(
       class = "text-center",

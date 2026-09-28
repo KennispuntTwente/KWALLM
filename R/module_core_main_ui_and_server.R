@@ -588,7 +588,7 @@ main_server <- function(
               analysis_name_ui("analysis_name")
             ),
             uiOutput("kwallm_processing_global"),
-            div(style = "height: 75px;"),
+            div(style = "height: 75px;")
           ),
           hr()
         ),

@@ -461,7 +461,7 @@ for (i in seq_len(nrow(paragraphs_df))) {
   acc <- bslib::accordion(
       bslib::accordion_panel(
         title = "View texts",
-        htmltools::HTML(paste0("<ul>", paste0("<li><i>", htmltools::htmlEscape(supporting_texts), "</i></li>", collapse = ""), "</ul>")),
+        htmltools::HTML(paste0("<ul>", paste0("<li><i>", htmltools::htmlEscape(supporting_texts), "</i></li>", collapse = ""), "</ul>"))
       ),
       id = paste0("acc-", i),
       open = FALSE
