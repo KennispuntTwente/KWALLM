@@ -2925,8 +2925,8 @@
       "RemoteHost": "api.github.com",
       "RemoteUsername": "KennispuntTwente",
       "RemoteRepo": "tidyprompt",
-      "RemoteRef": "a647762dc9ef768884695fb4e120fcb19a039da3",
-      "RemoteSha": "a647762dc9ef768884695fb4e120fcb19a039da3"
+      "RemoteRef": "6699c4d0e89edb8683d4c40d70d36d7d46cfa202",
+      "RemoteSha": "6699c4d0e89edb8683d4c40d70d36d7d46cfa202"
     },
     "tidyr": {
       "Package": "tidyr",
